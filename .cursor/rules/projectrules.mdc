@@ -1,0 +1,65 @@
+---
+description: "AgendIA - Sistema SaaS de agendamentos inteligentes com IA"
+globs:
+  - "**/*.ts"
+  - "**/*.vue"
+  - "**/*.php"
+  - "**/*.js"
+  - "**/*.json"
+alwaysApply: true
+---
+
+# Regras do Projeto
+
+- O projeto se chama **AgendIA**.
+- É um **SaaS de agendamentos inteligentes** (com integração Google Calendar, WhatsApp e IA futuramente).
+- É um projeto mult-tenant lembre disso e não esqueça
+- Sempre deixa o sistema responsivo para para celular, ter o cuidado de desenvolver pensando nisso
+- Stack principal:
+  - Frontend: Vue 3 + Vuetify
+  - Backend: Laravel 12
+  - Banco de dados: MySQL
+  - Linguagens: TypeScript, JavaScript e PHP
+- Utilize **boas práticas** de desenvolvimento:
+  - Clean Code
+  - SOLID
+  - Arquitetura em camadas (Services, Repositories, Controllers)
+  - Componentização no Vue
+- **Regras de implementação**:
+  - Sempre priorizar legibilidade e manutenibilidade do código.
+  - Evitar duplicação de código (DRY).
+  - Sempre usar tipagem estática quando possível (TypeScript e PHP 8+ com tipos).
+  - Nomes de variáveis, classes e métodos devem ser claros e autoexplicativos (em inglês).
+  - O sistema deve ser multi-tenant (cada cliente/empresa tem seus próprios dados).
+
+# Funcionalidades Obrigatórias
+
+- Autenticação:
+  - Login com Google
+  - Login com email e senha
+  - Recuperação de senha
+  - Controle multi-tenant (cada empresa com seu espaço separado)
+- Gestão de usuários:
+  - Perfis: administrador da empresa, secretária, cliente
+  - Permissões e papéis
+- Agenda e agendamentos:
+  - Cadastro de horários de atendimento por profissional
+  - Exibição de dias e horários disponíveis
+  - Evitar agendamento duplicado (mesmo horário/profissional)
+  - Bloqueio de horários indisponíveis (férias, feriados, folgas)
+  - Remarcação e cancelamento de agendamentos
+  - Histórico de agendamentos
+- Integrações:
+  - Integração inicial com **Google Calendar**
+  - Notificações por **WhatsApp** (via integração externa, ex: n8n)
+  - Notificações por email
+- Painel administrativo:
+  - Dashboard com visão geral dos agendamentos
+  - Gestão de clientes
+  - Relatórios básicos (número de agendamentos, cancelamentos etc.)
+- Futuro (não obrigatório agora, mas previsto):
+  - IA para sugerir horários otimizados
+  - IA para responder clientes via chatbot integrado
+  - Cobrança recorrente (Stripe/Pagar.me)
+
+- No laravel usar sempre formResquest

@@ -1,0 +1,272 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Models\User;
+use App\Models\Company;
+use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
+
+class AuthController extends Controller
+{
+    /**
+     * Register a new user
+     */
+    public function register(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|min:8|confirmed',
+            'phone' => 'nullable|string|max:20',
+            'company_name' => 'required|string|max:255',
+            'company_phone' => 'required|string|max:20',
+            'company_whatsapp' => 'required|string|max:20',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Dados inválidos',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            // Create company
+            $company = Company::create([
+                'name' => $request->company_name,
+                'phone' => $request->company_phone,
+                'whatsapp_number' => $request->company_whatsapp,
+                'timezone' => 'America/Sao_Paulo',
+            ]);
+
+            // Buscar profile de admin
+            $adminProfile = \App\Models\Profile::where('name', 'admin')->first();
+
+            // Create user
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'phone' => $request->phone,
+                'profile_id' => $adminProfile->id,
+            ]);
+
+            // Attach user to company
+            $user->companies()->attach($company->id);
+
+            // Create token
+            $token = $user->createToken('auth_token')->plainTextToken;
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Usuário criado com sucesso',
+                'data' => [
+                    'user' => $user->load('companies'),
+                    'company' => $company,
+                    'token' => $token,
+                    'token_type' => 'Bearer',
+                ]
+            ], 201);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao criar usuário',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Login user
+     */
+    public function login(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
+            'password' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Dados inválidos',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        if (!Auth::attempt($request->only('email', 'password'))) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Credenciais inválidas'
+            ], 401);
+        }
+
+        $user = Auth::user();
+        $token = $user->createToken('auth_token', $user->getAbilities())->plainTextToken;
+
+        // Carregar abilities do usuário
+        $user->load('profile.abilities');
+        $abilities = $user->getAbilities();
+        $abilitiesGrouped = $user->getAbilitiesGrouped();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Login realizado com sucesso',
+            'data' => [
+                'user' => $user->load('companies'),
+                'token' => $token,
+                'token_type' => 'Bearer',
+                'abilities' => $abilities,
+                'abilities_grouped' => $abilitiesGrouped,
+                'profile' => $user->profile
+            ]
+        ]);
+    }
+
+    /**
+     * Login with Google
+     */
+    public function googleLogin(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'google_id' => 'required|string',
+            'name' => 'required|string',
+            'email' => 'required|email',
+            'avatar' => 'nullable|url',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Dados inválidos',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            // Find or create user
+            $user = User::where('google_id', $request->google_id)
+                      ->orWhere('email', $request->email)
+                      ->first();
+
+            if (!$user) {
+                // Buscar profile de cliente
+                $clientProfile = \App\Models\Profile::where('name', 'client')->first();
+
+                $user = User::create([
+                    'name' => $request->name,
+                    'email' => $request->email,
+                    'google_id' => $request->google_id,
+                    'profile_id' => $clientProfile->id,
+                ]);
+            } else {
+                // Update Google ID if not set
+                if (!$user->google_id) {
+                    $user->update(['google_id' => $request->google_id]);
+                }
+            }
+
+            $token = $user->createToken('auth_token')->plainTextToken;
+
+            // Carregar abilities do usuário
+            $user->load('profile.abilities');
+            $abilities = $user->getAbilities();
+            $abilitiesGrouped = $user->getAbilitiesGrouped();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Login com Google realizado com sucesso',
+                'data' => [
+                    'user' => $user->load('companies'),
+                    'token' => $token,
+                    'token_type' => 'Bearer',
+                    'abilities' => $abilities,
+                    'abilities_grouped' => $abilitiesGrouped,
+                    'profile' => $user->profile,
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao fazer login com Google',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get authenticated user
+     */
+    public function me(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $user->load('profile.abilities', 'companies');
+
+        $abilities = $user->getAbilities();
+        $abilitiesGrouped = $user->getAbilitiesGrouped();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'user' => $user,
+                'abilities' => $abilities,
+                'abilities_grouped' => $abilitiesGrouped,
+                'profile' => $user->profile
+            ]
+        ]);
+    }
+
+    /**
+     * Logout user
+     */
+    public function logout(Request $request): JsonResponse
+    {
+        $request->user()->currentAccessToken()->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Logout realizado com sucesso'
+        ]);
+    }
+
+    /**
+     * Refresh token
+     */
+    public function refresh(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        // Delete current token
+        $request->user()->currentAccessToken()->delete();
+
+        // Carregar abilities do usuário
+        $user->load('profile.abilities');
+        $abilities = $user->getAbilities();
+        $abilitiesGrouped = $user->getAbilitiesGrouped();
+
+        // Create new token
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Token renovado com sucesso',
+            'data' => [
+                'user' => $user->load('companies'),
+                'token' => $token,
+                'token_type' => 'Bearer',
+                'abilities' => $abilities,
+                'abilities_grouped' => $abilitiesGrouped,
+                'profile' => $user->profile
+            ]
+        ]);
+    }
+}
