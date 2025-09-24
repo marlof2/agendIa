@@ -18,7 +18,6 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->integer('duration_minutes');
             $table->decimal('price', 10, 2)->nullable();
-            $table->boolean('active')->default(true);
             $table->timestamps();
         });
     }

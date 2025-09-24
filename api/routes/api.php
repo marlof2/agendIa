@@ -54,7 +54,7 @@ Route::middleware('auth:sanctum')->group(function () {
                     'message' => 'Lista de agendamentos',
                     'data' => []
                 ]);
-            })->middleware('ability:appointments.view');
+            })->middleware('ability:appointments.index');
 
             Route::post('/', function (Request $request) {
                 return response()->json([
@@ -82,7 +82,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
         // Rotas para admin e secretária
-        Route::middleware('ability:users.view')->group(function () {
+        Route::middleware('ability:users.index')->group(function () {
 
             Route::prefix('dashboard')->group(function () {
                 Route::get('/', function () {
@@ -119,7 +119,7 @@ Route::middleware('auth:sanctum')->group(function () {
                         'message' => 'Lista de usuários',
                         'data' => []
                     ]);
-                })->middleware('ability:users.view');
+                })->middleware('ability:users.index');
 
                 Route::post('/', function (Request $request) {
                     return response()->json([
@@ -135,7 +135,7 @@ Route::middleware('auth:sanctum')->group(function () {
                         'message' => 'Usuário encontrado',
                         'data' => ['id' => $id]
                     ]);
-                })->middleware('ability:users.view');
+                })->middleware('ability:users.index');
 
                 Route::put('/{user}', function (Request $request, $id) {
                     return response()->json([
@@ -184,7 +184,7 @@ Route::middleware('auth:sanctum')->group(function () {
         });
 
         // Rotas para clientes
-        Route::middleware('ability:appointments.view')->group(function () {
+        Route::middleware('ability:appointments.index')->group(function () {
             Route::prefix('my-appointments')->group(function () {
                 Route::get('/', function () {
                     return response()->json([

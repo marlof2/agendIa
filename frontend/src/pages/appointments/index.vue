@@ -10,6 +10,7 @@
       <ActionBar>
         <template #left>
           <v-btn
+            v-if="permissionReactive('appointments.create')"
             color="success"
             prepend-icon="mdi-plus"
             rounded="lg"
@@ -329,10 +330,15 @@ import AppointmentViewModal from "./components/AppointmentViewModal.vue";
 import DeleteConfirmModal from "./components/DeleteConfirmModal.vue";
 import { useAppointmentsApi } from "./api";
 import { useExport } from "@/composables/useExport";
-import { usePermission } from "@/composables/usePermission";
+import { useAbilities } from "@/composables/useAbilities";
 
-// Validação de permissão usando o composable abstraído
-const { requirePermission } = usePermission();
+const { permissionReactive } = useAbilities();
+
+
+onMounted(async () => {
+  // await loadAppointments();
+  console.log(permissionReactive.value('appointments.create'));
+});
 
 // Composables
 const {
@@ -364,9 +370,7 @@ const remove = (item: any) => {
   showDeleteModal.value = true;
 };
 
-onMounted(async () => {
-  // await loadAppointments();
-});
+
 
 const loadAppointments = async () => {
   try {
@@ -376,8 +380,6 @@ const loadAppointments = async () => {
   }
 };
 
-// Verificar permissão ao carregar a página
-requirePermission("appointments.view");
 
 const create = () => {
   selectedAppointment.value = null;

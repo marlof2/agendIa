@@ -210,9 +210,7 @@
 import { ref, computed, onMounted } from 'vue'
 import PageHeader from '@/components/PageHeader.vue'
 import { useClientsApi, type Client, type Filters } from './api'
-import { usePermission } from '@/composables/usePermission'
 
-const { requirePermission } = usePermission();
 
 // API composable
 const {
@@ -282,7 +280,6 @@ const filteredClients = computed(() => {
 // Lifecycle
 onMounted(async () => {
   await loadClients()
-  // requirePermission("clients.view");
 })
 
 // Methods

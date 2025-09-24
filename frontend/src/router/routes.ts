@@ -37,7 +37,7 @@ const routes: RouteRecordRaw[] = [
     component: Dashboard,
     meta: {
       requiresAuth: true,
-      requiresAbility: 'appointments.view',
+      requiresAbility: 'appointments.index',
       title: 'Dashboard',
       description: 'Visão geral do sistema'
     }
@@ -48,7 +48,7 @@ const routes: RouteRecordRaw[] = [
     component: ClientsIndex,
     meta: {
       requiresAuth: true,
-      requiresAbility: 'clients.view',
+      requiresAbility: 'clients.index',
       title: 'Clientes',
       description: 'Gerencie todos os clientes cadastrados'
     }
@@ -59,7 +59,7 @@ const routes: RouteRecordRaw[] = [
     component: AppointmentsIndex,
     meta: {
       requiresAuth: true,
-      requiresAbility: 'appointments.view',
+      requiresAbility: 'appointments.index',
       title: 'Agendamentos',
       description: 'Gerencie todos os agendamentos do sistema'
     }

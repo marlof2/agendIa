@@ -28,10 +28,9 @@ class CheckAbility
 
         if (!$auth->user()->hasAbility($ability)) {
             return response()->json([
-                'message' => 'Insufficient abiliies.',
+                'message' => 'Sem permissão para acessar este recurso.',
                 'error' => 'INSUFFICIENT_ABILITIES',
                 'required_ability' => $ability,
-                // 'user_abilities' => $user->getAbilities()
             ], 403);
         }
 

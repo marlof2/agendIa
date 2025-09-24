@@ -24,17 +24,17 @@ class UserSeeder extends Seeder
         // Criar empresa de exemplo
         $company = Company::create([
             'name' => 'AgendIA Demo',
-            'phone' => '(11) 99999-9999',
-            'whatsapp_number' => '5511999999999',
+            'phone' => '11999999999',
+            'whatsapp_number' => '11999999999',
             'timezone' => 'America/Sao_Paulo',
         ]);
 
         // Criar usuário admin
         $admin = User::create([
-            'name' => 'Administrador',
-            'email' => 'admin@agendia.com',
-            'password' => Hash::make('password'),
-            'phone' => '(11) 99999-9999',
+            'name' => 'Marlo Marques da Silva Filho',
+            'email' => 'marlosilva.f2@gmail.com',
+            'password' => Hash::make('123456'),
+            'phone' => '71991717209',
             'profile_id' => $adminProfile->id,
         ]);
 
@@ -46,7 +46,7 @@ class UserSeeder extends Seeder
             'name' => 'Maria Silva',
             'email' => 'secretaria@agendia.com',
             'password' => Hash::make('password'),
-            'phone' => '(11) 88888-8888',
+            'phone' => '11888888888',
             'profile_id' => $secretaryProfile->id,
         ]);
 
@@ -58,7 +58,7 @@ class UserSeeder extends Seeder
             'name' => 'João Santos',
             'email' => 'cliente@agendia.com',
             'password' => Hash::make('password'),
-            'phone' => '(11) 77777-7777',
+            'phone' => '11777777777',
             'profile_id' => $clientProfile->id,
         ]);
 
@@ -66,7 +66,7 @@ class UserSeeder extends Seeder
         $client->companies()->attach($company->id);
 
         $this->command->info('Usuários de exemplo criados com sucesso!');
-        $this->command->info('Admin: admin@agendia.com / password');
+        $this->command->info('Admin: marlosilva.f2@gmail.com / 123');
         $this->command->info('Secretária: secretaria@agendia.com / password');
         $this->command->info('Cliente: cliente@agendia.com / password');
     }

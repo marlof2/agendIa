@@ -17,7 +17,6 @@ return new class extends Migration
             $table->tinyInteger('day_of_week'); // 0=Dom, 1=Seg, ... 6=Sab
             $table->time('start_time');
             $table->time('end_time');
-            $table->boolean('active')->default(true);
             $table->timestamps();
         });
     }
