@@ -162,7 +162,7 @@ class User extends Authenticatable
     /**
      * Check if user has a specific ability.
      */
-    public function hasAbility(string $ability): bool
+    public function hasPermission(string $ability): bool
     {
         return in_array($ability, $this->getAbilities());
     }

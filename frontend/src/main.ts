@@ -16,6 +16,9 @@ import { createApp } from 'vue'
 // Styles
 import 'unfonts.css'
 
+// CSS global para SweetAlert2
+import './styles/swal.css'
+
 const app = createApp(App)
 
 registerPlugins(app)

@@ -33,10 +33,6 @@ export function useAuth() {
   const token = computed(() => authState.value.token);
   const isAuthenticated = computed(() => authState.value.isAuthenticated);
 
-  // Nota: Verificações de role/perfil agora são feitas através do useAbilities
-
-  // Nota: Verificações de perfil e permissões agora são feitas através do useAbilities
-
   // Login
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
@@ -55,20 +51,23 @@ export function useAuth() {
 
       // Carregar abilities automaticamente se disponíveis
       if (response.data.abilities && response.data.profile) {
-        const { useAbilities } = await import('@/composables/useAbilities');
-        const { saveAbilitiesToStorage } = useAbilities();
+        const { saveWithEncrypted } = await import('@/utils/storage');
 
         const abilitiesData = {
           abilities: response.data.abilities,
         };
 
         // Salvar abilities criptografadas no localStorage
-        await saveAbilitiesToStorage(abilitiesData);
+        await saveWithEncrypted('agendia_user_abilities', abilitiesData);
       }
 
       return true;
-    } catch (error) {
-      showErrorToast("Erro no login", "Autenticação");
+    } catch (error: any) {
+      // Não mostrar toast genérico se for erro de credenciais (401)
+      // O useHttp já trata e mostra o toast apropriado
+      if (error.response?.status !== 401) {
+        showErrorToast("Erro no login", "Autenticação");
+      }
       return false;
     }
   };
@@ -112,10 +111,6 @@ export function useAuth() {
       const response = await post("/auth/logout");
 
       if (response.success) {
-        // Limpar abilities do cache
-        const { useAbilities } = await import('@/composables/useAbilities');
-        const { clearAbilitiesFromStorage } = useAbilities();
-        clearAbilitiesFromStorage();
 
         authState.value = {
           user: null,
@@ -127,11 +122,6 @@ export function useAuth() {
       }
     } catch (error) {
       showErrorToast("Erro no logout", "Autenticação");
-      // Mesmo com erro, limpar dados locais
-      const { useAbilities } = await import('@/composables/useAbilities');
-      const { clearAbilitiesFromStorage } = useAbilities();
-      clearAbilitiesFromStorage();
-
       authState.value = {
         user: null,
         token: null,

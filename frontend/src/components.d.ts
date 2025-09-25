@@ -9,6 +9,8 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     ActionBar: typeof import('./components/ActionBar.vue')['default']
+    ActionMenu: typeof import('./components/ActionMenu.vue')['default']
+    ActionMenuItem: typeof import('./components/ActionMenuItem.vue')['default']
     AppBreadcrumb: typeof import('./components/AppBreadcrumb.vue')['default']
     AppFooter: typeof import('./components/AppFooter.vue')['default']
     AppointmentModal: typeof import('./components/modals/AppointmentModal.vue')['default']
@@ -20,6 +22,7 @@ declare module 'vue' {
     ExportActions: typeof import('./components/ExportActions.vue')['default']
     FiltersCard: typeof import('./components/FiltersCard.vue')['default']
     HelloWorld: typeof import('./components/HelloWorld.vue')['default']
+    MobileActionButtons: typeof import('./components/MobileActionButtons.vue')['default']
     PageHeader: typeof import('./components/PageHeader.vue')['default']
     PermissionGuard: typeof import('./components/PermissionGuard.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']

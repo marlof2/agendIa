@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\Api\AbilityController;
+use App\Http\Controllers\Api\ProfileController;
 
 /*
 |--------------------------------------------------------------------------
@@ -161,6 +162,17 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::prefix('abilities')->group(function () {
                 Route::get('/', [AbilityController::class, 'index']);
                 Route::get('/by-profile/{profile}', [AbilityController::class, 'abilitiesByProfile']);
+            });
+
+            // Rotas para profiles
+            Route::prefix('profiles')->group(function () {
+                Route::get('/', [ProfileController::class, 'index']);
+                Route::post('/', [ProfileController::class, 'store'])->middleware('ability:profiles.create');
+                Route::get('/{profile}', [ProfileController::class, 'show']);
+                Route::put('/{profile}', [ProfileController::class, 'update'])->middleware('ability:profiles.edit');
+                Route::delete('/{profile}', [ProfileController::class, 'destroy'])->middleware('ability:profiles.delete');
+                Route::get('/abilities/all', [ProfileController::class, 'abilities']);
+                Route::patch('/{profile}/abilities', [ProfileController::class, 'updateAbilities'])->middleware('ability:profiles.edit');
             });
 
 

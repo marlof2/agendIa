@@ -10,7 +10,7 @@
       <ActionBar>
         <template #left>
           <v-btn
-            v-if="permissionReactive('appointments.create')"
+            v-if="hasPermission('appointments.create')"
             color="success"
             prepend-icon="mdi-plus"
             rounded="lg"
@@ -332,12 +332,12 @@ import { useAppointmentsApi } from "./api";
 import { useExport } from "@/composables/useExport";
 import { useAbilities } from "@/composables/useAbilities";
 
-const { permissionReactive } = useAbilities();
+const { hasPermission } = useAbilities();
 
 
 onMounted(async () => {
   // await loadAppointments();
-  console.log(permissionReactive.value('appointments.create'));
+  // console.log(permissionReactive.value('appointments.create'));
 });
 
 // Composables

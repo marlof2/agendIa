@@ -11,7 +11,7 @@ import Swal from 'sweetalert2'
 export const showSuccessToast = (
   message: string,
   title?: string,
-  timer: number = 3000
+  timer: number = 4000
 ): void => {
   Swal.mixin({
     toast: true,
@@ -19,10 +19,18 @@ export const showSuccessToast = (
     showConfirmButton: false,
     timer,
     timerProgressBar: true,
+    allowOutsideClick: false,
     icon: 'success',
     iconColor: '#10b981',
     background: '#ffffff',
-    color: '#1f2937'
+    color: '#1f2937',
+    customClass: {
+      popup: 'swal-font-roboto'
+    },
+    didOpen: (toast) => {
+      toast.addEventListener('mouseenter', Swal.stopTimer)
+      toast.addEventListener('mouseleave', Swal.resumeTimer)
+    }
   }).fire({
     title: title ? `${title}: ${message}` : message
   })
@@ -34,7 +42,7 @@ export const showSuccessToast = (
 export const showErrorToast = (
   message: string,
   title?: string,
-  timer: number = 4000
+  timer: number = 5000
 ): void => {
   Swal.mixin({
     toast: true,
@@ -42,10 +50,18 @@ export const showErrorToast = (
     showConfirmButton: false,
     timer,
     timerProgressBar: true,
+    allowOutsideClick: false,
     icon: 'error',
     iconColor: '#ef4444',
     background: '#ffffff',
-    color: '#1f2937'
+    color: '#1f2937',
+    customClass: {
+      popup: 'swal-font-roboto'
+    },
+    didOpen: (toast) => {
+      toast.addEventListener('mouseenter', Swal.stopTimer)
+      toast.addEventListener('mouseleave', Swal.resumeTimer)
+    }
   }).fire({
     title: title ? `${title}: ${message}` : message
   })
@@ -57,7 +73,7 @@ export const showErrorToast = (
 export const showWarningToast = (
   message: string,
   title?: string,
-  timer: number = 3500
+  timer: number = 4000
 ): void => {
   Swal.mixin({
     toast: true,
@@ -65,10 +81,18 @@ export const showWarningToast = (
     showConfirmButton: false,
     timer,
     timerProgressBar: true,
+    allowOutsideClick: false,
     icon: 'warning',
     iconColor: '#f59e0b',
     background: '#ffffff',
-    color: '#1f2937'
+    color: '#1f2937',
+    customClass: {
+      popup: 'swal-font-roboto'
+    },
+    didOpen: (toast) => {
+      toast.addEventListener('mouseenter', Swal.stopTimer)
+      toast.addEventListener('mouseleave', Swal.resumeTimer)
+    }
   }).fire({
     title: title ? `${title}: ${message}` : message
   })
@@ -80,7 +104,7 @@ export const showWarningToast = (
 export const showInfoToast = (
   message: string,
   title?: string,
-  timer: number = 3000
+  timer: number = 4000
 ): void => {
   Swal.mixin({
     toast: true,
@@ -88,10 +112,18 @@ export const showInfoToast = (
     showConfirmButton: false,
     timer,
     timerProgressBar: true,
+    allowOutsideClick: false,
     icon: 'info',
     iconColor: '#3b82f6',
     background: '#ffffff',
-    color: '#1f2937'
+    color: '#1f2937',
+    customClass: {
+      popup: 'swal-font-roboto'
+    },
+    didOpen: (toast) => {
+      toast.addEventListener('mouseenter', Swal.stopTimer)
+      toast.addEventListener('mouseleave', Swal.resumeTimer)
+    }
   }).fire({
     title: title ? `${title}: ${message}` : message
   })

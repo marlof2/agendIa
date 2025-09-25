@@ -1,0 +1,33 @@
+/* CSS para SweetAlert2 - Fonte Roboto */
+.swal-font-roboto {
+  font-family: 'Roboto', sans-serif !important;
+}
+
+/* Garantir que todos os elementos do SweetAlert2 usem Roboto */
+.swal-font-roboto * {
+  font-family: 'Roboto', sans-serif !important;
+}
+
+/* Estilo específico para toasts */
+.swal-font-roboto.swal2-toast {
+  font-family: 'Roboto', sans-serif !important;
+}
+
+.swal-font-roboto.swal2-toast .swal2-title {
+  font-family: 'Roboto', sans-serif !important;
+  font-weight: 500 !important;
+}
+
+/* Estilo para modais também */
+.swal-font-roboto.swal2-popup {
+  font-family: 'Roboto', sans-serif !important;
+}
+
+.swal-font-roboto.swal2-popup .swal2-title {
+  font-family: 'Roboto', sans-serif !important;
+  font-weight: 500 !important;
+}
+
+.swal-font-roboto.swal2-popup .swal2-content {
+  font-family: 'Roboto', sans-serif !important;
+}

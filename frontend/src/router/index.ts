@@ -28,11 +28,11 @@ const checkUserPermissions = async (
 ): Promise<boolean> => {
   try {
     const { useAbilities } = await import("@/composables/useAbilities");
-    const { hasAbility, loadUserAbilities } = useAbilities();
+    const { hasPermission, getUserPermissions } = useAbilities();
 
-    await loadUserAbilities();
+    await getUserPermissions();
 
-    return hasAbility.value(requiredAbility);
+    return hasPermission.value(requiredAbility);
   } catch (error) {
     console.error("Erro ao verificar permissões:", error);
     return false;

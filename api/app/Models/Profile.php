@@ -15,11 +15,6 @@ class Profile extends Model
         'name',
         'display_name',
         'description',
-        'is_active',
-    ];
-
-    protected $casts = [
-        'is_active' => 'boolean',
     ];
 
     /**
@@ -39,13 +34,6 @@ class Profile extends Model
         return $this->hasMany(User::class);
     }
 
-    /**
-     * Scope a query to only include active profiles.
-     */
-    public function scopeActive($query)
-    {
-        return $query->where('is_active', true);
-    }
 
     /**
      * Get abilities grouped by category.

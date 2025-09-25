@@ -1,19 +1,16 @@
 import type { RouteRecordRaw } from 'vue-router'
 
 // Importações das páginas
-import Index from '@/pages/index.vue'
-import Login from '@/pages/login.vue'
-import Dashboard from '@/pages/dashboard.vue'
-import ClientsIndex from '@/pages/clients/index.vue'
-import AppointmentsIndex from '@/pages/appointments/index.vue'
-import Unauthorized from '@/pages/unauthorized.vue'
-import NotFound from '@/pages/404.vue'
+
+import routesProfiles from '@/pages/profiles/routes/index'
+
 
 const routes: RouteRecordRaw[] = [
+  ...routesProfiles,
   {
     path: '/',
     name: 'index',
-    component: Index,
+    component: () => import('@/pages/index.vue'),
     meta: {
       requiresAuth: false,
       title: 'Início',
@@ -23,7 +20,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/login',
     name: 'login',
-    component: Login,
+    component: () => import('@/pages/login/login.vue'),
     meta: {
       requiresAuth: false,
       title: 'Login',
@@ -34,7 +31,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/dashboard',
     name: 'dashboard',
-    component: Dashboard,
+    component: () => import('@/pages/dashboard.vue'),
     meta: {
       requiresAuth: true,
       requiresAbility: 'appointments.index',
@@ -45,7 +42,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/clients',
     name: 'clients',
-    component: ClientsIndex,
+    component: () => import('@/pages/clients/index.vue'),
     meta: {
       requiresAuth: true,
       requiresAbility: 'clients.index',
@@ -56,7 +53,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/appointments',
     name: 'appointments',
-    component: AppointmentsIndex,
+    component: () => import('@/pages/appointments/index.vue'),
     meta: {
       requiresAuth: true,
       requiresAbility: 'appointments.index',
@@ -67,7 +64,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/unauthorized',
     name: 'unauthorized',
-    component: Unauthorized,
+    component: () => import('@/pages/error/unauthorized.vue'),
     meta: {
       requiresAuth: false,
       title: 'Acesso Negado',
@@ -78,7 +75,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/:pathMatch(.*)*',
     name: 'not-found',
-    component: NotFound,
+    component: () => import('@/pages/error/404.vue'),
     meta: {
       requiresAuth: false,
       title: 'Página não encontrada',

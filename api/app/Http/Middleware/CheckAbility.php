@@ -26,7 +26,7 @@ class CheckAbility
 
 
 
-        if (!$auth->user()->hasAbility($ability)) {
+        if (!$auth->user()->hasPermission($ability)) {
             return response()->json([
                 'message' => 'Sem permissão para acessar este recurso.',
                 'error' => 'INSUFFICIENT_ABILITIES',

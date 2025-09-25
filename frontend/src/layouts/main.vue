@@ -160,6 +160,12 @@ const menuItems = [
     to: "/services",
   },
   {
+    title: "Perfis",
+    icon: "mdi-account-group",
+    value: "profiles",
+    to: "/profiles",
+  },
+  {
     title: "Relatórios",
     icon: "mdi-chart-line",
     value: "reports",

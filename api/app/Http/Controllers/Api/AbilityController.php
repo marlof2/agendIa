@@ -51,11 +51,11 @@ class AbilityController extends Controller
             'ability' => 'required|string'
         ]);
 
-        $hasAbility = $user->hasAbility($request->ability);
+        $hasPermission = $user->hasPermission($request->ability);
 
         return response()->json([
             'success' => true,
-            'has_ability' => $hasAbility,
+            'has_ability' => $hasPermission,
             'ability' => $request->ability
         ]);
     }

@@ -27,6 +27,7 @@ export const ERROR_MESSAGES = {
   NETWORK_ERROR: 'Erro de conexão. Verifique sua internet.',
   TIMEOUT_ERROR: 'Tempo limite excedido. Tente novamente.',
   UNAUTHORIZED: 'Sessão expirada. Faça login novamente.',
+  UNAUTHORIZED_LOGIN: 'Email ou senha incorretos',
   FORBIDDEN: 'Você não tem permissão para esta ação.',
   NOT_FOUND: 'Recurso não encontrado.',
   SERVER_ERROR: 'Erro interno do servidor. Tente novamente mais tarde.',

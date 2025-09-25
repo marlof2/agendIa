@@ -12,17 +12,17 @@
     </PageHeader>
 
     <!-- Action Bar -->
-    <div v-if="$slots.actionBar" class="base-page__action-bar mb-4">
+    <div v-if="$slots.actionBar"   class="mb-4">
       <slot name="actionBar" />
     </div>
 
     <!-- Filters Card (opcional) -->
-    <div v-if="showFilters && $slots.filters" class="base-page__filters mb-6">
+    <div v-if="showFilters && $slots.filters" class="mb-6">
       <slot name="filters" />
     </div>
 
     <!-- Main Content -->
-    <div class="base-page__content">
+    <div class="">
       <slot name="content" />
     </div>
   </div>
@@ -37,14 +37,27 @@ interface BreadcrumbItem {
   disabled?: boolean
 }
 
-interface Props {
-  title: string
-  subtitle?: string
-  breadcrumbs?: BreadcrumbItem[]
-  showFilters?: boolean
-}
-
-defineProps<Props>()
+defineProps(
+  {
+    showFilters: {
+      type: Boolean,
+      required: false,
+      default: true
+    },
+    title: {
+      type: String,
+      required: true
+    },
+    subtitle: {
+      type: String,
+      required: false
+    },
+    breadcrumbs: {
+      type: Array as PropType<BreadcrumbItem[]>,
+      required: false
+    }
+  }
+)
 </script>
 
 <style scoped>
@@ -54,18 +67,6 @@ defineProps<Props>()
   padding: 0 24px;
 }
 
-
-.base-page__action-bar {
-  /* Espaçamento para barra de ações */
-}
-
-.base-page__filters {
-  /* Espaçamento para filtros */
-}
-
-.base-page__content {
-  /* Conteúdo principal */
-}
 
 /* Responsividade */
 @media (max-width: 768px) {

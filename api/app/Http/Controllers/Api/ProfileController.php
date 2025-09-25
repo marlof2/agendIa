@@ -21,11 +21,7 @@ class ProfileController extends Controller
         // Filter by search term
         if ($request->has('search') && $request->search) {
             $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('display_name', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%");
-            });
+            $query->where('display_name', 'like', "%{$search}%");
         }
 
         // Pagination
@@ -57,7 +53,6 @@ class ProfileController extends Controller
             'name' => 'required|string|max:255|unique:profiles,name',
             'display_name' => 'required|string|max:255',
             'description' => 'nullable|string|max:500',
-            'is_active' => 'boolean',
             'abilities' => 'array',
             'abilities.*' => 'exists:abilities,id'
         ]);
@@ -66,7 +61,6 @@ class ProfileController extends Controller
             'name' => $request->name,
             'display_name' => $request->display_name,
             'description' => $request->description,
-            'is_active' => $request->boolean('is_active', true),
         ]);
 
         if ($request->has('abilities')) {
@@ -96,7 +90,6 @@ class ProfileController extends Controller
             ],
             'display_name' => 'required|string|max:255',
             'description' => 'nullable|string|max:500',
-            'is_active' => 'boolean',
             'abilities' => 'array',
             'abilities.*' => 'exists:abilities,id'
         ]);
@@ -105,7 +98,6 @@ class ProfileController extends Controller
             'name' => $request->name,
             'display_name' => $request->display_name,
             'description' => $request->description,
-            'is_active' => $request->boolean('is_active', true),
         ]);
 
         if ($request->has('abilities')) {
@@ -148,7 +140,7 @@ class ProfileController extends Controller
      */
     public function abilities(): JsonResponse
     {
-        $abilities = Ability::active()->get()->groupBy('category');
+        $abilities = Ability::get()->groupBy('category');
 
         return response()->json([
             'success' => true,

@@ -55,12 +55,25 @@ const createAxiosInstance = (): AxiosInstance => {
           showErrorToast(ERROR_MESSAGES.NETWORK_ERROR, 'Conexão')
         }
       } else if (error.response?.status === 401) {
-        error.message = ERROR_MESSAGES.UNAUTHORIZED
-        if (showErrorToasts) {
-          showWarningToast(ERROR_MESSAGES.UNAUTHORIZED, 'Sessão Expirada')
+        // Verificar se é uma requisição de login
+        const isLoginRequest = error.config?.url?.includes('/auth/login')
+
+        if (isLoginRequest) {
+          error.message = ERROR_MESSAGES.UNAUTHORIZED_LOGIN
+          if (showErrorToasts) {
+            showErrorToast(ERROR_MESSAGES.UNAUTHORIZED_LOGIN, 'Credenciais Inválidas')
+          }
+        } else {
+          error.message = ERROR_MESSAGES.UNAUTHORIZED
+          if (showErrorToasts) {
+            showWarningToast(ERROR_MESSAGES.UNAUTHORIZED, 'Sessão Expirada')
+          }
+          localStorage.removeItem('auth_token')
+          // Usar router.push ao invés de window.location.href para evitar recarregamento
+          if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+            window.location.href = '/login'
+          }
         }
-        localStorage.removeItem('auth_token')
-        window.location.href = '/login'
       } else if (error.response?.status === 403) {
         error.message = ERROR_MESSAGES.FORBIDDEN
         if (showErrorToasts) {
