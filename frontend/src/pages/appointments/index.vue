@@ -554,9 +554,9 @@ const clearFilters = async () => {
 };
 
 // Export function
-const handleExport = async (format: 'excel' | 'pdf' | 'csv', data: any[], filename: string) => {
+const handleExport = async (format: 'excel' | 'pdf', data: any[], filename: string) => {
   try {
-    await exportData(format, data, tableColumns, filename);
+    await exportData(format, '/appointments', filename, data);
     console.log(`Exportação ${format.toUpperCase()} concluída: ${filename}`);
   } catch (error) {
     console.error('Erro na exportação:', error);

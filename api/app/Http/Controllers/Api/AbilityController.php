@@ -16,7 +16,7 @@ class AbilityController extends Controller
      */
     public function index(): JsonResponse
     {
-        $abilities = Ability::active()->get();
+        $abilities = Ability::get();
 
         return response()->json([
             'success' => true,

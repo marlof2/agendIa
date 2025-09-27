@@ -1,38 +1,15 @@
 <template>
-  <v-dialog
+  <BaseDialog
     :model-value="modelValue"
-    @update:model-value="$emit('update:modelValue', $event)"
+    :title="profile?.display_name || 'Visualizar Perfil'"
+    subtitle="Visualize as informações do perfil"
+    icon="mdi-account-tie"
+    icon-color="info"
     max-width="900px"
-    persistent
-    scrollable
+    :fullscreen="$vuetify.display.mobile"
+    @close="closeModal"
   >
-    <v-card class="profile-view-modal">
-      <v-card-title class="profile-view-modal__header">
-        <div class="d-flex align-center">
-          <v-avatar size="40" color="primary" class="mr-4">
-            <v-icon color="white" size="24">mdi-account-tie</v-icon>
-          </v-avatar>
-          <div>
-            <h2 class="text-h5 font-weight-bold mb-1">
-              {{ profile?.display_name || 'Perfil não informado' }}
-            </h2>
-            <p class="text-body-2 text-medium-emphasis mb-0">
-              {{ profile?.name || 'Nome não informado' }}
-            </p>
-          </div>
-        </div>
-        <v-btn
-          icon
-          variant="text"
-          @click="closeModal"
-          class="profile-view-modal__close-btn"
-        >
-          <v-icon size="20">mdi-close</v-icon>
-        </v-btn>
-      </v-card-title>
-
-      <v-card-text class="profile-view-modal__content">
-        <v-row>
+    <v-row>
           <!-- Informações Básicas -->
           <v-col cols="12" md="6">
             <v-card variant="outlined" class="info-card">
@@ -205,18 +182,19 @@
               </v-card-text>
             </v-card>
           </v-col>
-        </v-row>
-      </v-card-text>
+    </v-row>
 
-      <v-card-actions class="profile-view-modal__actions">
-        <v-spacer />
+    <template #actions>
+      <v-spacer />
+      <div class="d-flex modal-actions-container">
         <v-btn
-          color="secondary"
-          variant="outlined"
+          color="grey-darken-1"
+          variant="flat"
           rounded="lg"
-          class="text-none font-weight-medium"
+          class="text-none font-weight-medium mr-4"
           @click="closeModal"
         >
+          <v-icon icon="mdi-close" class="mr-2" />
           Fechar
         </v-btn>
         <v-btn
@@ -224,15 +202,15 @@
           color="primary"
           variant="flat"
           rounded="lg"
-          class="text-none font-weight-medium"
+          class="text-none font-weight-medium mr-4"
           prepend-icon="mdi-cog"
           @click="openAbilitiesModal"
         >
-          Gerenciar Abilities
+          Gerenciar Permissões
         </v-btn>
         <v-btn
           v-if="hasPermission('profiles.edit')"
-          color="warning"
+          color="info"
           variant="flat"
           rounded="lg"
           class="text-none font-weight-medium"
@@ -241,15 +219,15 @@
         >
           Editar
         </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+      </div>
+    </template>
+  </BaseDialog>
 
   <!-- Abilities Modal -->
   <ProfileAbilitiesModal
     v-model="showAbilitiesModal"
     :profile="profile"
-    @success="handleAbilitiesSuccess"
+    @reload="handleAbilitiesReload"
   />
 </template>
 
@@ -257,6 +235,7 @@
 import { computed, ref } from 'vue'
 import { useAbilities } from '@/composables/useAbilities'
 import ProfileAbilitiesModal from './ProfileAbilitiesModal.vue'
+import BaseDialog from '@/components/BaseDialog.vue'
 
 interface Props {
   modelValue: boolean
@@ -266,6 +245,7 @@ interface Props {
 interface Emits {
   (e: 'update:modelValue', value: boolean): void
   (e: 'edit', profile: any): void
+  (e: 'reload'): void
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -287,7 +267,7 @@ const abilitiesByCategory = computed(() => {
     if (!grouped[ability.category]) {
       grouped[ability.category] = []
     }
-    grouped[ability.category].push(ability)
+    grouped[ability.category]?.push(ability)
   })
 
   return grouped
@@ -363,9 +343,8 @@ const openAbilitiesModal = () => {
   showAbilitiesModal.value = true;
 };
 
-const handleAbilitiesSuccess = (updatedProfile: any) => {
-  // Update the profile with new abilities
-  Object.assign(props.profile, updatedProfile);
+const handleAbilitiesReload = () => {
+  emit('reload');
   showAbilitiesModal.value = false;
 };
 </script>
@@ -512,6 +491,17 @@ const handleAbilitiesSuccess = (updatedProfile: any) => {
 
   .profile-view-modal__actions .v-btn {
     width: 100%;
+  }
+
+  .modal-actions-container {
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .modal-actions-container .v-btn {
+    width: 100%;
+    margin-right: 0 !important;
   }
 
   .abilities-grid {

@@ -168,10 +168,11 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::prefix('profiles')->group(function () {
                 Route::get('/', [ProfileController::class, 'index']);
                 Route::post('/', [ProfileController::class, 'store'])->middleware('ability:profiles.create');
+                Route::get('/export', [ProfileController::class, 'export'])->middleware('ability:profiles.index');
+                Route::get('/abilities/all', [ProfileController::class, 'abilities']);
                 Route::get('/{profile}', [ProfileController::class, 'show']);
                 Route::put('/{profile}', [ProfileController::class, 'update'])->middleware('ability:profiles.edit');
                 Route::delete('/{profile}', [ProfileController::class, 'destroy'])->middleware('ability:profiles.delete');
-                Route::get('/abilities/all', [ProfileController::class, 'abilities']);
                 Route::patch('/{profile}/abilities', [ProfileController::class, 'updateAbilities'])->middleware('ability:profiles.edit');
             });
 

@@ -19,6 +19,9 @@ import 'unfonts.css'
 // CSS global para SweetAlert2
 import './styles/swal.css'
 
+// Correções para tema escuro
+import './styles/dark-theme-fixes.scss'
+
 const app = createApp(App)
 
 registerPlugins(app)

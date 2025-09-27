@@ -58,51 +58,78 @@
           </v-btn>
         </template>
         <v-list class="user-menu-list">
+          <!-- Header do usuário -->
           <v-list-item class="user-menu-header">
             <template v-slot:prepend>
-              <v-avatar size="40" class="user-avatar-large">
+              <v-avatar size="48" class="user-avatar-large">
                 <v-img v-if="userAvatar" :src="userAvatar" :alt="userName" />
-                <v-icon v-else color="white" size="20">mdi-account</v-icon>
+                <v-icon v-else color="white" size="24">mdi-account</v-icon>
               </v-avatar>
             </template>
-            <v-list-item-title class="user-name-large">
-              {{ userName }}
-            </v-list-item-title>
-            <v-list-item-subtitle class="user-role-large">
-              {{ userRole }}
-            </v-list-item-subtitle>
+            <div class="user-info-container">
+              <v-list-item-title class="user-name-large">
+                {{ userName }}
+              </v-list-item-title>
+              <v-list-item-subtitle class="user-role-large">
+                {{ userRole }}
+              </v-list-item-subtitle>
+              <div class="user-status-container">
+                <v-chip
+                  size="small"
+                  :color="getStatusColor(userStatus)"
+                  variant="flat"
+                  class="status-chip"
+                >
+                  <v-icon size="12" class="mr-1">{{ getStatusIcon(userStatus) }}</v-icon>
+                  {{ getStatusText(userStatus) }}
+                </v-chip>
+              </div>
+            </div>
           </v-list-item>
-          <v-divider />
-          <v-list-item
-            prepend-icon="mdi-account"
-            title="Meu Perfil"
-            @click="navigateToProfile"
-            class="menu-item"
-          />
-          <v-list-item
-            prepend-icon="mdi-cog"
-            title="Configurações"
-            @click="navigateToSettings"
-            class="menu-item"
-          />
-          <v-list-item
-            prepend-icon="mdi-currency-usd"
-            title="Planos e Preços"
-            class="pricing-item"
-            @click="navigateToPricing"
-          />
-          <v-list-item
-            prepend-icon="mdi-help-circle"
-            title="Ajuda e Suporte"
-            @click="navigateToHelp"
-            class="menu-item"
-          />
-          <v-divider />
+
+          <v-divider class="menu-divider" />
+
+          <!-- Menu Simplificado -->
+          <div class="menu-section">
+            <v-list-item
+              prepend-icon="mdi-account-edit"
+              title="Editar Perfil"
+              subtitle="Atualize suas informações"
+              @click="navigateToProfile"
+              class="menu-item"
+            />
+            <v-list-item
+              prepend-icon="mdi-bell"
+              title="Notificações"
+              subtitle="Preferências de alertas"
+              @click="navigateToNotifications"
+              class="menu-item"
+            />
+            <v-list-item
+              prepend-icon="mdi-help-circle"
+              title="Central de Ajuda"
+              subtitle="FAQ e documentação"
+              @click="navigateToHelp"
+              class="menu-item"
+            />
+            <v-list-item
+              prepend-icon="mdi-headset"
+              title="Suporte Técnico"
+              subtitle="Fale conosco"
+              @click="navigateToSupport"
+              class="menu-item"
+            />
+          </div>
+
+          <v-divider class="menu-divider" />
+
+          <!-- Logout -->
           <v-list-item
             prepend-icon="mdi-logout"
-            title="Sair"
+            title="Sair da Conta"
+            subtitle="Encerrar sessão"
             class="logout-item"
-            @click="logout()"
+            @click="logout"
           />
         </v-list>
       </v-menu>
@@ -119,10 +146,10 @@ import { useAuth } from "@/composables/useAuth";
 const theme = useTheme();
 const router = useRouter();
 const { logout, user } = useAuth();
-
+  console.log(user.value)
 // User data (em produção, isso viria de um store/API)
-const userName = ref(user.value?.name);
-const userRole = ref(user.value?.role);
+const userName = ref(user.value.name);
+const userRole = ref(user.value.profile.display_name);
 const userAvatar = ref("");
 const userStatus = ref("online"); // online, away, busy, offline
 const notificationCount = ref(1);
@@ -154,21 +181,52 @@ const statusClass = computed(() => {
 });
 
 
+// Status helper methods
+const getStatusColor = (status: string) => {
+  const colors = {
+    online: 'success',
+    away: 'warning',
+    busy: 'error',
+    offline: 'grey'
+  };
+  return colors[status as keyof typeof colors] || 'grey';
+};
+
+const getStatusIcon = (status: string) => {
+  const icons = {
+    online: 'mdi-circle',
+    away: 'mdi-circle-half-full',
+    busy: 'mdi-minus-circle',
+    offline: 'mdi-circle-outline'
+  };
+  return icons[status as keyof typeof icons] || 'mdi-circle-outline';
+};
+
+const getStatusText = (status: string) => {
+  const texts = {
+    online: 'Online',
+    away: 'Ausente',
+    busy: 'Ocupado',
+    offline: 'Offline'
+  };
+  return texts[status as keyof typeof texts] || 'Desconhecido';
+};
+
 // Navigation methods
 const navigateToProfile = () => {
   router.push('/profile');
 };
 
-const navigateToSettings = () => {
-  router.push('/settings');
-};
-
-const navigateToPricing = () => {
-  router.push('/pricing');
+const navigateToNotifications = () => {
+  router.push('/notifications');
 };
 
 const navigateToHelp = () => {
   router.push('/help');
+};
+
+const navigateToSupport = () => {
+  router.push('/support');
 };
 
 </script>
@@ -185,7 +243,7 @@ const navigateToHelp = () => {
 .topbar-actions__btn {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border-radius: 12px;
-  color: #64748b;
+  color: #475569;
   position: relative;
   overflow: hidden;
 }
@@ -204,7 +262,7 @@ const navigateToHelp = () => {
 
 .topbar-actions__btn:hover {
   background: rgba(0, 0, 0, 0.04);
-  color: #334155;
+  color: #1e293b;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
@@ -242,7 +300,7 @@ const navigateToHelp = () => {
 }
 
 .user-avatar {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
@@ -259,17 +317,17 @@ const navigateToHelp = () => {
 }
 
 .status-online {
-  background: #10b981;
+  background: #059669;
   box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
 }
 
 .status-away {
-  background: #f59e0b;
+  background: #d97706;
   box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
 }
 
 .status-busy {
-  background: #ef4444;
+  background: #dc2626;
   box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
 }
 
@@ -280,7 +338,8 @@ const navigateToHelp = () => {
 
 /* User Menu Styles */
 .user-menu-list {
-  min-width: 300px;
+  min-width: 320px;
+  max-width: 360px;
   border-radius: 16px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
   border: 1px solid rgba(0, 0, 0, 0.08);
@@ -289,11 +348,24 @@ const navigateToHelp = () => {
 }
 
 .user-menu-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
   color: white;
-  padding: 24px 20px;
+  padding: 20px;
   position: relative;
   overflow: hidden;
+}
+
+.user-info-container {
+  flex: 1;
+}
+
+.user-status-container {
+  margin-top: 8px;
+}
+
+.status-chip {
+  font-size: 0.75rem;
+  height: 20px;
 }
 
 .user-menu-header::before {
@@ -326,6 +398,15 @@ const navigateToHelp = () => {
   font-weight: 500;
 }
 
+.menu-divider {
+  margin: 8px 0;
+  opacity: 0.1;
+}
+
+.menu-section {
+  padding: 8px 0;
+}
+
 .menu-item {
   transition: all 0.2s ease;
   border-radius: 8px;
@@ -333,49 +414,26 @@ const navigateToHelp = () => {
 }
 
 .menu-item:hover {
-  background: rgba(102, 126, 234, 0.08);
+  background: rgba(51, 65, 85, 0.08);
   transform: translateX(4px);
 }
 
-.pricing-item {
-  background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
-  color: white;
-  margin: 4px 8px;
-  border-radius: 12px;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
+.menu-item :deep(.v-list-item-title) {
+  font-weight: 500;
+  font-size: 0.9rem;
 }
 
-.pricing-item::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transition: left 0.5s ease;
+.menu-item :deep(.v-list-item-subtitle) {
+  font-size: 0.8rem;
+  opacity: 0.7;
 }
 
-.pricing-item:hover::before {
-  left: 100%;
-}
-
-.pricing-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(245, 158, 11, 0.3);
-}
-
-.pricing-item :deep(.v-list-item-title) {
-  color: white;
-  font-weight: 600;
-}
 
 .logout-item {
   transition: all 0.2s ease;
   border-radius: 8px;
   margin: 2px 8px;
+  border-top: 1px solid rgba(239, 68, 68, 0.1);
 }
 
 .logout-item:hover {
@@ -384,18 +442,24 @@ const navigateToHelp = () => {
 }
 
 .logout-item :deep(.v-list-item-title) {
-  color: #ef4444;
+  color: #dc2626;
   font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.logout-item :deep(.v-list-item-subtitle) {
+  color: rgba(220, 38, 38, 0.7);
+  font-size: 0.8rem;
 }
 
 /* Dark theme adjustments */
 .v-theme--dark .topbar-actions__btn {
-  color: #94a3b8;
+  color: #64748b;
 }
 
 .v-theme--dark .topbar-actions__btn:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: #e2e8f0;
+  background: rgba(255, 255, 255, 0.08);
+  color: #f1f5f9;
 }
 
 .v-theme--dark .topbar-actions__user-menu:hover {
@@ -403,7 +467,7 @@ const navigateToHelp = () => {
 }
 
 .v-theme--dark .user-role-large {
-  color: #94a3b8;
+  color: #64748b;
 }
 
 /* Responsive */

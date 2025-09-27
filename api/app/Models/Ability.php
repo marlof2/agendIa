@@ -16,11 +16,6 @@ class Ability extends Model
         'action',
         'display_name',
         'description',
-        'is_active',
-    ];
-
-    protected $casts = [
-        'is_active' => 'boolean',
     ];
 
     /**
@@ -32,13 +27,6 @@ class Ability extends Model
             ->withTimestamps();
     }
 
-    /**
-     * Scope a query to only include active abilities.
-     */
-    public function scopeActive($query)
-    {
-        return $query->where('is_active', true);
-    }
 
     /**
      * Scope a query to filter by category.

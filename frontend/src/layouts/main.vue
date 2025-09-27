@@ -268,7 +268,7 @@ onUnmounted(() => {
 <style scoped>
 /* Sidebar Styles */
 .sidebar {
-  background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(180deg, #1e293b 0%, #334155 100%);
   color: white;
   border-right: none;
   box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1);
@@ -572,7 +572,7 @@ onUnmounted(() => {
 }
 
 .user-avatar {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
   box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
 }
 
@@ -582,7 +582,7 @@ onUnmounted(() => {
   right: 2px;
   width: 12px;
   height: 12px;
-  background: #10b981;
+  background: #059669;
   border: 2px solid white;
   border-radius: 50%;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
@@ -602,7 +602,7 @@ onUnmounted(() => {
 }
 
 .user-avatar-large {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
   box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
 }
 
@@ -619,22 +619,22 @@ onUnmounted(() => {
 }
 
 .pricing-item {
-  background: rgba(59, 130, 246, 0.05);
-  color: #2563eb;
+  background: rgba(30, 64, 175, 0.05);
+  color: #1e40af;
   font-weight: 600;
 }
 
 .pricing-item :deep(.v-list-item-title) {
-  color: #2563eb;
+  color: #1e40af;
   font-weight: 600;
 }
 
 .logout-item {
-  color: #ef4444;
+  color: #dc2626;
 }
 
 .logout-item :deep(.v-list-item-title) {
-  color: #ef4444;
+  color: #dc2626;
   font-weight: 500;
 }
 
@@ -653,7 +653,7 @@ onUnmounted(() => {
 
 /* Main Content */
 .main-content {
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
   min-height: 100vh;
   position: relative;
 }
@@ -722,7 +722,7 @@ onUnmounted(() => {
 
 /* Dark theme sidebar adjustments */
 .v-theme--dark .sidebar {
-  background: linear-gradient(180deg, #1e293b 0%, #334155 100%);
+  background: linear-gradient(180deg, #334155 0%, #475569 100%);
   border-right: 1px solid rgba(255, 255, 255, 0.1);
 }
 

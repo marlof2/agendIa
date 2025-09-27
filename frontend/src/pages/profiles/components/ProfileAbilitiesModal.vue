@@ -1,69 +1,51 @@
 <template>
-  <v-dialog
+  <BaseDialog
     :model-value="modelValue"
-    @update:model-value="$emit('update:modelValue', $event)"
+    :title="`Gerenciar Permissões - ${profile?.display_name || ''}`"
+    :subtitle="'Configure as permissões do perfil'"
+    icon="mdi-shield-account"
+    icon-color="primary"
     max-width="900px"
-    persistent
-    scrollable
+    :fullscreen="$vuetify.display.mobile"
+    :show-progress="false"
+    @close="closeModal"
   >
-    <v-card class="profile-abilities-modal">
-      <v-card-title class="profile-abilities-modal__header">
-        <div class="d-flex align-center">
-          <v-icon
-            color="primary"
-            size="24"
-            class="mr-3"
-          >
-            mdi-shield-account
-          </v-icon>
-          <span class="text-h5 font-weight-bold">
-            Gerenciar Abilities - {{ profile?.display_name }}
-          </span>
-        </div>
-        <v-btn
-          icon
-          variant="text"
-          @click="closeModal"
-          class="profile-abilities-modal__close-btn"
-        >
-          <v-icon size="20">mdi-close</v-icon>
-        </v-btn>
-      </v-card-title>
+    <!-- Loading State -->
+    <div v-if="loading" class="text-center py-8">
+      <v-progress-circular
+        indeterminate
+        color="primary"
+        size="64"
+      />
+      <p class="text-body-1 mt-4">Carregando permissões...</p>
+    </div>
 
-      <v-card-text class="profile-abilities-modal__content">
-        <div v-if="loading" class="text-center py-8">
-          <v-progress-circular
-            indeterminate
-            color="primary"
-            size="64"
-          />
-          <p class="text-body-1 mt-4">Carregando abilities...</p>
-        </div>
+    <!-- Error State -->
+    <div v-else-if="error" class="text-center py-8">
+      <v-icon color="error" size="64" class="mb-4">mdi-alert-circle</v-icon>
+      <p class="text-body-1 text-error">{{ error }}</p>
+      <v-btn
+        color="primary"
+        variant="outlined"
+        class="mt-4"
+        @click="loadAbilities"
+      >
+        Tentar Novamente
+      </v-btn>
+    </div>
 
-        <div v-else-if="error" class="text-center py-8">
-          <v-icon color="error" size="64" class="mb-4">mdi-alert-circle</v-icon>
-          <p class="text-body-1 text-error">{{ error }}</p>
-          <v-btn
-            color="primary"
-            variant="outlined"
-            class="mt-4"
-            @click="loadAbilities"
-          >
-            Tentar Novamente
-          </v-btn>
-        </div>
-
-        <div v-else>
+    <!-- Content -->
+    <div v-else>
           <!-- Search and Filter -->
           <div class="mb-6">
             <v-row>
               <v-col cols="12" md="8">
                 <v-text-field
                   v-model="searchQuery"
-                  label="Buscar abilities"
+                  label="Buscar permissões"
                   prepend-inner-icon="mdi-magnify"
                   variant="outlined"
-                  density="comfortable"
+                  density="compact"
                   clearable
                   rounded="lg"
                   hide-details
@@ -75,19 +57,40 @@
                   :items="categoryOptions"
                   label="Categoria"
                   variant="outlined"
-                  density="comfortable"
+                  density="compact"
                   clearable
                   rounded="lg"
                   hide-details
                 />
               </v-col>
             </v-row>
+
+              <!-- Action Buttons Row -->
+              <v-row class="mt-4">
+                <v-col cols="12">
+                  <div class="d-flex align-center">
+                    <!-- Marcar/Desmarcar Todas Switch -->
+                    <div class="d-flex align-center">
+                      <v-switch
+                        v-model="markAllSwitch"
+                        color="primary"
+                        hide-details
+                        density="compact"
+                        @update:model-value="handleMarkAllSwitch"
+                      />
+                      <span class="ml-2 text-body-1 font-weight-medium">
+                        {{ markAllSwitch ? 'Desmarcar Todas' : 'Marcar Todas' }}
+                      </span>
+                    </div>
+                  </div>
+                </v-col>
+              </v-row>
           </div>
 
-          <!-- Abilities by Category -->
+          <!-- Permissões por Categoria -->
           <div v-if="filteredAbilities.length === 0" class="text-center py-8">
             <v-icon color="grey" size="64" class="mb-4">mdi-shield-off</v-icon>
-            <p class="text-body-1 text-grey">Nenhuma ability encontrada</p>
+            <p class="text-body-1 text-grey">Nenhuma permissão encontrada</p>
           </div>
 
           <div v-else>
@@ -110,7 +113,7 @@
                       variant="outlined"
                       class="ml-3"
                     >
-                      {{ abilities.length }}
+                      {{ getSelectedCountInCategory(category) }}/{{ abilities.length }} Permissões
                     </v-chip>
                   </div>
                 </template>
@@ -129,13 +132,6 @@
                     >
                       <v-card-text class="pa-4">
                         <div class="d-flex align-center">
-                          <v-checkbox
-                            :model-value="isAbilitySelected(ability.id)"
-                            color="primary"
-                            hide-details
-                            class="mr-3"
-                            @click.stop
-                          />
                           <div class="flex-grow-1">
                             <div class="font-weight-medium text-body-1 mb-1">
                               {{ ability.display_name }}
@@ -147,13 +143,6 @@
                               {{ ability.description }}
                             </div>
                           </div>
-                          <v-chip
-                            :color="getCategoryColor(category)"
-                            size="x-small"
-                            variant="outlined"
-                          >
-                            {{ category }}
-                          </v-chip>
                         </div>
                       </v-card-text>
                     </v-card>
@@ -161,43 +150,50 @@
                 </template>
               </v-expansion-panel>
             </v-expansion-panels>
-          </div>
         </div>
-      </v-card-text>
+      </div>
 
-      <v-card-actions class="profile-abilities-modal__actions">
-        <v-spacer />
-        <div class="text-body-2 text-medium-emphasis mr-4">
-          {{ selectedAbilities.length }} abilities selecionadas
-        </div>
-        <v-btn
-          color="secondary"
+    <template #actions>
+      <v-spacer />
+      <div class="d-flex modal-actions-container">
+        <v-chip
+          color="primary"
           variant="outlined"
+          class="mr-4 align-self-center"
+        >
+          {{ selectedAbilities.length }}/{{ allAbilities.length }}
+        </v-chip>
+        <v-btn
+          color="grey-darken-1"
+          variant="flat"
           rounded="lg"
-          class="text-none font-weight-medium"
+          class="text-none font-weight-medium px-6 mr-4"
           @click="closeModal"
         >
-          Cancelar
+          <v-icon icon="mdi-close" class="mr-2" />
+          Fechar
         </v-btn>
         <v-btn
           color="primary"
           variant="flat"
           rounded="lg"
-          class="text-none font-weight-medium"
+          class="text-none font-weight-medium px-6"
           :loading="saving"
-          :disabled="!hasChanges"
           @click="saveAbilities"
         >
+          <v-icon icon="mdi-check" class="mr-2" />
           Salvar Alterações
         </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+      </div>
+    </template>
+  </BaseDialog>
 </template>
 
 <script lang="ts" setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { useProfilesApi, type Ability } from '../api'
+import { showSuccessToast, showErrorToast } from '@/utils/swal'
+import BaseDialog from '@/components/BaseDialog.vue'
 
 interface Props {
   modelValue: boolean
@@ -206,7 +202,7 @@ interface Props {
 
 interface Emits {
   (e: 'update:modelValue', value: boolean): void
-  (e: 'reload', profile: any): void
+  (e: 'reload'): void
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -227,6 +223,7 @@ const selectedCategory = ref('')
 const allAbilities = ref<Ability[]>([])
 const selectedAbilities = ref<number[]>([])
 const originalAbilities = ref<number[]>([])
+const markAllSwitch = ref(false)
 
 // Computed
 const hasChanges = computed(() => {
@@ -235,8 +232,13 @@ const hasChanges = computed(() => {
   return JSON.stringify(current) !== JSON.stringify(original)
 })
 
+const formProgress = computed(() => {
+  if (!allAbilities.value.length) return 0
+  return (selectedAbilities.value.length / allAbilities.value.length) * 100
+})
+
 const filteredAbilities = computed(() => {
-  let filtered = allAbilities.value
+  let filtered = Array.isArray(allAbilities.value) ? allAbilities.value : []
 
   // Filter by search query
   if (searchQuery.value) {
@@ -263,19 +265,20 @@ const groupedAbilities = computed(() => {
     if (!grouped[ability.category]) {
       grouped[ability.category] = []
     }
-    grouped[ability.category].push(ability)
+    grouped[ability.category]?.push(ability)
   })
 
-  // Sort abilities within each category
+  // Sort permissions within each category
   Object.keys(grouped).forEach(category => {
-    grouped[category].sort((a, b) => a.display_name.localeCompare(b.display_name))
+    grouped[category]?.sort((a, b) => a.display_name.localeCompare(b.display_name))
   })
 
   return grouped
 })
 
 const categoryOptions = computed(() => {
-  const categories = [...new Set(allAbilities.value.map(ability => ability.category))]
+  const abilities = Array.isArray(allAbilities.value) ? allAbilities.value : []
+  const categories = [...new Set(abilities.map(ability => ability.category))]
   return categories.map(category => ({
     title: getCategoryTitle(category),
     value: category
@@ -335,6 +338,29 @@ const toggleAbility = (abilityId: number) => {
   }
 }
 
+const getSelectedCountInCategory = (category: string) => {
+  const abilitiesInCategory = allAbilities.value.filter(ability => ability.category === category)
+  return abilitiesInCategory.filter(ability => selectedAbilities.value.includes(ability.id)).length
+}
+
+const selectAll = () => {
+  selectedAbilities.value = allAbilities.value.map(ability => ability.id)
+  markAllSwitch.value = true
+}
+
+const clearAll = () => {
+  selectedAbilities.value = []
+  markAllSwitch.value = false
+}
+
+const handleMarkAllSwitch = (value: boolean | null) => {
+  if (value) {
+    selectAll()
+  } else {
+    clearAll()
+  }
+}
+
 const loadAbilities = async () => {
   if (!props.profile) return
 
@@ -342,31 +368,38 @@ const loadAbilities = async () => {
   error.value = null
 
   try {
-    // Load all available abilities
+    // Load all available permissions
     const abilities = await getAllAbilities()
-    allAbilities.value = Object.values(abilities).flat()
+    allAbilities.value = abilities
 
-    // Set current profile abilities
+    // Set current profile permissions
     selectedAbilities.value = props.profile.abilities?.map((a: any) => a.id) || []
     originalAbilities.value = [...selectedAbilities.value]
+
+    // Sync switch state
+    markAllSwitch.value = selectedAbilities.value.length === allAbilities.value.length
   } catch (err: any) {
-    error.value = err.message || 'Erro ao carregar abilities'
+    error.value = err.message || 'Erro ao carregar permissões'
   } finally {
     loading.value = false
   }
 }
 
 const saveAbilities = async () => {
-  if (!props.profile || !hasChanges.value) return
+  if (!props.profile) return
 
   saving.value = true
 
   try {
     await updateAbilities(props.profile.id, selectedAbilities.value)
-    emit('reload', props.profile)
+    showSuccessToast('Permissões do perfil atualizadas com sucesso!', 'Sucesso!')
+    emit('reload')
     closeModal()
   } catch (err: any) {
-    error.value = err.message || 'Erro ao salvar abilities'
+    const errorMessage = err?.response?.data?.message ||
+                        err?.message ||
+                        'Erro ao salvar permissões'
+    showErrorToast(errorMessage, 'Erro!')
   } finally {
     saving.value = false
   }
@@ -379,6 +412,7 @@ const closeModal = () => {
   originalAbilities.value = []
   searchQuery.value = ''
   selectedCategory.value = ''
+  markAllSwitch.value = false
   error.value = null
 }
 
@@ -394,39 +428,14 @@ watch(() => props.profile, () => {
     loadAbilities()
   }
 }, { deep: true })
+
+// Watch for changes in selectedAbilities to sync the switch
+watch(selectedAbilities, (newSelection) => {
+  markAllSwitch.value = newSelection.length === allAbilities.value.length && allAbilities.value.length > 0
+}, { deep: true })
 </script>
 
 <style scoped>
-.profile-abilities-modal {
-  border-radius: 16px;
-  overflow: hidden;
-}
-
-.profile-abilities-modal__header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 24px;
-  position: relative;
-}
-
-.profile-abilities-modal__close-btn {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  color: white !important;
-}
-
-.profile-abilities-modal__content {
-  padding: 24px;
-  max-height: 70vh;
-  overflow-y: auto;
-}
-
-.profile-abilities-modal__actions {
-  padding: 16px 24px;
-  background: #f8fafc;
-  border-top: 1px solid #e2e8f0;
-}
 
 .abilities-grid {
   display: grid;
@@ -437,12 +446,13 @@ watch(() => props.profile, () => {
 .ability-card {
   cursor: pointer;
   transition: all 0.2s ease;
-  border: 2px solid transparent;
+  border: 2px solid #e0e0e0;
 }
 
 .ability-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: #b0b0b0;
 }
 
 .ability-card--selected {
@@ -450,47 +460,44 @@ watch(() => props.profile, () => {
   background: rgba(var(--v-theme-primary), 0.05);
 }
 
-/* Custom scrollbar */
-.profile-abilities-modal__content::-webkit-scrollbar {
-  width: 6px;
+.ability-card--selected:hover {
+  border-color: rgb(var(--v-theme-primary));
 }
 
-.profile-abilities-modal__content::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 3px;
+/* Action buttons styling */
+.d-flex.gap-2 {
+  gap: 8px;
 }
 
-.profile-abilities-modal__content::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 3px;
+.d-flex.gap-2 .v-btn {
+  flex: 1;
 }
 
-.profile-abilities-modal__content::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
-}
-
-/* Responsive adjustments */
+/* Mobile responsiveness */
 @media (max-width: 768px) {
-  .profile-abilities-modal__header {
-    padding: 20px;
-  }
-
-  .profile-abilities-modal__content {
-    padding: 20px;
-  }
-
-  .profile-abilities-modal__actions {
-    padding: 16px 20px;
-    flex-direction: column-reverse;
-    gap: 12px;
-  }
-
-  .profile-abilities-modal__actions .v-btn {
+  .modal-actions-container {
+    flex-direction: column;
+    gap: 8px;
     width: 100%;
+  }
+
+  .modal-actions-container .v-btn {
+    width: 100%;
+    margin-right: 0 !important;
   }
 
   .abilities-grid {
     grid-template-columns: 1fr;
   }
+
+  .d-flex.gap-2 {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .d-flex.gap-2 .v-btn {
+    width: 100%;
+  }
 }
+
 </style>

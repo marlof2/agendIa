@@ -20,18 +20,6 @@
 
       <v-list class="export-menu">
         <v-list-item
-          @click="handleExport('excel')"
-          :disabled="loading"
-          class="export-item"
-        >
-          <template #prepend>
-            <v-icon color="success" class="mr-3">mdi-file-excel</v-icon>
-          </template>
-          <v-list-item-title>Excel</v-list-item-title>
-          <v-list-item-subtitle>.xlsx</v-list-item-subtitle>
-        </v-list-item>
-
-        <v-list-item
           @click="handleExport('pdf')"
           :disabled="loading"
           class="export-item"
@@ -42,17 +30,16 @@
           <v-list-item-title>PDF</v-list-item-title>
           <v-list-item-subtitle>.pdf</v-list-item-subtitle>
         </v-list-item>
-
         <v-list-item
-          @click="handleExport('csv')"
+          @click="handleExport('excel')"
           :disabled="loading"
           class="export-item"
         >
           <template #prepend>
-            <v-icon color="info" class="mr-3">mdi-file-delimited</v-icon>
+            <v-icon color="success" class="mr-3">mdi-file-excel</v-icon>
           </template>
-          <v-list-item-title>CSV</v-list-item-title>
-          <v-list-item-subtitle>.csv</v-list-item-subtitle>
+          <v-list-item-title>Excel</v-list-item-title>
+          <v-list-item-subtitle>.xlsx</v-list-item-subtitle>
         </v-list-item>
       </v-list>
     </v-menu>
@@ -60,58 +47,57 @@
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue'
+import { ref } from "vue";
 
 interface Props {
-  buttonText?: string
-  color?: string
-  variant?: 'flat' | 'outlined' | 'text' | 'elevated' | 'tonal' | 'plain'
-  size?: string
-  prependIcon?: string
-  appendIcon?: string
-  buttonClass?: string
-  disabled?: boolean
-  filename?: string
-  data?: any[]
-  columns?: any[]
+  buttonText?: string;
+  color?: string;
+  variant?: "flat" | "outlined" | "text" | "elevated" | "tonal" | "plain";
+  size?: string;
+  prependIcon?: string;
+  appendIcon?: string;
+  buttonClass?: string;
+  disabled?: boolean;
+  filename?: string;
+  data?: any[];
+  columns?: any[];
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  buttonText: 'Exportar',
-  color: 'primary',
-  variant: 'outlined',
-  size: 'default',
-  prependIcon: 'mdi-download',
-  appendIcon: 'mdi-chevron-down',
-  buttonClass: '',
+  buttonText: "Exportar",
+  color: "primary",
+  variant: "outlined",
+  size: "default",
+  prependIcon: "mdi-download",
+  appendIcon: "mdi-chevron-down",
+  buttonClass: "",
   disabled: false,
-  filename: 'export',
+  filename: "export",
   data: () => [],
-  columns: () => []
-})
+  columns: () => [],
+});
 
 const emit = defineEmits<{
-  'export': [format: 'excel' | 'pdf' | 'csv', data: any[], filename: string]
-}>()
+  export: [format: "excel" | "pdf", data: any[], filename: string];
+}>();
 
-const loading = ref(false)
+const loading = ref(false);
 
-const handleExport = async (format: 'excel' | 'pdf' | 'csv') => {
-  loading.value = true
+const handleExport = async (format: "excel" | "pdf") => {
+  loading.value = true;
 
   try {
     // Emitir evento para o componente pai processar
-    emit('export', format, props.data, props.filename)
+    emit("export", format, props.data, props.filename);
 
     // Simular delay de processamento
-    await new Promise(resolve => setTimeout(resolve, 1000))
-
+    await new Promise((resolve) => setTimeout(resolve, 1000));
   } catch (error) {
-    console.error('Erro ao exportar:', error)
+    console.error("Erro ao exportar:", error);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 </script>
 
 <style scoped>

@@ -18,13 +18,13 @@ export default createVuetify({
     themes: {
       light: {
         colors: {
-          primary: '#667eea',
-          secondary: '#764ba2',
-          accent: '#a78bfa',
-          error: '#ef4444',
-          info: '#3b82f6',
-          success: '#10b981',
-          warning: '#f59e0b',
+          primary: '#1e293b', // Azul escuro profissional
+          secondary: '#475569', // Cinza azulado neutro
+          accent: '#334155', // Cinza escuro para destaques
+          error: '#dc2626', // Vermelho mais sóbrio
+          info: '#1e40af', // Azul corporativo
+          success: '#059669', // Verde mais escuro e profissional
+          warning: '#d97706', // Laranja mais sério
           background: '#f8fafc',
           surface: '#ffffff',
           'surface-variant': '#f1f5f9',
@@ -34,13 +34,13 @@ export default createVuetify({
       },
       dark: {
         colors: {
-          primary: '#8b5cf6',
-          secondary: '#a78bfa',
-          accent: '#c4b5fd',
-          error: '#f87171',
-          info: '#60a5fa',
-          success: '#34d399',
-          warning: '#fbbf24',
+          primary: '#334155', // Cinza escuro profissional
+          secondary: '#475569', // Cinza azulado neutro
+          accent: '#64748b', // Cinza médio para destaques
+          error: '#ef4444', // Vermelho mais sóbrio
+          info: '#2563eb', // Azul corporativo
+          success: '#10b981', // Verde profissional
+          warning: '#f59e0b', // Laranja sério
           background: '#0f172a',
           surface: '#1e293b',
           'surface-variant': '#334155',

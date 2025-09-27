@@ -11,18 +11,19 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  profile_id?: number;
-  company_id?: string;
+  profile_id: number;
+  company_id: string;
+  profile: object ;
 }
 
 export interface AuthState {
-  user: User | null;
-  token: string | null;
+  user: any;
+  token: any;
   isAuthenticated: boolean;
 }
 
 const authState = ref<AuthState>({
-  user: null,
+  user: null ,
   token: null,
   isAuthenticated: false,
 });
@@ -85,6 +86,9 @@ export function useAuth() {
         email: "maria@example.com",
         profile_id: 2,
         company_id: "company_1",
+        profile: {
+          display_name: "Administrador",
+        },
       };
 
       const mockToken = "mock_google_token";

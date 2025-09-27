@@ -1,38 +1,18 @@
 <template>
-  <v-dialog
+  <BaseDialog
     :model-value="modelValue"
-    @update:model-value="$emit('update:modelValue', $event)"
+    :title="isEditing ? 'Editar Perfil' : 'Novo Perfil'"
+    :subtitle="isEditing ? 'Atualize as informações do perfil' : 'Preencha os dados para criar um novo perfil'"
+    :icon="isEditing ? 'mdi-pencil' : 'mdi-plus-circle'"
+    :icon-color="isEditing ? 'info' : 'primary'"
     max-width="600px"
-    persistent
-    scrollable
+    :fullscreen="$vuetify.display.mobile"
+    :show-progress="true"
+    :progress="formProgress"
+    @close="closeModal"
   >
-    <v-card class="profile-modal">
-      <v-card-title class="profile-modal__header">
-        <div class="d-flex align-center">
-          <v-icon
-            :color="isEditing ? 'warning' : 'success'"
-            size="24"
-            class="mr-3"
-          >
-            {{ isEditing ? 'mdi-pencil' : 'mdi-plus' }}
-          </v-icon>
-          <span class="text-h5 font-weight-bold">
-            {{ isEditing ? 'Editar Perfil' : 'Novo Perfil' }}
-          </span>
-        </div>
-        <v-btn
-          icon
-          variant="text"
-          @click="closeModal"
-          class="profile-modal__close-btn"
-        >
-          <v-icon size="20">mdi-close</v-icon>
-        </v-btn>
-      </v-card-title>
-
-      <v-card-text class="profile-modal__content">
-        <v-form ref="formRef" v-model="isValid" @submit.prevent="handleSubmit">
-          <v-row>
+    <v-form ref="formRef" v-model="isValid" @submit.prevent="handleSubmit">
+      <v-row>
             <!-- Informações do Perfil -->
             <v-col cols="12">
               <h3 class="text-h6 mb-4 d-flex align-center">
@@ -46,7 +26,7 @@
                 v-model="form.name"
                 label="Nome do perfil *"
                 variant="outlined"
-                density="comfortable"
+                density="compact"
                 rounded="lg"
                 :rules="nameRules"
                 prepend-inner-icon="mdi-tag"
@@ -61,7 +41,7 @@
                 v-model="form.display_name"
                 label="Nome de exibição *"
                 variant="outlined"
-                density="comfortable"
+                density="compact"
                 rounded="lg"
                 :rules="displayNameRules"
                 prepend-inner-icon="mdi-account"
@@ -76,7 +56,7 @@
                 v-model="form.description"
                 label="Descrição"
                 variant="outlined"
-                density="comfortable"
+                density="compact"
                 rounded="lg"
                 prepend-inner-icon="mdi-text"
                 rows="3"
@@ -85,207 +65,194 @@
                 persistent-hint
               />
             </v-col>
+      </v-row>
+    </v-form>
 
-            <!-- Abilities Preview -->
-            <v-col cols="12" v-if="isEditing && profile?.abilities?.length">
-              <h3 class="text-h6 mb-4 d-flex align-center">
-                <v-icon size="20" class="mr-2">mdi-shield-account</v-icon>
-                Abilities Atuais
-              </h3>
-              <div class="abilities-preview">
-                <v-chip
-                  v-for="ability in profile.abilities.slice(0, 5)"
-                  :key="ability.id"
-                  color="primary"
-                  size="small"
-                  variant="outlined"
-                  class="mr-2 mb-2"
-                >
-                  {{ ability.display_name }}
-                </v-chip>
-                <v-chip
-                  v-if="profile.abilities.length > 5"
-                  color="secondary"
-                  size="small"
-                  variant="flat"
-                  class="mr-2 mb-2"
-                >
-                  +{{ profile.abilities.length - 5 }} mais
-                </v-chip>
-              </div>
-              <v-btn
-                color="primary"
-                variant="outlined"
-                size="small"
-                prepend-icon="mdi-cog"
-                class="mt-2"
-                @click="openAbilitiesModal"
-              >
-                Gerenciar Abilities
-              </v-btn>
-            </v-col>
-          </v-row>
-        </v-form>
-      </v-card-text>
-
-      <v-card-actions class="profile-modal__actions">
-        <v-spacer />
+    <template #actions>
+      <v-spacer />
+      <div class="d-flex modal-actions-container">
         <v-btn
-          color="secondary"
-          variant="outlined"
+          color="grey-darken-1"
+          variant="flat"
           rounded="lg"
-          class="text-none font-weight-medium"
+          class="text-none font-weight-medium mr-4"
           @click="closeModal"
         >
-          Cancelar
+          <v-icon icon="mdi-close" class="mr-2" />
+          Fechar
         </v-btn>
         <v-btn
-          color="primary"
+          :color="isEditing ? 'info' : 'primary'"
           variant="flat"
           rounded="lg"
           class="text-none font-weight-medium"
           :loading="loading"
           :disabled="!isValid"
+          type="submit"
           @click="handleSubmit"
         >
-          {{ isEditing ? 'Atualizar' : 'Criar' }}
+          <v-icon :icon="isEditing ? 'mdi-pencil' : 'mdi-plus'" class="mr-2" />
+          {{ isEditing ? "Atualizar" : "Salvar" }}
         </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
-
-  <!-- Abilities Modal -->
-  <ProfileAbilitiesModal
-    v-model="showAbilitiesModal"
-    :profile="profile"
-    @success="handleAbilitiesSuccess"
-  />
+      </div>
+    </template>
+  </BaseDialog>
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, watch, nextTick } from 'vue'
-import ProfileAbilitiesModal from './ProfileAbilitiesModal.vue'
+import { ref, computed, watch, nextTick } from "vue";
+import { showSuccessToast, showErrorToast } from "@/utils/swal";
+import { useProfilesApi } from "../api";
+import BaseDialog from "@/components/BaseDialog.vue";
 
 interface Props {
-  modelValue: boolean
-  profile?: any
+  modelValue: boolean;
+  profile?: any;
 }
 
 interface Emits {
-  (e: 'update:modelValue', value: boolean): void
-  (e: 'success', profile: any): void
+  (e: "update:modelValue", value: boolean): void;
+  (e: "reload"): void;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  profile: null
-})
+  profile: null,
+});
 
-const emit = defineEmits<Emits>()
+const emit = defineEmits<Emits>();
+
+// Composables
+const { createItem, updateItem } = useProfilesApi();
 
 // Reactive data
-const formRef = ref()
-const isValid = ref(false)
-const loading = ref(false)
-const showAbilitiesModal = ref(false)
+const formRef = ref();
+const isValid = ref(false);
+const loading = ref(false);
 
 // Form data
 const form = ref({
-  name: '',
-  display_name: '',
-  description: '',
-  abilities: [] as number[]
-})
+  name: "",
+  display_name: "",
+  description: "",
+  abilities: [] as number[],
+});
 
 // Computed
-const isEditing = computed(() => !!props.profile?.id)
+const isEditing = computed(() => !!props.profile?.id);
+
+const formProgress = computed(() => {
+  const totalFields = 2; // name, display_name (campos obrigatórios)
+  const filledFields = [
+    form.value.name,
+    form.value.display_name,
+  ].filter((field) => field && field.trim() !== "").length;
+
+  return (filledFields / totalFields) * 100;
+});
 
 // Validation rules
 const nameRules = [
-  (v: string) => !!v || 'Nome do perfil é obrigatório',
-  (v: string) => (v && v.length >= 2) || 'Nome deve ter pelo menos 2 caracteres',
-  (v: string) => /^[a-z_]+$/.test(v) || 'Nome deve conter apenas letras minúsculas e underscore'
-]
+  (v: string) => !!v || "Nome do perfil é obrigatório",
+  (v: string) =>
+    (v && v.length >= 2) || "Nome deve ter pelo menos 2 caracteres",
+  (v: string) =>
+    /^[a-z_]+$/.test(v) ||
+    "Nome deve conter apenas letras minúsculas e underscore",
+];
 
 const displayNameRules = [
-  (v: string) => !!v || 'Nome de exibição é obrigatório',
-  (v: string) => (v && v.length >= 2) || 'Nome deve ter pelo menos 2 caracteres'
-]
+  (v: string) => !!v || "Nome de exibição é obrigatório",
+  (v: string) =>
+    (v && v.length >= 2) || "Nome deve ter pelo menos 2 caracteres",
+];
 
 // Methods
 const resetForm = () => {
   form.value = {
-    name: '',
-    display_name: '',
-    description: '',
-    abilities: []
-  }
-}
+    name: "",
+    display_name: "",
+    description: "",
+    abilities: [],
+  };
+};
 
 const loadProfileData = () => {
   if (props.profile) {
     form.value = {
-      name: props.profile.name || '',
-      display_name: props.profile.display_name || '',
-      description: props.profile.description || '',
-      abilities: props.profile.abilities?.map((a: any) => a.id) || []
-    }
+      name: props.profile.name || "",
+      display_name: props.profile.display_name || "",
+      description: props.profile.description || "",
+      abilities: props.profile.abilities?.map((a: any) => a.id) || [],
+    };
   } else {
-    resetForm()
+    resetForm();
   }
-}
+};
 
 const closeModal = () => {
-  emit('update:modelValue', false)
-  resetForm()
-}
-
-const openAbilitiesModal = () => {
-  showAbilitiesModal.value = true
-}
-
-const handleAbilitiesSuccess = (updatedProfile: any) => {
-  // Update the profile with new abilities
-  Object.assign(props.profile, updatedProfile)
-  showAbilitiesModal.value = false
-}
+  emit("update:modelValue", false);
+  resetForm();
+};
 
 const handleSubmit = async () => {
-  if (!isValid.value) return
+  if (!isValid.value) return;
 
-  loading.value = true
+  loading.value = true;
 
   try {
     const profileData = {
       name: form.value.name,
       display_name: form.value.display_name,
       description: form.value.description,
-      abilities: form.value.abilities
+      abilities: form.value.abilities,
+    };
+
+    let result;
+    if (isEditing.value) {
+      result = await updateItem(props.profile.id, profileData);
+      showSuccessToast("Perfil atualizado com sucesso!", "Sucesso!");
+    } else {
+      result = await createItem(profileData);
+      showSuccessToast("Perfil criado com sucesso!", "Sucesso!");
     }
 
-    emit('success', profileData)
-    closeModal()
-  } catch (error) {
-    console.error('Erro ao salvar perfil:', error)
+    emit("reload");
+    closeModal();
+  } catch (error: any) {
+    console.error("Erro ao salvar perfil:", error);
+
+    const errorMessage = error?.response?.data?.message ||
+                        error?.message ||
+                        "Ocorreu um erro ao salvar o perfil.";
+
+    showErrorToast(errorMessage, "Erro!");
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 // Watchers
-watch(() => props.modelValue, (newValue) => {
-  if (newValue) {
-    loadProfileData()
-    nextTick(() => {
-      formRef.value?.resetValidation()
-    })
+watch(
+  () => props.modelValue,
+  (newValue) => {
+    if (newValue) {
+      loadProfileData();
+      nextTick(() => {
+        formRef.value?.resetValidation();
+      });
+    }
   }
-})
+);
 
-watch(() => props.profile, () => {
-  if (props.modelValue) {
-    loadProfileData()
-  }
-}, { deep: true })
+watch(
+  () => props.profile,
+  () => {
+    if (props.modelValue) {
+      loadProfileData();
+    }
+  },
+  { deep: true }
+);
 </script>
 
 <style scoped>
@@ -364,6 +331,17 @@ watch(() => props.profile, () => {
 
   .profile-modal__actions .v-btn {
     width: 100%;
+  }
+
+  .modal-actions-container {
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .modal-actions-container .v-btn {
+    width: 100%;
+    margin-right: 0 !important;
   }
 }
 </style>

@@ -56,12 +56,12 @@ defineProps<Props>()
 }
 
 .breadcrumb__item--home {
-  color: #667eea;
+  color: #1e293b;
   font-weight: 600;
 }
 
 .breadcrumb__item--home:hover {
-  color: #5a67d8;
+  color: #334155;
 }
 
 .breadcrumb__item--current {
@@ -76,7 +76,7 @@ defineProps<Props>()
 }
 
 .breadcrumb__home-icon {
-  color: #667eea;
+  color: #1e293b;
 }
 
 /* Dark theme */
@@ -85,11 +85,11 @@ defineProps<Props>()
 }
 
 .v-theme--dark .breadcrumb__item--home {
-  color: #8b5cf6;
+  color: #f1f5f9;
 }
 
 .v-theme--dark .breadcrumb__item--home:hover {
-  color: #a78bfa;
+  color: #cbd5e1;
 }
 
 .v-theme--dark .breadcrumb__item--current {
@@ -101,7 +101,7 @@ defineProps<Props>()
 }
 
 .v-theme--dark .breadcrumb__home-icon {
-  color: #8b5cf6;
+  color: #f1f5f9;
 }
 
 /* Responsive */

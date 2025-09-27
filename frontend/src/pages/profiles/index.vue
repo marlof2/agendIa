@@ -23,7 +23,7 @@
           <div class="d-flex action-buttons-container">
             <ExportActions
               :data="profiles"
-              :columns="tableColumns"
+              :columns="[]"
               filename="perfis"
               button-text="Exportar"
               color="primary"
@@ -53,7 +53,7 @@
                 label="Buscar nome ou descrição"
                 prepend-inner-icon="mdi-magnify"
                 variant="outlined"
-                density="comfortable"
+                density="compact"
                 clearable
                 rounded="lg"
                 hide-details
@@ -89,19 +89,16 @@
     <template #content>
       <!-- Loading State -->
       <div v-if="loading" class="profiles-loading">
-        <v-skeleton-loader
-          v-for="i in 5"
-          :key="i"
-          type="card"
-          class="mb-4"
-        />
+        <v-skeleton-loader v-for="i in 5" :key="i" type="card" class="mb-4" />
       </div>
 
       <!-- Empty State -->
       <div v-else-if="profiles.length === 0" class="profiles-empty">
         <v-icon size="64" color="grey-lighten-1">mdi-account-group-off</v-icon>
         <p class="text-h6 mt-4">Nenhum perfil encontrado</p>
-        <p class="text-body-2 text-medium-emphasis">Crie seu primeiro perfil para começar</p>
+        <p class="text-body-2 text-medium-emphasis">
+          Crie seu primeiro perfil para começar
+        </p>
       </div>
 
       <!-- Profiles Grid -->
@@ -116,12 +113,13 @@
           <!-- Card Header -->
           <v-card-title class="profile-card-header">
             <div class="d-flex align-center">
-              <v-avatar size="48" color="primary" class="mr-4">
-                <v-icon color="white" size="24">mdi-account-tie</v-icon>
-              </v-avatar>
               <div class="flex-grow-1">
-                <div class="text-h6 font-weight-bold">{{ item.display_name || 'Perfil não informado' }}</div>
-                <div class="text-body-2 text-medium-emphasis">{{ item.name || 'Nome não informado' }}</div>
+                <div class="text-h6 font-weight-bold">
+                  {{ item.display_name || "Perfil não informado" }}
+                </div>
+                <!-- <div class="text-body-2 text-medium-emphasis">
+                  {{ item.name || "Nome não informado" }}
+                </div> -->
               </div>
               <v-menu location="bottom end" offset="8">
                 <template v-slot:activator="{ props }">
@@ -171,19 +169,27 @@
           <v-card-text class="profile-card-content">
             <div class="profile-description mb-4">
               <div class="text-body-2 text-medium-emphasis">
-                {{ item.description || 'Sem descrição' }}
+                {{ item.description || "Sem descrição" }}
               </div>
             </div>
 
             <!-- Profile Stats -->
             <div class="profile-stats">
               <div class="stat-item">
-                <v-icon size="18" color="primary" class="mr-2">mdi-shield-account</v-icon>
-                <span class="text-body-2">{{ item.abilities?.length || 0 }} permissões</span>
+                <v-icon size="18" color="primary" class="mr-2"
+                  >mdi-shield-account</v-icon
+                >
+                <span class="text-body-2"
+                  ><strong class="text-high-emphasis">Permissões: </strong>{{ item.abilities?.length || 0 }}</span
+                >
               </div>
               <div class="stat-item">
-                <v-icon size="18" color="info" class="mr-2">mdi-calendar</v-icon>
-                <span class="text-body-2">{{ formatDate(item.created_at) }}</span>
+                <v-icon size="18" color="info" class="mr-2"
+                  >mdi-calendar</v-icon
+                >
+                <span class="text-body-2">
+                  <strong class="text-high-emphasis">Criado em: </strong>{{ formatDate(item.created_at) }}
+                </span>
               </div>
             </div>
           </v-card-text>
@@ -242,8 +248,14 @@
         />
         <div class="pagination-info">
           <span class="text-body-2 text-medium-emphasis">
-            Mostrando {{ ((pagination.current_page - 1) * pagination.per_page) + 1 }} a
-            {{ Math.min(pagination.current_page * pagination.per_page, pagination.total) }}
+            Mostrando
+            {{ (pagination.current_page - 1) * pagination.per_page + 1 }} a
+            {{
+              Math.min(
+                pagination.current_page * pagination.per_page,
+                pagination.total
+              )
+            }}
             de {{ pagination.total }} perfis
           </span>
         </div>
@@ -255,13 +267,14 @@
   <ProfileModal
     v-model="showProfileModal"
     :profile="selectedProfile"
-    @success="handleProfileSuccess"
+    @reload="handleListReload"
   />
 
   <ProfileViewModal
     v-model="showViewModal"
     :profile="selectedProfile"
     @edit="handleEditFromView"
+    @reload="handleListReload"
   />
 
   <DeleteConfirmModal
@@ -274,26 +287,27 @@
   <ProfileAbilitiesModal
     v-model="showAbilitiesModal"
     :profile="selectedProfile"
-    @reload="handlePermissionReload"
+    @reload="handleListReload"
   />
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted } from "vue";
 import BasePage from "@/components/BasePage.vue";
 import ActionBar from "@/components/ActionBar.vue";
 import FiltersCard from "@/components/FiltersCard.vue";
-import DataTable from "@/components/DataTable.vue";
 import ExportActions from "@/components/ExportActions.vue";
 import ProfileModal from "./components/ProfileModal.vue";
 import ProfileViewModal from "./components/ProfileViewModal.vue";
 import DeleteConfirmModal from "./components/DeleteConfirmModal.vue";
 import ProfileAbilitiesModal from "./components/ProfileAbilitiesModal.vue";
 import { useProfilesApi } from "./api";
-import { useExport } from "@/composables/useExport";
 import { useAbilities } from "@/composables/useAbilities";
+import { showSuccessToast, showErrorToast } from "@/utils/swal";
+import { useExport } from "@/composables/useExport";
 
 const { hasPermission } = useAbilities();
+const { handleExport: exportData } = useExport();
 
 onMounted(async () => {
   await loadProfiles();
@@ -306,12 +320,9 @@ const {
   error,
   pagination,
   getAll,
-  createItem,
-  updateItem,
   deleteItem,
 } = useProfilesApi();
 
-const { handleExport: exportData } = useExport();
 
 // Funções de navegação específicas da página
 const view = (item: any) => {
@@ -334,7 +345,7 @@ const loadProfiles = async () => {
   try {
     await getAll();
   } catch (err) {
-    console.error('Erro ao carregar perfis:', err);
+    console.error("Erro ao carregar perfis:", err);
   }
 };
 
@@ -345,28 +356,20 @@ const create = () => {
 };
 
 // Funções dos modais
-const handleProfileSuccess = async (profile: any) => {
-  try {
-    if (isEditing.value && selectedProfile.value && 'id' in selectedProfile.value) {
-      await updateItem(selectedProfile.value.id, profile);
-      console.log('Perfil atualizado:', profile);
-    } else {
-      await createItem(profile);
-      console.log('Perfil criado:', profile);
-    }
-    // A lista é atualizada automaticamente pelo composable
-  } catch (err) {
-    console.error('Erro ao salvar perfil:', err);
-  }
+const handleListReload = async () => {
+  await getAll();
 };
 
 const handleDeleteConfirm = async (item: any) => {
   try {
     await deleteItem(item.id);
-    console.log('Perfil excluído:', item);
-    // A lista é atualizada automaticamente pelo composable
-  } catch (err) {
-    console.error('Erro ao excluir perfil:', err);
+    showSuccessToast('Perfil excluído com sucesso!', 'Sucesso!');
+    await getAll(); // Recarregar o grid
+  } catch (err: any) {
+    const errorMessage = err?.response?.data?.message ||
+                        err?.message ||
+                        'Erro ao excluir perfil';
+    showErrorToast(errorMessage, 'Erro!');
   }
 };
 
@@ -381,52 +384,6 @@ const manageAbilities = (item: any) => {
   showAbilitiesModal.value = true;
 };
 
-const handlePermissionReload = async () => {
-  // Recarregar a lista completa para garantir que os dados estão atualizados
-  try {
-    await getAll();
-    showAbilitiesModal.value = false;
-  } catch (err) {
-    console.error('Erro ao recarregar perfis:', err);
-    showAbilitiesModal.value = false;
-  }
-};
-
-// Métodos para ações mobile
-const getPrimaryActions = (item: any) => [
-  {
-    key: 'view',
-    title: 'Visualizar',
-    icon: 'mdi-eye-outline',
-    color: 'primary',
-    onClick: () => view(item)
-  },
-  {
-    key: 'permissions',
-    title: 'Permissões',
-    icon: 'mdi-shield-account-outline',
-    color: 'info',
-    onClick: () => manageAbilities(item),
-    badge: item.abilities?.length || 0
-  }
-];
-
-const getSecondaryActions = (item: any) => [
-  {
-    key: 'edit',
-    title: 'Editar',
-    icon: 'mdi-pencil-outline',
-    color: 'warning',
-    onClick: () => edit(item)
-  },
-  {
-    key: 'delete',
-    title: 'Excluir',
-    icon: 'mdi-delete-outline',
-    color: 'error',
-    onClick: () => remove(item)
-  }
-];
 
 // Reactive data
 const searchQuery = ref("");
@@ -439,36 +396,16 @@ const showAbilitiesModal = ref(false);
 const selectedProfile = ref<any>(null);
 const isEditing = ref(false);
 
-// Table headers
-const headers = [
-  { title: "Nome", key: "display_name", sortable: true },
-  { title: "Descrição", key: "description", sortable: true },
-  { title: "Permissões", key: "abilities", sortable: true },
-  { title: "Criado em", key: "created_at", sortable: true },
-  { title: "Ações", key: "actions", sortable: false, width: "80px" },
-];
-
-// Colunas para exportação (sem ações)
-const tableColumns = [
-  { title: "Nome", key: "display_name" },
-  { title: "Descrição", key: "description" },
-  { title: "Permissões", key: "abilities" },
-  { title: "Criado em", key: "created_at" },
-  { title: "Última atualização", key: "updated_at" },
-];
-
-
 // Methods
-
 const formatDate = (dateString: string) => {
-  if (!dateString) return 'Data não informada';
+  if (!dateString) return "Data não informada";
 
   try {
     const date = new Date(dateString);
-    return date.toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
+    return date.toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
     });
   } catch (error) {
     return dateString;
@@ -489,7 +426,7 @@ const performSearch = async () => {
     await getAll(filters);
     console.log("Busca realizada com filtros:", filters);
   } catch (err) {
-    console.error('Erro ao realizar busca:', err);
+    console.error("Erro ao realizar busca:", err);
   }
 };
 
@@ -511,34 +448,26 @@ const handlePageChange = async (page: number) => {
 
     await getAll(filters);
   } catch (err) {
-    console.error('Erro ao alterar página:', err);
-  }
-};
-
-const handleItemsPerPageChange = async (itemsPerPage: number) => {
-  try {
-    const filters: any = {
-      per_page: itemsPerPage,
-      page: 1 // Reset to first page when changing items per page
-    };
-
-    if (searchQuery.value) {
-      filters.search = searchQuery.value;
-    }
-
-    await getAll(filters);
-  } catch (err) {
-    console.error('Erro ao alterar itens por página:', err);
+    console.error("Erro ao alterar página:", err);
   }
 };
 
 // Export function
-const handleExport = async (format: 'excel' | 'pdf' | 'csv', data: any[], filename: string) => {
+const handleExport = async (
+  format: "excel" | "pdf",
+  data: any[],
+  filename: string
+) => {
   try {
-    await exportData(format, data, tableColumns, filename);
-    console.log(`Exportação ${format.toUpperCase()} concluída: ${filename}`);
+    // Preparar filtros atuais para enviar para a API
+    const filters = {
+      search: searchQuery.value || undefined
+    };
+
+
+    await exportData(format, '/profiles', filename, filters);
   } catch (error) {
-    console.error('Erro na exportação:', error);
+    console.error("Erro na exportação:", error);
   }
 };
 </script>
@@ -606,7 +535,11 @@ const handleExport = async (format: 'excel' | 'pdf' | 'csv', data: any[], filena
 }
 
 .profile-card-header {
-  background: linear-gradient(135deg, rgba(var(--v-theme-primary), 0.05), rgba(var(--v-theme-primary), 0.02));
+  background: linear-gradient(
+    135deg,
+    rgba(var(--v-theme-primary), 0.05),
+    rgba(var(--v-theme-primary), 0.02)
+  );
   padding: 20px 24px;
   border-bottom: 1px solid rgba(var(--v-theme-outline), 0.12);
 }

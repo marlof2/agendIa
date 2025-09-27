@@ -18,7 +18,6 @@ export interface Ability {
   action: string
   display_name: string
   description?: string
-  is_active: boolean
   created_at: string
   updated_at: string
 }
@@ -50,7 +49,7 @@ export function useProfilesApi() {
   const pagination = ref({
     current_page: 1,
     last_page: 1,
-    per_page: 10,
+    per_page: 12,
     total: 0
   })
 
@@ -80,7 +79,7 @@ export function useProfilesApi() {
       pagination.value = {
         current_page: response.current_page || 1,
         last_page: response.last_page || 1,
-        per_page: response.per_page || 10,
+        per_page: response.per_page || 12,
         total: response.total || 0
       }
 
@@ -213,10 +212,10 @@ export function useProfilesApi() {
   }
 
 
-  const getAllAbilities = async () => {
+  const getAllAbilities = async (): Promise<Ability[]> => {
     try {
       const response = await get('/profiles/abilities/all')
-      return response.data
+      return response.data as Ability[]
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Erro ao carregar abilities'
       throw err
@@ -224,42 +223,6 @@ export function useProfilesApi() {
   }
 
 
-  const exportData = async (filters: ProfileFilters = {}, format: 'excel' | 'pdf' | 'csv' = 'excel') => {
-    loading.value = true
-    error.value = null
-
-    try {
-      const params = new URLSearchParams()
-
-      // Add filters to params
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== '') {
-          params.append(key, value.toString())
-        }
-      })
-
-      params.append('format', format)
-
-      const response = await get(`/profiles/export?${params.toString()}`)
-
-      // Create download link
-      const url = window.URL.createObjectURL(new Blob(['']))
-      const link = document.createElement('a')
-      link.href = url
-      link.setAttribute('download', `perfis.${format}`)
-      document.body.appendChild(link)
-      link.click()
-      link.remove()
-      window.URL.revokeObjectURL(url)
-
-      return response.data
-    } catch (err: any) {
-      error.value = err.response?.data?.message || 'Erro ao exportar dados'
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
 
   const clearError = () => {
     error.value = null
@@ -289,7 +252,6 @@ export function useProfilesApi() {
     bulkDelete,
     updateAbilities,
     getAllAbilities,
-    exportData,
     clearError,
     refresh
   }

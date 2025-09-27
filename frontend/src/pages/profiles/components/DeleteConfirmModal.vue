@@ -1,27 +1,15 @@
 <template>
-  <v-dialog
+  <BaseDialog
     :model-value="modelValue"
-    @update:model-value="$emit('update:modelValue', $event)"
+    title="Confirmar Exclusão"
+    subtitle="Esta ação não pode ser desfeita"
+    icon="mdi-alert-circle"
+    icon-color="error"
     max-width="500px"
-    persistent
+    :fullscreen="$vuetify.display.mobile"
+    @close="closeModal"
   >
-    <v-card class="delete-confirm-modal">
-      <v-card-title class="delete-confirm-modal__header">
-        <div class="d-flex align-center">
-          <v-icon
-            color="error"
-            size="28"
-            class="mr-3"
-          >
-            mdi-alert-circle
-          </v-icon>
-          <span class="text-h5 font-weight-bold">
-            Confirmar Exclusão
-          </span>
-        </div>
-      </v-card-title>
-
-      <v-card-text class="delete-confirm-modal__content">
+    <div class="delete-confirm-modal__content">
         <div class="warning-message">
           <p class="text-body-1 mb-4">
             Tem certeza que deseja excluir este {{ itemType }}?
@@ -77,36 +65,42 @@
             </div>
           </v-alert>
         </div>
-      </v-card-text>
+    </div>
 
-      <v-card-actions class="delete-confirm-modal__actions">
-        <v-spacer />
+    <template #actions>
+      <v-spacer />
+      <div class="d-flex modal-actions-container">
         <v-btn
-          color="secondary"
+          color="grey-darken-1"
           variant="outlined"
           rounded="lg"
-          class="text-none font-weight-medium"
+          class="text-none font-weight-medium mr-4"
+          size="large"
           @click="closeModal"
         >
-          Cancelar
+          <v-icon icon="mdi-close" class="mr-2" />
+          Fechar
         </v-btn>
         <v-btn
           color="error"
           variant="flat"
           rounded="lg"
           class="text-none font-weight-medium"
+          size="large"
           :loading="loading"
           @click="handleConfirm"
         >
-          Excluir {{ itemType }}
+          <v-icon icon="mdi-delete" class="mr-2" />
+          Excluir
         </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+      </div>
+    </template>
+  </BaseDialog>
 </template>
 
 <script lang="ts" setup>
 import { ref } from 'vue'
+import BaseDialog from '@/components/BaseDialog.vue'
 
 interface Props {
   modelValue: boolean

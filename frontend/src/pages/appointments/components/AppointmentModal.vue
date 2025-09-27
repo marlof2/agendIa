@@ -6,7 +6,7 @@
       isEdit ? 'Atualize as informações' : 'Preencha os dados para criar'
     "
     :icon="isEdit ? 'mdi-pencil' : 'mdi-plus'"
-    :icon-color="isEdit ? 'warning' : 'success'"
+    :icon-color="isEdit ? 'info' : 'primary'"
     max-width="900px"
     :fullscreen="$vuetify.display.mobile"
     :show-progress="true"
@@ -216,7 +216,7 @@
       <v-spacer />
       <div class="d-flex modal-actions-container">
         <v-btn
-          color="secondary"
+          color="grey-darken-1"
           variant="outlined"
           rounded="lg"
           class="text-none font-weight-medium px-6 mr-4"
@@ -224,10 +224,10 @@
           @click="closeModal"
         >
           <v-icon icon="mdi-close" class="mr-2" />
-          Cancelar
+          Fechar
         </v-btn>
         <v-btn
-          :color="isEdit ? 'warning' : 'success'"
+          :color="isEdit ? 'info' : 'primary'"
           :loading="loading"
           rounded="lg"
           class="text-none font-weight-medium px-6"

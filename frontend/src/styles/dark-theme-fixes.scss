@@ -1,0 +1,113 @@
+// ========================================
+// DARK THEME FIXES - CORREÇÕES PARA TEMA ESCURO
+// ========================================
+
+/* Global fixes for outlined buttons in dark theme */
+.v-theme--dark .v-btn--variant-outlined {
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  color: rgba(255, 255, 255, 0.87) !important;
+}
+
+.v-theme--dark .v-btn--variant-outlined:hover {
+  border-color: rgba(255, 255, 255, 0.5) !important;
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  color: rgba(255, 255, 255, 1) !important;
+}
+
+/* Fix for secondary color buttons in dark theme */
+.v-theme--dark .v-btn--variant-outlined.v-btn--color-secondary {
+  border-color: rgba(255, 255, 255, 0.35) !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.v-theme--dark .v-btn--variant-outlined.v-btn--color-secondary:hover {
+  border-color: rgba(255, 255, 255, 0.55) !important;
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  color: rgba(255, 255, 255, 1) !important;
+}
+
+/* Fix for primary color outlined buttons in dark theme */
+.v-theme--dark .v-btn--variant-outlined.v-btn--color-primary {
+  border-color: rgba(51, 65, 85, 0.6) !important;
+  color: rgba(51, 65, 85, 1) !important;
+}
+
+.v-theme--dark .v-btn--variant-outlined.v-btn--color-primary:hover {
+  border-color: rgba(51, 65, 85, 0.8) !important;
+  background-color: rgba(51, 65, 85, 0.1) !important;
+  color: rgba(51, 65, 85, 1) !important;
+}
+
+/* Fix for info color outlined buttons in dark theme */
+.v-theme--dark .v-btn--variant-outlined.v-btn--color-info {
+  border-color: rgba(30, 64, 175, 0.6) !important;
+  color: rgba(30, 64, 175, 1) !important;
+}
+
+.v-theme--dark .v-btn--variant-outlined.v-btn--color-info:hover {
+  border-color: rgba(30, 64, 175, 0.8) !important;
+  background-color: rgba(30, 64, 175, 0.1) !important;
+  color: rgba(30, 64, 175, 1) !important;
+}
+
+/* Fix for success color outlined buttons in dark theme */
+.v-theme--dark .v-btn--variant-outlined.v-btn--color-success {
+  border-color: rgba(5, 150, 105, 0.6) !important;
+  color: rgba(5, 150, 105, 1) !important;
+}
+
+.v-theme--dark .v-btn--variant-outlined.v-btn--color-success:hover {
+  border-color: rgba(5, 150, 105, 0.8) !important;
+  background-color: rgba(5, 150, 105, 0.1) !important;
+  color: rgba(5, 150, 105, 1) !important;
+}
+
+/* Fix for warning color outlined buttons in dark theme */
+.v-theme--dark .v-btn--variant-outlined.v-btn--color-warning {
+  border-color: rgba(217, 119, 6, 0.6) !important;
+  color: rgba(217, 119, 6, 1) !important;
+}
+
+.v-theme--dark .v-btn--variant-outlined.v-btn--color-warning:hover {
+  border-color: rgba(217, 119, 6, 0.8) !important;
+  background-color: rgba(217, 119, 6, 0.1) !important;
+  color: rgba(217, 119, 6, 1) !important;
+}
+
+/* Fix for error color outlined buttons in dark theme */
+.v-theme--dark .v-btn--variant-outlined.v-btn--color-error {
+  border-color: rgba(220, 38, 38, 0.6) !important;
+  color: rgba(220, 38, 38, 1) !important;
+}
+
+.v-theme--dark .v-btn--variant-outlined.v-btn--color-error:hover {
+  border-color: rgba(220, 38, 38, 0.8) !important;
+  background-color: rgba(220, 38, 38, 0.1) !important;
+  color: rgba(220, 38, 38, 1) !important;
+}
+
+/* Fix for outlined text fields in dark theme */
+.v-theme--dark .v-field--variant-outlined {
+  border-color: rgba(255, 255, 255, 0.23) !important;
+}
+
+.v-theme--dark .v-field--variant-outlined:hover {
+  border-color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.v-theme--dark .v-field--variant-outlined.v-field--focused {
+  border-color: rgba(51, 65, 85, 0.8) !important;
+}
+
+/* Fix for outlined select fields in dark theme */
+.v-theme--dark .v-select .v-field--variant-outlined {
+  border-color: rgba(255, 255, 255, 0.23) !important;
+}
+
+.v-theme--dark .v-select .v-field--variant-outlined:hover {
+  border-color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.v-theme--dark .v-select .v-field--variant-outlined.v-field--focused {
+  border-color: rgba(51, 65, 85, 0.8) !important;
+}

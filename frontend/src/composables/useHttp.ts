@@ -115,6 +115,10 @@ export interface ApiResponse<T = any> {
   message?: string
   status: number
   success: boolean
+  current_page?: number
+  last_page?: number
+  per_page?: number
+  total?: number
 }
 
 export interface PaginatedResponse<T = any> {

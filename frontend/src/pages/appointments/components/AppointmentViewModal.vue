@@ -86,7 +86,7 @@
       <v-spacer />
       <div class="d-flex modal-actions-container">
         <v-btn
-          color="secondary"
+          color="grey-darken-1"
           variant="outlined"
           rounded="lg"
           class="text-none font-weight-medium px-6 mr-4"

@@ -25,6 +25,7 @@ declare module 'vue' {
     MobileActionButtons: typeof import('./components/MobileActionButtons.vue')['default']
     PageHeader: typeof import('./components/PageHeader.vue')['default']
     PermissionGuard: typeof import('./components/PermissionGuard.vue')['default']
+    ProfileExportActions: typeof import('./components/ProfileExportActions.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     ToastContainer: typeof import('./components/ToastContainer.vue')['default']

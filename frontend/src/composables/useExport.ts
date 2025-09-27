@@ -1,24 +1,62 @@
 import { ref } from 'vue'
 import { showSuccessToast, showErrorToast, showInfoToast } from '@/utils/swal'
+import { useHttp } from './useHttp'
 
 export function useExport() {
   const loading = ref(false)
+  const { get } = useHttp()
 
-  const exportToExcel = async (data: any[], columns: any[], filename: string) => {
+  const exportToExcel = async (endpoint: string, filename: string, filters?: any) => {
     loading.value = true
 
     try {
-      // Simular exportação para Excel
-      showInfoToast(`Exportando para Excel: ${filename}`, 'Exportação')
+      showInfoToast('Exportando para Excel...', 'Exportação')
 
-      // Aqui você integraria com uma biblioteca como xlsx
-      // const workbook = XLSX.utils.book_new()
-      // const worksheet = XLSX.utils.json_to_sheet(data)
-      // XLSX.utils.book_append_sheet(workbook, worksheet, 'Dados')
-      // XLSX.writeFile(workbook, `${filename}.xlsx`)
+      const params = new URLSearchParams()
+      params.append('format', 'excel')
 
-      // Simular download
-      await simulateDownload(`${filename}.xlsx`, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+      // Adicionar filtros se existirem
+      if (filters) {
+        Object.entries(filters).forEach(([key, value]) => {
+          if (value !== undefined && value !== null && value !== '') {
+            params.append(key, value.toString())
+          }
+        })
+      }
+
+      const response = await get(`${endpoint}/export?${params.toString()}`, {
+        responseType: 'blob',
+        headers: {
+          'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        }
+      })
+
+      // O response.data pode estar undefined, usar o response diretamente se for um Blob
+      const blobData = response.data || response
+
+      // Criar download diretamente do response
+      const blob = new Blob([blobData], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      })
+      const url = window.URL.createObjectURL(blob)
+
+      // Criar link de download
+      const link = document.createElement('a')
+      link.style.display = 'none'
+      link.href = url
+      link.download = `${filename}.xlsx`
+
+      // Adicionar ao DOM, clicar e remover
+      document.body.appendChild(link)
+      link.click()
+
+      // Limpar após download
+      setTimeout(() => {
+        document.body.removeChild(link)
+        window.URL.revokeObjectURL(url)
+      }, 100)
+
+      showSuccessToast('Exportação para Excel concluída!', 'Exportação')
 
     } catch (error) {
       showErrorToast('Erro ao exportar para Excel', 'Exportação')
@@ -28,21 +66,55 @@ export function useExport() {
     }
   }
 
-  const exportToPDF = async (data: any[], columns: any[], filename: string) => {
+  const exportToPDF = async (endpoint: string, filename: string, filters?: any) => {
     loading.value = true
 
     try {
-      // Simular exportação para PDF
-      showInfoToast(`Exportando para PDF: ${filename}`, 'Exportação')
+      showInfoToast('Exportando para PDF...', 'Exportação')
 
-      // Aqui você integraria com uma biblioteca como jsPDF
-      // const doc = new jsPDF()
-      // doc.text('Relatório de Agendamentos', 20, 20)
-      // ... adicionar dados
-      // doc.save(`${filename}.pdf`)
+      const params = new URLSearchParams()
+      params.append('format', 'pdf')
 
-      // Simular download
-      await simulateDownload(`${filename}.pdf`, 'application/pdf')
+      // Adicionar filtros se existirem
+      if (filters) {
+        Object.entries(filters).forEach(([key, value]) => {
+          if (value !== undefined && value !== null && value !== '') {
+            params.append(key, value.toString())
+          }
+        })
+      }
+
+      const response = await get(`${endpoint}/export?${params.toString()}`, {
+        responseType: 'blob',
+        headers: {
+          'Accept': 'application/pdf'
+        }
+      })
+
+      // O response.data pode estar undefined, usar o response diretamente se for um Blob
+      const blobData = response.data || response
+
+      // Criar download diretamente do response
+      const blob = new Blob([blobData], { type: 'application/pdf' })
+      const url = window.URL.createObjectURL(blob)
+
+      // Criar link de download
+      const link = document.createElement('a')
+      link.style.display = 'none'
+      link.href = url
+      link.download = `${filename}.pdf`
+
+      // Adicionar ao DOM, clicar e remover
+      document.body.appendChild(link)
+      link.click()
+
+      // Limpar após download
+      setTimeout(() => {
+        document.body.removeChild(link)
+        window.URL.revokeObjectURL(url)
+      }, 100)
+
+      showSuccessToast('Exportação para PDF concluída!', 'Exportação')
 
     } catch (error) {
       showErrorToast('Erro ao exportar para PDF', 'Exportação')
@@ -52,75 +124,13 @@ export function useExport() {
     }
   }
 
-  const exportToCSV = async (data: any[], columns: any[], filename: string) => {
-    loading.value = true
 
-    try {
-      // Converter dados para CSV
-      const csvContent = convertToCSV(data, columns)
-
-      // Simular download
-      await simulateDownload(`${filename}.csv`, 'text/csv', csvContent)
-
-    } catch (error) {
-      showErrorToast('Erro ao exportar para CSV', 'Exportação')
-      throw error
-    } finally {
-      loading.value = false
-    }
-  }
-
-  const convertToCSV = (data: any[], columns: any[]) => {
-    if (!data.length || !columns.length) return ''
-
-    // Cabeçalhos
-    const headers = columns.map(col => col.title || col.key || col).join(',')
-
-    // Dados
-    const rows = data.map(row => {
-      return columns.map(col => {
-        const key = col.key || col
-        const value = row[key] || ''
-        // Escapar aspas e vírgulas
-        return `"${String(value).replace(/"/g, '""')}"`
-      }).join(',')
-    })
-
-    return [headers, ...rows].join('\n')
-  }
-
-  const simulateDownload = async (filename: string, mimeType: string, content?: string) => {
-    return new Promise<void>((resolve) => {
-      // Simular delay de processamento
-      setTimeout(() => {
-        if (content) {
-          // Download real para CSV
-          const blob = new Blob([content], { type: mimeType })
-          const url = window.URL.createObjectURL(blob)
-          const link = document.createElement('a')
-          link.href = url
-          link.download = filename
-          document.body.appendChild(link)
-          link.click()
-          document.body.removeChild(link)
-          window.URL.revokeObjectURL(url)
-        } else {
-          // Simular download para Excel/PDF
-          showInfoToast(`Download simulado: ${filename} (${mimeType})`, 'Download')
-        }
-        resolve()
-      }, 1000)
-    })
-  }
-
-  const handleExport = async (format: 'excel' | 'pdf' | 'csv', data: any[], columns: any[], filename: string) => {
+  const handleExport = async (format: 'excel' | 'pdf', endpoint: string, filename: string, filters?: any) => {
     switch (format) {
       case 'excel':
-        return await exportToExcel(data, columns, filename)
+        return await exportToExcel(endpoint, filename, filters)
       case 'pdf':
-        return await exportToPDF(data, columns, filename)
-      case 'csv':
-        return await exportToCSV(data, columns, filename)
+        return await exportToPDF(endpoint, filename, filters)
       default:
         throw new Error(`Formato de exportação não suportado: ${format}`)
     }
@@ -130,7 +140,6 @@ export function useExport() {
     loading,
     exportToExcel,
     exportToPDF,
-    exportToCSV,
     handleExport
   }
 }

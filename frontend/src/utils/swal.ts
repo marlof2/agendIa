@@ -14,13 +14,15 @@ export const showSuccessToast = (
   timer: number = 4000
 ): void => {
   Swal.mixin({
+    icon: 'success',
+    title,
+    text: message,
     toast: true,
     position: 'top-end',
     showConfirmButton: false,
     timer,
     timerProgressBar: true,
     allowOutsideClick: false,
-    icon: 'success',
     iconColor: '#10b981',
     background: '#ffffff',
     color: '#1f2937',
@@ -31,9 +33,7 @@ export const showSuccessToast = (
       toast.addEventListener('mouseenter', Swal.stopTimer)
       toast.addEventListener('mouseleave', Swal.resumeTimer)
     }
-  }).fire({
-    title: title ? `${title}: ${message}` : message
-  })
+  }).fire()
 }
 
 /**
@@ -45,6 +45,8 @@ export const showErrorToast = (
   timer: number = 5000
 ): void => {
   Swal.mixin({
+    title: title,
+    text: message,
     toast: true,
     position: 'top-end',
     showConfirmButton: false,
@@ -62,9 +64,7 @@ export const showErrorToast = (
       toast.addEventListener('mouseenter', Swal.stopTimer)
       toast.addEventListener('mouseleave', Swal.resumeTimer)
     }
-  }).fire({
-    title: title ? `${title}: ${message}` : message
-  })
+  }).fire()
 }
 
 /**
@@ -76,6 +76,8 @@ export const showWarningToast = (
   timer: number = 4000
 ): void => {
   Swal.mixin({
+    title: title,
+    text: message,
     toast: true,
     position: 'top-end',
     showConfirmButton: false,
@@ -93,9 +95,7 @@ export const showWarningToast = (
       toast.addEventListener('mouseenter', Swal.stopTimer)
       toast.addEventListener('mouseleave', Swal.resumeTimer)
     }
-  }).fire({
-    title: title ? `${title}: ${message}` : message
-  })
+  }).fire()
 }
 
 /**
@@ -107,6 +107,8 @@ export const showInfoToast = (
   timer: number = 4000
 ): void => {
   Swal.mixin({
+    title: title,
+    text: message,
     toast: true,
     position: 'top-end',
     showConfirmButton: false,
@@ -124,9 +126,7 @@ export const showInfoToast = (
       toast.addEventListener('mouseenter', Swal.stopTimer)
       toast.addEventListener('mouseleave', Swal.resumeTimer)
     }
-  }).fire({
-    title: title ? `${title}: ${message}` : message
-  })
+  }).fire()
 }
 
 /**
