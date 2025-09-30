@@ -144,7 +144,10 @@ export const showSuccess = async (
     confirmButtonText: confirmText,
     confirmButtonColor: '#10b981',
     background: '#ffffff',
-    color: '#1f2937'
+    color: '#1f2937',
+    customClass: {
+      popup: 'swal-font-roboto'
+    }
   })
   return result.isConfirmed
 }
@@ -164,7 +167,10 @@ export const showError = async (
     confirmButtonText: confirmText,
     confirmButtonColor: '#ef4444',
     background: '#ffffff',
-    color: '#1f2937'
+    color: '#1f2937',
+    customClass: {
+      popup: 'swal-font-roboto'
+    }
   })
   return result.isConfirmed
 }
@@ -184,7 +190,10 @@ export const showWarning = async (
     confirmButtonText: confirmText,
     confirmButtonColor: '#f59e0b',
     background: '#ffffff',
-    color: '#1f2937'
+    color: '#1f2937',
+    customClass: {
+      popup: 'swal-font-roboto'
+    }
   })
   return result.isConfirmed
 }
@@ -204,7 +213,10 @@ export const showInfo = async (
     confirmButtonText: confirmText,
     confirmButtonColor: '#3b82f6',
     background: '#ffffff',
-    color: '#1f2937'
+    color: '#1f2937',
+    customClass: {
+      popup: 'swal-font-roboto'
+    }
   })
   return result.isConfirmed
 }
@@ -228,7 +240,10 @@ export const showConfirm = async (
     confirmButtonColor: '#10b981',
     cancelButtonColor: '#6b7280',
     background: '#ffffff',
-    color: '#1f2937'
+    color: '#1f2937',
+    customClass: {
+      popup: 'swal-font-roboto'
+    }
   })
   return result.isConfirmed
 }
@@ -250,7 +265,10 @@ export const showLoading = (
       Swal.showLoading()
     },
     background: '#ffffff',
-    color: '#1f2937'
+    color: '#1f2937',
+    customClass: {
+      popup: 'swal-font-roboto'
+    }
   })
 }
 
@@ -259,4 +277,36 @@ export const showLoading = (
  */
 export const hideLoading = (): void => {
   Swal.close()
+}
+
+/**
+ * Mostrar erros de validação em modal
+ */
+export const showValidationErrors = (errors: Record<string, string[]>): void => {
+  // Converter erros para HTML formatado simples
+  let errorsHtml = '<div style="text-align: left;">'
+
+  Object.entries(errors).forEach(([field, fieldErrors]) => {
+    fieldErrors.forEach(error => {
+      errorsHtml += `<div style="margin-bottom: 10px; color: #ef4444; display: flex; align-items: center;">`
+      errorsHtml += `<span style="margin-right: 8px;">❌</span>${error}`
+      errorsHtml += `</div>`
+    })
+  })
+
+  errorsHtml += '</div>'
+
+  Swal.fire({
+    icon: 'error',
+    title: 'Erros de Validação',
+    html: errorsHtml,
+    confirmButtonText: 'Entendi',
+    confirmButtonColor: '#ef4444',
+    background: '#ffffff',
+    color: '#1f2937',
+    customClass: {
+      popup: 'swal-font-roboto'
+    },
+    width: '500px'
+  })
 }

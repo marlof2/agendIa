@@ -30,5 +30,6 @@ declare module 'vue' {
     RouterView: typeof import('vue-router')['RouterView']
     ToastContainer: typeof import('./components/ToastContainer.vue')['default']
     TopbarActions: typeof import('./components/TopbarActions.vue')['default']
+    ValidationErrorsModal: typeof import('./components/ValidationErrorsModal.vue')['default']
   }
 }

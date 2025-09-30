@@ -48,6 +48,8 @@
 
 <script lang="ts" setup>
 import { ref } from "vue";
+import { useExport } from "@/composables/useExport";
+import { showErrorToast } from "@/utils/swal";
 
 interface Props {
   buttonText?: string;
@@ -60,7 +62,8 @@ interface Props {
   disabled?: boolean;
   filename?: string;
   data?: any[];
-  columns?: any[];
+  endpoint?: string;
+  filters?: Record<string, any>;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -74,7 +77,8 @@ const props = withDefaults(defineProps<Props>(), {
   disabled: false,
   filename: "export",
   data: () => [],
-  columns: () => [],
+  endpoint: "",
+  filters: () => ({}),
 });
 
 const emit = defineEmits<{
@@ -82,18 +86,15 @@ const emit = defineEmits<{
 }>();
 
 const loading = ref(false);
+const { handleExport: exportData } = useExport();
 
 const handleExport = async (format: "excel" | "pdf") => {
   loading.value = true;
 
   try {
-    // Emitir evento para o componente pai processar
-    emit("export", format, props.data, props.filename);
-
-    // Simular delay de processamento
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await exportData(format, props.endpoint, props.filename, props.filters);
   } catch (error) {
-    console.error("Erro ao exportar:", error);
+    showErrorToast("Erro ao exportar:", error as string);
   } finally {
     loading.value = false;
   }

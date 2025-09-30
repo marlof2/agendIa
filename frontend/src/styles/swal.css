@@ -31,3 +31,21 @@
 .swal-font-roboto.swal2-popup .swal2-content {
   font-family: 'Roboto', sans-serif !important;
 }
+
+/* Z-index alto para SweetAlert2 - garantir que fique acima de modais */
+.swal2-container {
+  z-index: 10000 !important;
+}
+
+.swal2-popup {
+  z-index: 10001 !important;
+}
+
+.swal2-backdrop {
+  z-index: 9999 !important;
+}
+
+/* Para toasts também */
+.swal2-toast {
+  z-index: 10000 !important;
+}

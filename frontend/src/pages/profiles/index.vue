@@ -23,13 +23,13 @@
           <div class="d-flex action-buttons-container">
             <ExportActions
               :data="profiles"
-              :columns="[]"
               filename="perfis"
               button-text="Exportar"
               color="primary"
               variant="outlined"
               prepend-icon="mdi-download"
-              @export="handleExport"
+              endpoint="/profiles"
+              :filters="{ search: searchQuery || undefined }"
             />
           </div>
         </template>
@@ -180,7 +180,8 @@
                   >mdi-shield-account</v-icon
                 >
                 <span class="text-body-2"
-                  ><strong class="text-high-emphasis">Permissões: </strong>{{ item.abilities?.length || 0 }}</span
+                  ><strong class="text-high-emphasis">Permissões: </strong
+                  >{{ item.abilities?.length || 0 }}</span
                 >
               </div>
               <div class="stat-item">
@@ -188,7 +189,8 @@
                   >mdi-calendar</v-icon
                 >
                 <span class="text-body-2">
-                  <strong class="text-high-emphasis">Criado em: </strong>{{ formatDate(item.created_at) }}
+                  <strong class="text-high-emphasis">Criado em: </strong
+                  >{{ formatDate(item.created_at) }}
                 </span>
               </div>
             </div>
@@ -239,13 +241,34 @@
 
       <!-- Pagination -->
       <div v-if="profiles.length > 0" class="profiles-pagination mt-6">
-        <v-pagination
-          v-model="pagination.current_page"
-          :length="pagination.last_page"
-          :total-visible="7"
-          @update:model-value="handlePageChange"
-          class="pagination-controls"
-        />
+        <div class="pagination-controls-container">
+          <!-- Pagination component (centered) -->
+          <v-pagination
+            v-model="pagination.current_page"
+            :length="pagination.last_page"
+            :total-visible="$vuetify.display.mobile ? 3 : 7"
+            @update:model-value="handlePageChange"
+            class="pagination-controls"
+          />
+
+          <!-- Items per page selector (right side) -->
+          <div class="items-per-page-selector">
+            <span class="text-body-2 text-medium-emphasis mr-3"
+              >Itens por página:</span
+            >
+            <v-select
+              v-model="pagination.per_page"
+              :items="[6, 12, 24, 48]"
+              density="compact"
+              variant="outlined"
+              hide-details
+              class="items-per-page-select"
+              @update:model-value="handlePerPageChange"
+            />
+          </div>
+        </div>
+
+        <!-- Pagination info -->
         <div class="pagination-info">
           <span class="text-body-2 text-medium-emphasis">
             Mostrando
@@ -304,10 +327,8 @@ import ProfileAbilitiesModal from "./components/ProfileAbilitiesModal.vue";
 import { useProfilesApi } from "./api";
 import { useAbilities } from "@/composables/useAbilities";
 import { showSuccessToast, showErrorToast } from "@/utils/swal";
-import { useExport } from "@/composables/useExport";
 
 const { hasPermission } = useAbilities();
-const { handleExport: exportData } = useExport();
 
 onMounted(async () => {
   await loadProfiles();
@@ -322,7 +343,6 @@ const {
   getAll,
   deleteItem,
 } = useProfilesApi();
-
 
 // Funções de navegação específicas da página
 const view = (item: any) => {
@@ -363,13 +383,12 @@ const handleListReload = async () => {
 const handleDeleteConfirm = async (item: any) => {
   try {
     await deleteItem(item.id);
-    showSuccessToast('Perfil excluído com sucesso!', 'Sucesso!');
+    showSuccessToast("Perfil excluído com sucesso!", "Sucesso!");
     await getAll(); // Recarregar o grid
   } catch (err: any) {
-    const errorMessage = err?.response?.data?.message ||
-                        err?.message ||
-                        'Erro ao excluir perfil';
-    showErrorToast(errorMessage, 'Erro!');
+    const errorMessage =
+      err?.response?.data?.message || err?.message || "Erro ao excluir perfil";
+    showErrorToast(errorMessage, "Erro!");
   }
 };
 
@@ -383,7 +402,6 @@ const manageAbilities = (item: any) => {
   selectedProfile.value = item;
   showAbilitiesModal.value = true;
 };
-
 
 // Reactive data
 const searchQuery = ref("");
@@ -452,24 +470,23 @@ const handlePageChange = async (page: number) => {
   }
 };
 
-// Export function
-const handleExport = async (
-  format: "excel" | "pdf",
-  data: any[],
-  filename: string
-) => {
+const handlePerPageChange = async (perPage: number) => {
   try {
-    // Preparar filtros atuais para enviar para a API
-    const filters = {
-      search: searchQuery.value || undefined
+    const filters: any = {
+      page: 1, // Reset to first page when changing items per page
+      per_page: perPage,
     };
 
+    if (searchQuery.value) {
+      filters.search = searchQuery.value;
+    }
 
-    await exportData(format, '/profiles', filename, filters);
-  } catch (error) {
-    console.error("Erro na exportação:", error);
+    await getAll(filters);
+  } catch (err) {
+    console.error("Erro ao alterar itens por página:", err);
   }
 };
+
 </script>
 
 <style scoped>
@@ -627,15 +644,44 @@ const handleExport = async (
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: 20px;
+}
+
+.pagination-controls-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 800px;
+  gap: 20px;
+}
+
+.items-per-page-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.items-per-page-select {
+  min-width: 80px;
+  max-width: 120px;
 }
 
 .pagination-controls {
-  margin: 0 auto;
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  order: 1;
+}
+
+.items-per-page-selector {
+  order: 2;
 }
 
 .pagination-info {
   text-align: center;
+  margin-top: 8px;
 }
 
 /* Responsividade */
@@ -643,6 +689,21 @@ const handleExport = async (
   .profiles-grid {
     grid-template-columns: 1fr;
     gap: 16px;
+  }
+
+  .pagination-controls-container {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .pagination-controls {
+    order: 1;
+    width: 100%;
+  }
+
+  .items-per-page-selector {
+    order: 2;
+    justify-content: center;
   }
 
   .profile-card-header {

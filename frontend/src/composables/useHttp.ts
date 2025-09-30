@@ -1,6 +1,6 @@
 import axios, { type AxiosInstance, type AxiosRequestConfig, type AxiosResponse } from 'axios'
 import { API_CONFIG, ERROR_MESSAGES } from '@/config/api'
-import { showErrorToast, showWarningToast, showInfoToast } from '@/utils/swal'
+import { showErrorToast, showWarningToast, showInfoToast, showValidationErrors } from '@/utils/swal'
 
 // Configuração base do axios
 const createAxiosInstance = (): AxiosInstance => {
@@ -85,9 +85,9 @@ const createAxiosInstance = (): AxiosInstance => {
           showWarningToast(ERROR_MESSAGES.NOT_FOUND, 'Não Encontrado')
         }
       } else if (error.response?.status === 422) {
-        error.message = ERROR_MESSAGES.VALIDATION_ERROR
-        if (showErrorToasts) {
-          showErrorToast(ERROR_MESSAGES.VALIDATION_ERROR, 'Validação')
+        const validationErrors = error.response?.data?.errors
+        if (validationErrors) {
+          showValidationErrors(validationErrors)
         }
       } else if (error.response?.status >= 500) {
         error.message = ERROR_MESSAGES.SERVER_ERROR

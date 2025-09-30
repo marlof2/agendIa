@@ -62,12 +62,19 @@ export function useProfilesApi() {
     loading.value = true
     error.value = null
 
-    try {
-      const params = new URLSearchParams()
+      try {
+        const params = new URLSearchParams()
+        console.log('filters', filters)
+        // Always add pagination parameters
+      const page = filters.page || pagination.value.current_page || 1
+      const perPage = filters.per_page || pagination.value.per_page || 12
 
-      // Add filters to params
+      params.append('page', page.toString())
+      params.append('per_page', perPage.toString())
+
+      // Add other filters to params
       Object.entries(filters).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== '') {
+        if (key !== 'page' && key !== 'per_page' && value !== undefined && value !== null && value !== '') {
           params.append(key, value.toString())
         }
       })

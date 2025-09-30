@@ -146,7 +146,6 @@ import { useAuth } from "@/composables/useAuth";
 const theme = useTheme();
 const router = useRouter();
 const { logout, user } = useAuth();
-  console.log(user.value)
 // User data (em produção, isso viria de um store/API)
 const userName = ref(user.value.name);
 const userRole = ref(user.value.profile.display_name);

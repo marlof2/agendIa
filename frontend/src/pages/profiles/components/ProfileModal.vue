@@ -2,7 +2,11 @@
   <BaseDialog
     :model-value="modelValue"
     :title="isEditing ? 'Editar Perfil' : 'Novo Perfil'"
-    :subtitle="isEditing ? 'Atualize as informações do perfil' : 'Preencha os dados para criar um novo perfil'"
+    :subtitle="
+      isEditing
+        ? 'Atualize as informações do perfil'
+        : 'Preencha os dados para criar um novo perfil'
+    "
     :icon="isEditing ? 'mdi-pencil' : 'mdi-plus-circle'"
     :icon-color="isEditing ? 'info' : 'primary'"
     max-width="600px"
@@ -13,58 +17,58 @@
   >
     <v-form ref="formRef" v-model="isValid" @submit.prevent="handleSubmit">
       <v-row>
-            <!-- Informações do Perfil -->
-            <v-col cols="12">
-              <h3 class="text-h6 mb-4 d-flex align-center">
-                <v-icon size="20" class="mr-2">mdi-account-tie</v-icon>
-                Informações do Perfil
-              </h3>
-            </v-col>
+        <!-- Informações do Perfil -->
+        <v-col cols="12">
+          <h3 class="text-h6 mb-4 d-flex align-center">
+            <v-icon size="20" class="mr-2">mdi-account-tie</v-icon>
+            Informações do Perfil
+          </h3>
+        </v-col>
 
-            <v-col cols="12" md="6">
-              <v-text-field
-                v-model="form.name"
-                label="Nome do perfil *"
-                variant="outlined"
-                density="compact"
-                rounded="lg"
-                :rules="nameRules"
-                prepend-inner-icon="mdi-tag"
-                required
-                hint="Nome único para identificação do perfil"
-                persistent-hint
-              />
-            </v-col>
+        <v-col cols="12" md="6">
+          <v-text-field
+            v-model="form.name"
+            label="Nome do perfil *"
+            variant="outlined"
+            density="compact"
+            rounded="lg"
+            :rules="nameRules"
+            prepend-inner-icon="mdi-tag"
+            required
+            hint="Nome único para identificação do perfil"
+            persistent-hint
+          />
+        </v-col>
 
-            <v-col cols="12" md="6">
-              <v-text-field
-                v-model="form.display_name"
-                label="Nome de exibição *"
-                variant="outlined"
-                density="compact"
-                rounded="lg"
-                :rules="displayNameRules"
-                prepend-inner-icon="mdi-account"
-                required
-                hint="Nome que será exibido para os usuários"
-                persistent-hint
-              />
-            </v-col>
+        <v-col cols="12" md="6">
+          <v-text-field
+            v-model="form.display_name"
+            label="Nome de exibição *"
+            variant="outlined"
+            density="compact"
+            rounded="lg"
+            :rules="displayNameRules"
+            prepend-inner-icon="mdi-account"
+            required
+            hint="Nome que será exibido para os usuários"
+            persistent-hint
+          />
+        </v-col>
 
-            <v-col cols="12">
-              <v-textarea
-                v-model="form.description"
-                label="Descrição"
-                variant="outlined"
-                density="compact"
-                rounded="lg"
-                prepend-inner-icon="mdi-text"
-                rows="3"
-                auto-grow
-                hint="Descrição opcional do perfil"
-                persistent-hint
-              />
-            </v-col>
+        <v-col cols="12">
+          <v-textarea
+            v-model="form.description"
+            label="Descrição"
+            variant="outlined"
+            density="compact"
+            rounded="lg"
+            prepend-inner-icon="mdi-text"
+            rows="3"
+            auto-grow
+            hint="Descrição opcional do perfil"
+            persistent-hint
+          />
+        </v-col>
       </v-row>
     </v-form>
 
@@ -142,10 +146,9 @@ const isEditing = computed(() => !!props.profile?.id);
 
 const formProgress = computed(() => {
   const totalFields = 2; // name, display_name (campos obrigatórios)
-  const filledFields = [
-    form.value.name,
-    form.value.display_name,
-  ].filter((field) => field && field.trim() !== "").length;
+  const filledFields = [form.value.name, form.value.display_name].filter(
+    (field) => field && field.trim() !== ""
+  ).length;
 
   return (filledFields / totalFields) * 100;
 });
@@ -155,9 +158,6 @@ const nameRules = [
   (v: string) => !!v || "Nome do perfil é obrigatório",
   (v: string) =>
     (v && v.length >= 2) || "Nome deve ter pelo menos 2 caracteres",
-  (v: string) =>
-    /^[a-z_]+$/.test(v) ||
-    "Nome deve conter apenas letras minúsculas e underscore",
 ];
 
 const displayNameRules = [
@@ -218,15 +218,7 @@ const handleSubmit = async () => {
 
     emit("reload");
     closeModal();
-  } catch (error: any) {
-    console.error("Erro ao salvar perfil:", error);
-
-    const errorMessage = error?.response?.data?.message ||
-                        error?.message ||
-                        "Ocorreu um erro ao salvar o perfil.";
-
-    showErrorToast(errorMessage, "Erro!");
-  } finally {
+  }  finally {
     loading.value = false;
   }
 };
