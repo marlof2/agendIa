@@ -187,16 +187,7 @@
     <template #actions>
       <v-spacer />
       <div class="d-flex modal-actions-container">
-        <v-btn
-          color="grey-darken-1"
-          variant="flat"
-          rounded="lg"
-          class="text-none font-weight-medium mr-4"
-          @click="closeModal"
-        >
-          <v-icon icon="mdi-close" class="mr-2" />
-          Fechar
-        </v-btn>
+        <BtnCancel @click="closeModal" />
         <v-btn
           v-if="hasPermission('profiles.edit')"
           color="primary"
@@ -208,17 +199,13 @@
         >
           Gerenciar Permissões
         </v-btn>
-        <v-btn
+        <BtnEdit
           v-if="hasPermission('profiles.edit')"
+          text="Editar"
           color="info"
           variant="flat"
-          rounded="lg"
-          class="text-none font-weight-medium"
-          prepend-icon="mdi-pencil"
           @click="handleEdit"
-        >
-          Editar
-        </v-btn>
+        />
       </div>
     </template>
   </BaseDialog>
@@ -471,6 +458,11 @@ const handleAbilitiesReload = () => {
 
 .profile-view-modal__content::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
+}
+
+/* Desktop styles */
+.modal-actions-container {
+  gap: 16px;
 }
 
 /* Responsive adjustments */

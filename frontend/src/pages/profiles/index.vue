@@ -8,16 +8,10 @@
     <template #actionBar>
       <ActionBar>
         <template #left>
-          <v-btn
+          <BtnNew
             v-if="hasPermission('profiles.create')"
-            color="success"
-            prepend-icon="mdi-plus"
-            rounded="lg"
-            class="text-none font-weight-medium"
             @click="create"
-          >
-            Novo
-          </v-btn>
+          />
         </template>
         <template #right>
           <div class="d-flex action-buttons-container">
@@ -62,25 +56,8 @@
           </v-row>
         </template>
         <template #actionsFilters>
-          <v-btn
-            color="primary"
-            prepend-icon="mdi-magnify"
-            rounded="lg"
-            class="text-none font-weight-medium"
-            @click="performSearch"
-          >
-            Buscar
-          </v-btn>
-          <v-btn
-            color="secondary"
-            prepend-icon="mdi-filter-variant"
-            rounded="lg"
-            class="text-none font-weight-medium"
-            variant="outlined"
-            @click="clearFilters"
-          >
-            Limpar Filtros
-          </v-btn>
+          <BtnSearch @click="performSearch" />
+          <BtnFilter @click="clearFilters" />
         </template>
       </FiltersCard>
     </template>
@@ -198,16 +175,7 @@
 
           <!-- Card Actions -->
           <v-card-actions class="profile-card-actions">
-            <v-btn
-              color="primary"
-              variant="outlined"
-              size="small"
-              prepend-icon="mdi-eye-outline"
-              @click="view(item)"
-              class="action-button"
-            >
-              Ver
-            </v-btn>
+            <BtnView @click="view(item)" />
             <v-btn
               color="info"
               variant="outlined"
@@ -219,22 +187,8 @@
               Permissões
             </v-btn>
             <v-spacer />
-            <v-btn
-              color="warning"
-              variant="text"
-              size="small"
-              icon="mdi-pencil-outline"
-              @click="edit(item)"
-              class="action-button"
-            />
-            <v-btn
-              color="error"
-              variant="text"
-              size="small"
-              icon="mdi-delete-outline"
-              @click="remove(item)"
-              class="action-button"
-            />
+            <BtnEdit :icon-only="true" @click="edit(item)" />
+            <BtnDelete :icon-only="true" @click="remove(item)" />
           </v-card-actions>
         </v-card>
       </div>

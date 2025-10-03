@@ -75,29 +75,13 @@
     <template #actions>
       <v-spacer />
       <div class="d-flex modal-actions-container">
-        <v-btn
-          color="grey-darken-1"
-          variant="flat"
-          rounded="lg"
-          class="text-none font-weight-medium mr-4"
-          @click="closeModal"
-        >
-          <v-icon icon="mdi-close" class="mr-2" />
-          Fechar
-        </v-btn>
-        <v-btn
-          :color="isEditing ? 'info' : 'primary'"
-          variant="flat"
-          rounded="lg"
-          class="text-none font-weight-medium"
+        <BtnCancel @click="closeModal"  />
+        <BtnSave
           :loading="loading"
           :disabled="!isValid"
-          type="submit"
+          :is-editing="isEditing"
           @click="handleSubmit"
-        >
-          <v-icon :icon="isEditing ? 'mdi-pencil' : 'mdi-plus'" class="mr-2" />
-          {{ isEditing ? "Atualizar" : "Salvar" }}
-        </v-btn>
+        />
       </div>
     </template>
   </BaseDialog>
@@ -335,5 +319,10 @@ watch(
     width: 100%;
     margin-right: 0 !important;
   }
+}
+
+/* Desktop styles */
+.modal-actions-container {
+  gap: 16px;
 }
 </style>

@@ -163,27 +163,13 @@
         >
           {{ selectedAbilities.length }}/{{ allAbilities.length }}
         </v-chip>
-        <v-btn
-          color="grey-darken-1"
-          variant="flat"
-          rounded="lg"
-          class="text-none font-weight-medium px-6 mr-4"
-          @click="closeModal"
-        >
-          <v-icon icon="mdi-close" class="mr-2" />
-          Fechar
-        </v-btn>
-        <v-btn
-          color="primary"
-          variant="flat"
-          rounded="lg"
-          class="text-none font-weight-medium px-6"
+        <BtnCancel @click="closeModal" />
+        <BtnSave
           :loading="saving"
+          text="Salvar Alterações"
+          prepend-icon="mdi-check"
           @click="saveAbilities"
-        >
-          <v-icon icon="mdi-check" class="mr-2" />
-          Salvar Alterações
-        </v-btn>
+        />
       </div>
     </template>
   </BaseDialog>
@@ -471,6 +457,11 @@ watch(selectedAbilities, (newSelection) => {
 
 .d-flex.gap-2 .v-btn {
   flex: 1;
+}
+
+/* Desktop styles */
+.modal-actions-container {
+  gap: 16px;
 }
 
 /* Mobile responsiveness */

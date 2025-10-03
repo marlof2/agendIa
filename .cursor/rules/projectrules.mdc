@@ -63,3 +63,13 @@ alwaysApply: true
   - Cobrança recorrente (Stripe/Pagar.me)
 
 - No laravel usar sempre formResquest
+
+# Padrão de layout que deverá seguir sempre é o do Profiles
+ - Caminho do arquivo: fronten/src/pages/profiles
+ - seguindo tudo responsivo
+ - A listagem com as ações
+ - Os inputs e botões
+ - Modais para ações como, adicionar, alterar, excluir, etc..
+ - Botão de exportar padrão em todas as telas
+ - filtro de busca
+ - paginação 

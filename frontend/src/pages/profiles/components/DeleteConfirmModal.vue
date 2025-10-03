@@ -70,29 +70,16 @@
     <template #actions>
       <v-spacer />
       <div class="d-flex modal-actions-container">
-        <v-btn
-          color="grey-darken-1"
+        <BtnCancel
           variant="outlined"
-          rounded="lg"
-          class="text-none font-weight-medium mr-4"
-          size="large"
           @click="closeModal"
-        >
-          <v-icon icon="mdi-close" class="mr-2" />
-          Fechar
-        </v-btn>
-        <v-btn
-          color="error"
+        />
+        <BtnDelete
           variant="flat"
-          rounded="lg"
-          class="text-none font-weight-medium"
-          size="large"
+          size="default"
           :loading="loading"
           @click="handleConfirm"
-        >
-          <v-icon icon="mdi-delete" class="mr-2" />
-          Excluir
-        </v-btn>
+        />
       </div>
     </template>
   </BaseDialog>
@@ -208,6 +195,11 @@ const handleConfirm = async () => {
   margin-bottom: 0;
 }
 
+/* Desktop styles */
+.modal-actions-container {
+  gap: 16px;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .delete-confirm-modal__header {
@@ -226,6 +218,17 @@ const handleConfirm = async () => {
 
   .delete-confirm-modal__actions .v-btn {
     width: 100%;
+  }
+
+  .modal-actions-container {
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .modal-actions-container .v-btn {
+    width: 100%;
+    margin-right: 0 !important;
   }
 }
 </style>
