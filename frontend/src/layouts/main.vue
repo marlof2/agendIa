@@ -109,7 +109,6 @@
 import { ref, computed, watch, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useTheme } from 'vuetify'
-import TopbarActions from '@/components/TopbarActions.vue'
 
 // Composables
 const route = useRoute();
