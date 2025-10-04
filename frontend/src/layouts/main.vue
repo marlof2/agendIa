@@ -165,6 +165,18 @@ const menuItems = [
     to: "/profiles",
   },
   {
+    title: "Empresas",
+    icon: "mdi-domain",
+    value: "companies",
+    to: "/companies",
+  },
+  {
+    title: "Usuários",
+    icon: "mdi-account-multiple",
+    value: "users",
+    to: "/users",
+  },
+  {
     title: "Relatórios",
     icon: "mdi-chart-line",
     value: "reports",
@@ -186,6 +198,9 @@ const pageTitles: Record<string, string> = {
   "/clients": "Clientes",
   "/professionals": "Profissionais",
   "/services": "Serviços",
+  "/profiles": "Perfis",
+  "/companies": "Empresas",
+  "/users": "Usuários",
   "/reports": "Relatórios",
   "/integrations": "Integrações",
   "/settings": "Configurações",

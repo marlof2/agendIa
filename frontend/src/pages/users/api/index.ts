@@ -1,6 +1,18 @@
 import { ref, computed } from 'vue'
 import { useHttp } from '@/composables/useHttp'
 
+export interface User {
+  id: number
+  name: string
+  email: string
+  phone?: string
+  profile_id?: number
+  created_at: string
+  updated_at: string
+  profile?: Profile
+  companies?: Company[]
+}
+
 export interface Profile {
   id: number
   name: string
@@ -22,28 +34,57 @@ export interface Ability {
   updated_at: string
 }
 
-export interface CreateProfileData {
+export interface Company {
+  id: number
   name: string
-  display_name: string
-  description?: string
-  abilities?: number[]
+  person_type: 'legal' | 'physical'
+  cnpj?: string
+  cpf?: string
+  responsible_name: string
+  phone_1?: string
+  phone_2?: string
+  has_whatsapp_1: boolean
+  has_whatsapp_2: boolean
+  timezone_id?: number
+  created_at: string
+  updated_at: string
+  timezone?: Timezone
 }
 
-export interface UpdateProfileData extends Partial<CreateProfileData> {
+export interface Timezone {
+  id: number
+  region: string
+  offset: string
+  created_at: string
+  updated_at: string
+}
+
+export interface CreateUserData {
+  name: string
+  email: string
+  password?: string
+  password_confirmation?: string
+  phone?: string
+  profile_id?: number
+  company_ids?: number[]
+}
+
+export interface UpdateUserData extends Partial<CreateUserData> {
   id: number
 }
 
-export interface ProfileFilters {
+export interface UserFilters {
   search?: string
+  profile_id?: number
   page?: number
   per_page?: number
 }
 
-export function useProfilesApi() {
-  const { get, post, put, del, patch } = useHttp()
+export function useUsersApi() {
+  const { get, post, put, del } = useHttp()
 
   // State
-  const items = ref<Profile[]>([])
+  const items = ref<User[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
   const pagination = ref({
@@ -58,7 +99,7 @@ export function useProfilesApi() {
   const isEmpty = computed(() => !loading.value && items.value.length === 0)
 
   // Methods
-  const getAll = async (filters: ProfileFilters = {}) => {
+  const getAll = async (filters: UserFilters = {}) => {
     loading.value = true
     error.value = null
 
@@ -78,7 +119,7 @@ export function useProfilesApi() {
         }
       })
 
-      const response = await get(`/profiles?${params.toString()}`)
+      const response = await get(`/users?${params.toString()}`)
 
       // Handle direct Laravel pagination response
       items.value = response.data || []
@@ -91,55 +132,55 @@ export function useProfilesApi() {
 
       return response
     } catch (err: any) {
-      error.value = err.response?.data?.message || 'Erro ao carregar perfis'
+      error.value = err.response?.data?.message || 'Erro ao carregar usuários'
       throw err
     } finally {
       loading.value = false
     }
   }
 
-  const getById = async (id: number): Promise<Profile> => {
+  const getById = async (id: number): Promise<User> => {
     loading.value = true
     error.value = null
 
     try {
-      const response = await get(`/profiles/${id}`)
-      return response.data as Profile
+      const response = await get(`/users/${id}`)
+      return response.data as User
     } catch (err: any) {
-      error.value = err.response?.data?.message || 'Erro ao carregar perfil'
+      error.value = err.response?.data?.message || 'Erro ao carregar usuário'
       throw err
     } finally {
       loading.value = false
     }
   }
 
-  const createItem = async (data: CreateProfileData): Promise<Profile> => {
+  const createItem = async (data: CreateUserData): Promise<User> => {
     loading.value = true
     error.value = null
 
     try {
-      const response = await post('/profiles', data)
+      const response = await post('/users', data)
 
       // Add the new item to the list
       if (response.data) {
         items.value.unshift(response.data)
       }
 
-      return response.data as Profile
+      return response.data as User
     } catch (err: any) {
-      error.value = err.response?.data?.message || 'Erro ao criar perfil'
+      error.value = err.response?.data?.message || 'Erro ao criar usuário'
       throw err
     } finally {
       loading.value = false
     }
   }
 
-  const updateItem = async (id: number, data: Partial<CreateProfileData>): Promise<Profile> => {
+  const updateItem = async (id: number, data: Partial<CreateUserData>): Promise<User> => {
     loading.value = true
     error.value = null
 
     try {
-      const response = await put(`/profiles/${id}`, data)
+      const response = await put(`/users/${id}`, data)
 
       // Update the item in the list
       const index = items.value.findIndex(item => item.id === id)
@@ -147,9 +188,9 @@ export function useProfilesApi() {
         items.value[index] = response.data
       }
 
-      return response.data as Profile
+      return response.data as User
     } catch (err: any) {
-      error.value = err.response?.data?.message || 'Erro ao atualizar perfil'
+      error.value = err.response?.data?.message || 'Erro ao atualizar usuário'
       throw err
     } finally {
       loading.value = false
@@ -161,7 +202,7 @@ export function useProfilesApi() {
     error.value = null
 
     try {
-      await del(`/profiles/${id}`)
+      await del(`/users/${id}`)
 
       // Remove the item from the list
       const index = items.value.findIndex(item => item.id === id)
@@ -169,7 +210,7 @@ export function useProfilesApi() {
         items.value.splice(index, 1)
       }
     } catch (err: any) {
-      error.value = err.response?.data?.message || 'Erro ao excluir perfil'
+      error.value = err.response?.data?.message || 'Erro ao excluir usuário'
       throw err
     } finally {
       loading.value = false
@@ -181,60 +222,24 @@ export function useProfilesApi() {
     error.value = null
 
     try {
-      await del('/profiles/bulk')
+      await del('/users/bulk')
 
       // Remove items from the list
       items.value = items.value.filter(item => !ids.includes(item.id))
     } catch (err: any) {
-      error.value = err.response?.data?.message || 'Erro ao excluir perfis'
+      error.value = err.response?.data?.message || 'Erro ao excluir usuários'
       throw err
     } finally {
       loading.value = false
     }
   }
-
-
-  const updateAbilities = async (id: number, abilities: number[]): Promise<Profile> => {
-    loading.value = true
-    error.value = null
-
-    try {
-      const response = await patch(`/profiles/${id}/abilities`, { abilities })
-
-      // Update the item in the list
-      const index = items.value.findIndex(item => item.id === id)
-      if (index !== -1) {
-        items.value[index]!.abilities = response.data.abilities
-        items.value[index] = { ...items.value[index]! }
-      }
-
-      return response.data as Profile
-    } catch (err: any) {
-      error.value = err.response?.data?.message || 'Erro ao atualizar abilities do perfil'
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
-
-  const getAllAbilities = async (): Promise<Ability[]> => {
-    try {
-      const response = await get('/profiles/abilities/all')
-      return response.data as Ability[]
-    } catch (err: any) {
-      error.value = err.response?.data?.message || 'Erro ao carregar abilities'
-      throw err
-    }
-  }
-
 
 
   const clearError = () => {
     error.value = null
   }
 
-  const refresh = async (filters: ProfileFilters = {}) => {
+  const refresh = async (filters: UserFilters = {}) => {
     return getAll(filters)
   }
 
@@ -256,8 +261,6 @@ export function useProfilesApi() {
     updateItem,
     deleteItem,
     bulkDelete,
-    updateAbilities,
-    getAllAbilities,
     clearError,
     refresh
   }

@@ -10,6 +10,7 @@ alwaysApply: true
 ---
 
 # Regras do Projeto
+- Use o yarn
 
 - O projeto se chama **AgendIA**.
 - É um **SaaS de agendamentos inteligentes** (com integração Google Calendar, WhatsApp e IA futuramente).

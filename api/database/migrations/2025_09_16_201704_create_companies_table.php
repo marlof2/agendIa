@@ -14,10 +14,15 @@ return new class extends Migration
         Schema::create('companies', function (Blueprint $table) {
             $table->id();
             $table->string('name');
+            $table->enum('person_type', ['physical', 'legal'])->default('legal');
             $table->string('cnpj')->nullable();
-            $table->string('phone');
-            $table->string('whatsapp_number');
-            $table->string('timezone')->default('America/Sao_Paulo');
+            $table->string('cpf')->nullable();
+            $table->string('responsible_name');
+            $table->string('phone_1');
+            $table->boolean('has_whatsapp_1')->default(false);
+            $table->string('phone_2')->nullable();
+            $table->boolean('has_whatsapp_2')->default(false);
+            $table->foreignId('timezone_id')->nullable()->constrained('timezones');
             $table->timestamps();
             $table->softDeletes();
         });

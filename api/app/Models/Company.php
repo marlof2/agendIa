@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -14,16 +15,30 @@ class Company extends Model
 
     protected $fillable = [
         'name',
+        'person_type',
         'cnpj',
-        'phone',
-        'whatsapp_number',
-        'timezone',
+        'cpf',
+        'responsible_name',
+        'phone_1',
+        'has_whatsapp_1',
+        'phone_2',
+        'has_whatsapp_2',
+        'timezone_id',
     ];
 
     protected $casts = [
-        'timezone' => 'string',
+        'has_whatsapp_1' => 'boolean',
+        'has_whatsapp_2' => 'boolean',
         'deleted_at' => 'datetime',
     ];
+
+    /**
+     * Get the timezone for the company.
+     */
+    public function timezone(): BelongsTo
+    {
+        return $this->belongsTo(Timezone::class);
+    }
 
     /**
      * Get the users for the company.

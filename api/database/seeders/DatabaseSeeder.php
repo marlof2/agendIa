@@ -14,8 +14,16 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
+            // Seeders básicos do sistema
             ProfileSeeder::class,
+            AbilitySeeder::class,
             ProfileAbilitySeeder::class,
+
+            // Seeders de dados de referência
+            TimezoneSeeder::class,
+
+            // Seeders de dados de exemplo
+            CompanySeeder::class,
             UserSeeder::class,
         ]);
     }

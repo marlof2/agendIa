@@ -1,49 +1,60 @@
 import { ref, computed } from 'vue'
 import { useHttp } from '@/composables/useHttp'
 
-export interface Profile {
+export interface Timezone {
   id: number
   name: string
-  display_name: string
-  description?: string
-  created_at: string
-  updated_at: string
-  abilities: Ability[]
-}
-
-export interface Ability {
-  id: number
-  name: string
-  category: string
-  action: string
-  display_name: string
-  description?: string
+  region: string
+  offset: string
   created_at: string
   updated_at: string
 }
 
-export interface CreateProfileData {
+export interface Company {
+  id: number
   name: string
-  display_name: string
-  description?: string
-  abilities?: number[]
+  person_type: 'physical' | 'legal'
+  cnpj?: string
+  cpf?: string
+  responsible_name: string
+  phone_1: string
+  has_whatsapp_1: boolean
+  phone_2?: string
+  has_whatsapp_2: boolean
+  timezone_id?: number
+  timezone?: Timezone
+  created_at: string
+  updated_at: string
 }
 
-export interface UpdateProfileData extends Partial<CreateProfileData> {
+export interface CreateCompanyData {
+  name: string
+  person_type: 'physical' | 'legal'
+  cnpj?: string
+  cpf?: string
+  responsible_name: string
+  phone_1: string
+  has_whatsapp_1: boolean
+  phone_2?: string
+  has_whatsapp_2: boolean
+  timezone_id?: number
+}
+
+export interface UpdateCompanyData extends Partial<CreateCompanyData> {
   id: number
 }
 
-export interface ProfileFilters {
+export interface CompanyFilters {
   search?: string
   page?: number
   per_page?: number
 }
 
-export function useProfilesApi() {
+export function useCompaniesApi() {
   const { get, post, put, del, patch } = useHttp()
 
   // State
-  const items = ref<Profile[]>([])
+  const items = ref<Company[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
   const pagination = ref({
@@ -58,13 +69,14 @@ export function useProfilesApi() {
   const isEmpty = computed(() => !loading.value && items.value.length === 0)
 
   // Methods
-  const getAll = async (filters: ProfileFilters = {}) => {
+  const getAll = async (filters: CompanyFilters = {}) => {
     loading.value = true
     error.value = null
 
-      try {
-        const params = new URLSearchParams()
-        // Always add pagination parameters
+    try {
+      const params = new URLSearchParams()
+
+      // Always add pagination parameters
       const page = filters.page || pagination.value.current_page || 1
       const perPage = filters.per_page || pagination.value.per_page || 12
 
@@ -78,7 +90,7 @@ export function useProfilesApi() {
         }
       })
 
-      const response = await get(`/profiles?${params.toString()}`)
+      const response = await get(`/companies?${params.toString()}`)
 
       // Handle direct Laravel pagination response
       items.value = response.data || []
@@ -91,55 +103,55 @@ export function useProfilesApi() {
 
       return response
     } catch (err: any) {
-      error.value = err.response?.data?.message || 'Erro ao carregar perfis'
+      error.value = err.response?.data?.message || 'Erro ao carregar empresas'
       throw err
     } finally {
       loading.value = false
     }
   }
 
-  const getById = async (id: number): Promise<Profile> => {
+  const getById = async (id: number): Promise<Company> => {
     loading.value = true
     error.value = null
 
     try {
-      const response = await get(`/profiles/${id}`)
-      return response.data as Profile
+      const response = await get(`/companies/${id}`)
+      return response.data as Company
     } catch (err: any) {
-      error.value = err.response?.data?.message || 'Erro ao carregar perfil'
+      error.value = err.response?.data?.message || 'Erro ao carregar empresa'
       throw err
     } finally {
       loading.value = false
     }
   }
 
-  const createItem = async (data: CreateProfileData): Promise<Profile> => {
+  const createItem = async (data: CreateCompanyData): Promise<Company> => {
     loading.value = true
     error.value = null
 
     try {
-      const response = await post('/profiles', data)
+      const response = await post('/companies', data)
 
       // Add the new item to the list
       if (response.data) {
         items.value.unshift(response.data)
       }
 
-      return response.data as Profile
+      return response.data as Company
     } catch (err: any) {
-      error.value = err.response?.data?.message || 'Erro ao criar perfil'
+      error.value = err.response?.data?.message || 'Erro ao criar empresa'
       throw err
     } finally {
       loading.value = false
     }
   }
 
-  const updateItem = async (id: number, data: Partial<CreateProfileData>): Promise<Profile> => {
+  const updateItem = async (id: number, data: Partial<CreateCompanyData>): Promise<Company> => {
     loading.value = true
     error.value = null
 
     try {
-      const response = await put(`/profiles/${id}`, data)
+      const response = await put(`/companies/${id}`, data)
 
       // Update the item in the list
       const index = items.value.findIndex(item => item.id === id)
@@ -147,9 +159,9 @@ export function useProfilesApi() {
         items.value[index] = response.data
       }
 
-      return response.data as Profile
+      return response.data as Company
     } catch (err: any) {
-      error.value = err.response?.data?.message || 'Erro ao atualizar perfil'
+      error.value = err.response?.data?.message || 'Erro ao atualizar empresa'
       throw err
     } finally {
       loading.value = false
@@ -161,7 +173,7 @@ export function useProfilesApi() {
     error.value = null
 
     try {
-      await del(`/profiles/${id}`)
+      await del(`/companies/${id}`)
 
       // Remove the item from the list
       const index = items.value.findIndex(item => item.id === id)
@@ -169,7 +181,7 @@ export function useProfilesApi() {
         items.value.splice(index, 1)
       }
     } catch (err: any) {
-      error.value = err.response?.data?.message || 'Erro ao excluir perfil'
+      error.value = err.response?.data?.message || 'Erro ao excluir empresa'
       throw err
     } finally {
       loading.value = false
@@ -181,60 +193,33 @@ export function useProfilesApi() {
     error.value = null
 
     try {
-      await del('/profiles/bulk')
+      await del('/companies/bulk')
 
       // Remove items from the list
       items.value = items.value.filter(item => !ids.includes(item.id))
     } catch (err: any) {
-      error.value = err.response?.data?.message || 'Erro ao excluir perfis'
+      error.value = err.response?.data?.message || 'Erro ao excluir empresas'
       throw err
     } finally {
       loading.value = false
     }
   }
 
-
-  const updateAbilities = async (id: number, abilities: number[]): Promise<Profile> => {
-    loading.value = true
-    error.value = null
-
+  const getAllTimezones = async (): Promise<Timezone[]> => {
     try {
-      const response = await patch(`/profiles/${id}/abilities`, { abilities })
-
-      // Update the item in the list
-      const index = items.value.findIndex(item => item.id === id)
-      if (index !== -1) {
-        items.value[index]!.abilities = response.data.abilities
-        items.value[index] = { ...items.value[index]! }
-      }
-
-      return response.data as Profile
+      const response = await get('/timezones')
+      return response.data as Timezone[]
     } catch (err: any) {
-      error.value = err.response?.data?.message || 'Erro ao atualizar abilities do perfil'
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
-
-  const getAllAbilities = async (): Promise<Ability[]> => {
-    try {
-      const response = await get('/profiles/abilities/all')
-      return response.data as Ability[]
-    } catch (err: any) {
-      error.value = err.response?.data?.message || 'Erro ao carregar abilities'
+      error.value = err.response?.data?.message || 'Erro ao carregar fusos horários'
       throw err
     }
   }
-
-
 
   const clearError = () => {
     error.value = null
   }
 
-  const refresh = async (filters: ProfileFilters = {}) => {
+  const refresh = async (filters: CompanyFilters = {}) => {
     return getAll(filters)
   }
 
@@ -256,8 +241,7 @@ export function useProfilesApi() {
     updateItem,
     deleteItem,
     bulkDelete,
-    updateAbilities,
-    getAllAbilities,
+    getAllTimezones,
     clearError,
     refresh
   }

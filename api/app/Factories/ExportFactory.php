@@ -83,7 +83,6 @@ class ExportFactory
         string $title = 'Relatório'
     ): Response {
         $html = self::generatePDFHtml($data, $headers, $title);
-
         $options = new Options();
         $options->set('defaultFont', 'Arial');
         $options->set('isRemoteEnabled', true);

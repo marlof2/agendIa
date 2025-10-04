@@ -42,23 +42,6 @@ class AbilityController extends Controller
         ]);
     }
 
-    /**
-     * Check if user has specific ability
-     */
-    public function checkAbility(Request $request, User $user): JsonResponse
-    {
-        $request->validate([
-            'ability' => 'required|string'
-        ]);
-
-        $hasPermission = $user->hasPermission($request->ability);
-
-        return response()->json([
-            'success' => true,
-            'has_ability' => $hasPermission,
-            'ability' => $request->ability
-        ]);
-    }
 
 
     /**

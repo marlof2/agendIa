@@ -1,29 +1,29 @@
 <template>
   <BasePage
-    title="Perfis"
-    subtitle="Gerencie todos os perfis de usuário do sistema"
-    :breadcrumbs="[{ title: 'Perfis' }]"
+    title="Usuários"
+    subtitle="Gerencie todos os usuários do sistema"
+    :breadcrumbs="[{ title: 'Usuários' }]"
   >
     <!-- Action Bar -->
     <template #actionBar>
       <ActionBar>
         <template #left>
           <BtnNew
-            v-if="hasPermission('profiles.create')"
+            v-if="hasPermission('users.create')"
             @click="create"
           />
         </template>
         <template #right>
           <div class="d-flex action-buttons-container">
             <ExportActions
-              :data="profiles"
-              filename="perfis"
+              :data="users"
+              filename="usuarios"
               button-text="Exportar"
               color="primary"
               variant="outlined"
               prepend-icon="mdi-download"
-              endpoint="/profiles"
-              :filters="{ search: searchQuery || undefined }"
+              endpoint="/users"
+              :filters="{ search: searchQuery || undefined, profile_id: filters.profile_id }"
             />
           </div>
         </template>
@@ -44,7 +44,7 @@
             <v-col cols="12" md="3">
               <v-text-field
                 v-model="searchQuery"
-                label="Buscar nome ou descrição"
+                label="Buscar nome ou email"
                 prepend-inner-icon="mdi-magnify"
                 variant="outlined"
                 density="compact"
@@ -52,6 +52,20 @@
                 rounded="lg"
                 hide-details
                 @keyup.enter="performSearch"
+              />
+            </v-col>
+            <v-col cols="12" md="3">
+              <v-select
+                v-model="filters.profile_id"
+                :items="profiles"
+                item-title="display_name"
+                item-value="id"
+                label="Filtrar por perfil"
+                variant="outlined"
+                density="compact"
+                clearable
+                hide-details
+                @update:model-value="performSearch"
               />
             </v-col>
           </v-row>
@@ -66,38 +80,38 @@
     <!-- Content -->
     <template #content>
       <!-- Loading State -->
-      <div v-if="loading" class="profiles-loading">
+      <div v-if="loading" class="users-loading">
         <v-skeleton-loader v-for="i in 5" :key="i" type="card" class="mb-4" />
       </div>
 
       <!-- Empty State -->
-      <div v-else-if="profiles.length === 0" class="profiles-empty">
-        <v-icon size="64" color="grey-lighten-1">mdi-account-group-off</v-icon>
-        <p class="text-h6 mt-4">Nenhum perfil encontrado</p>
+      <div v-else-if="users.length === 0" class="users-empty">
+        <v-icon size="64" color="grey-lighten-1">mdi-account-multiple-outline</v-icon>
+        <p class="text-h6 mt-4">Nenhum usuário encontrado</p>
         <p class="text-body-2 text-medium-emphasis">
-          Crie seu primeiro perfil para começar
+          Crie seu primeiro usuário para começar
         </p>
       </div>
 
-      <!-- Profiles Grid -->
-      <div v-else class="profiles-grid">
+      <!-- Users Grid -->
+      <div v-else class="users-grid">
         <v-card
-          v-for="item in profiles"
+          v-for="item in users"
           :key="item.id"
-          class="profile-card"
+          class="user-card"
           elevation="2"
           hover
         >
           <!-- Card Header -->
-          <v-card-title class="profile-card-header">
+          <v-card-title class="user-card-header">
             <div class="d-flex align-center">
               <div class="flex-grow-1">
                 <div class="text-h6 font-weight-bold">
-                  {{ item.display_name || "Perfil não informado" }}
+                  {{ item.name || "Usuário sem nome" }}
                 </div>
-                <!-- <div class="text-body-2 text-medium-emphasis">
-                  {{ item.name || "Nome não informado" }}
-                </div> -->
+                <div class="text-body-2 text-medium-emphasis">
+                  {{ item.email }}
+                </div>
               </div>
               <v-menu location="bottom end" offset="8">
                 <template v-slot:activator="{ props }">
@@ -120,12 +134,6 @@
                     class="action-item primary-action"
                   />
                   <v-list-item
-                    prepend-icon="mdi-shield-account-outline"
-                    title="Permissões"
-                    @click="manageAbilities(item)"
-                    class="action-item info-action"
-                  />
-                  <v-list-item
                     prepend-icon="mdi-pencil-outline"
                     title="Editar"
                     @click="edit(item)"
@@ -144,49 +152,48 @@
           </v-card-title>
 
           <!-- Card Content -->
-          <v-card-text class="profile-card-content">
-            <div class="profile-description mb-4">
-              <div class="text-body-2 text-medium-emphasis">
-                {{ item.description || "Sem descrição" }}
-              </div>
+          <v-card-text class="user-card-content">
+            <!-- Profile Badge -->
+            <div v-if="item.profile" class="profile-badge mb-4">
+              <v-chip
+                :color="getProfileColor(item.profile.name)"
+                variant="tonal"
+                size="small"
+              >
+                <v-icon start size="14">{{ getProfileIcon(item.profile.name) }}</v-icon>
+                {{ item.profile.display_name || item.profile.name }}
+              </v-chip>
             </div>
 
-            <!-- Profile Stats -->
-            <div class="profile-stats">
+            <!-- User Stats -->
+            <div class="user-stats">
               <div class="stat-item">
-                <v-icon size="18" color="primary" class="mr-2"
-                  >mdi-shield-account</v-icon
-                >
-                <span class="text-body-2"
-                  ><strong class="text-high-emphasis">Permissões: </strong
-                  >{{ item.abilities?.length || 0 }}</span
-                >
+                <v-icon size="18" color="primary" class="mr-2">mdi-phone</v-icon>
+                <span class="text-body-2">
+                  <strong class="text-high-emphasis">Telefone: </strong>
+                  {{ item.phone ? formatPhone(item.phone) : 'Não informado' }}
+                </span>
               </div>
               <div class="stat-item">
-                <v-icon size="18" color="info" class="mr-2"
-                  >mdi-calendar</v-icon
-                >
+                <v-icon size="18" color="info" class="mr-2">mdi-domain</v-icon>
                 <span class="text-body-2">
-                  <strong class="text-high-emphasis">Criado em: </strong
-                  >{{ formatDate(item.created_at) }}
+                  <strong class="text-high-emphasis">Empresas: </strong>
+                  {{ item.companies?.length || 0 }}
+                </span>
+              </div>
+              <div class="stat-item">
+                <v-icon size="18" color="success" class="mr-2">mdi-calendar</v-icon>
+                <span class="text-body-2">
+                  <strong class="text-high-emphasis">Criado em: </strong>
+                  {{ formatDate(item.created_at) }}
                 </span>
               </div>
             </div>
           </v-card-text>
 
           <!-- Card Actions -->
-          <v-card-actions class="profile-card-actions">
+          <v-card-actions class="user-card-actions">
             <BtnView @click="view(item)" />
-            <v-btn
-              color="info"
-              variant="outlined"
-              size="small"
-              prepend-icon="mdi-shield-account-outline"
-              @click="manageAbilities(item)"
-              class="action-button"
-            >
-              Permissões
-            </v-btn>
             <v-spacer />
             <BtnEdit :icon-only="true" @click="edit(item)" />
             <BtnDelete :icon-only="true" @click="remove(item)" />
@@ -195,7 +202,7 @@
       </div>
 
       <!-- Pagination -->
-      <div v-if="profiles.length > 0" class="profiles-pagination mt-6">
+      <div v-if="users.length > 0" class="users-pagination mt-6">
         <div class="pagination-controls-container">
           <!-- Pagination component (centered) -->
           <v-pagination
@@ -234,38 +241,33 @@
                 pagination.total
               )
             }}
-            de {{ pagination.total }} perfis
+            de {{ pagination.total }} usuários
           </span>
         </div>
       </div>
     </template>
+
   </BasePage>
 
-  <!-- Modals -->
-  <ProfileModal
-    v-model="showProfileModal"
-    :profile="selectedProfile"
+  <!-- Modals - Fora do BasePage para funcionar corretamente -->
+  <UserModal
+    v-model="showUserModal"
+    :user="selectedUser"
     @reload="handleListReload"
   />
 
-  <ProfileViewModal
+  <UserViewModal
     v-model="showViewModal"
-    :profile="selectedProfile"
+    :user="selectedUser"
     @edit="handleEditFromView"
     @reload="handleListReload"
   />
 
   <DeleteConfirmModal
     v-model="showDeleteModal"
-    :item="selectedProfile"
-    item-type="perfil"
+    :item="selectedUser"
+    item-type="usuário"
     @confirm="handleDeleteConfirm"
-  />
-
-  <ProfileAbilitiesModal
-    v-model="showAbilitiesModal"
-    :profile="selectedProfile"
-    @reload="handleListReload"
   />
 </template>
 
@@ -275,60 +277,73 @@ import BasePage from "@/components/BasePage.vue";
 import ActionBar from "@/components/ActionBar.vue";
 import FiltersCard from "@/components/FiltersCard.vue";
 import ExportActions from "@/components/ExportActions.vue";
-import ProfileModal from "./components/ProfileModal.vue";
-import ProfileViewModal from "./components/ProfileViewModal.vue";
+import UserViewModal from "./components/UserViewModal.vue";
 import DeleteConfirmModal from "./components/DeleteConfirmModal.vue";
-import ProfileAbilitiesModal from "./components/ProfileAbilitiesModal.vue";
-import { useProfilesApi } from "./api";
+import { useUsersApi } from "./api";
+import { useProfilesApi } from "@/pages/profiles/api";
 import { useAbilities } from "@/composables/useAbilities";
+import { useMask } from "@/composables/useMask";
 import { showSuccessToast, showErrorToast } from "@/utils/swal";
+import UserModal from "./components/UserModal.vue";
 
 const { hasPermission } = useAbilities();
 
 onMounted(async () => {
   await loadProfiles();
+  await loadUsers();
 });
 
 // Composables
 const {
-  items: profiles,
+  items: users,
   loading,
   error,
   pagination,
   getAll,
   deleteItem,
-} = useProfilesApi();
+} = useUsersApi();
 
 // Funções de navegação específicas da página
 const view = (item: any) => {
-  selectedProfile.value = item;
+  selectedUser.value = item;
   showViewModal.value = true;
 };
 
 const edit = (item: any) => {
-  selectedProfile.value = item;
+  selectedUser.value = item;
   isEditing.value = true;
-  showProfileModal.value = true;
+  showUserModal.value = true;
 };
 
 const remove = (item: any) => {
-  selectedProfile.value = item;
+  selectedUser.value = item;
   showDeleteModal.value = true;
+};
+
+const loadUsers = async () => {
+  try {
+    await getAll();
+  } catch (err) {
+    console.error("Erro ao carregar usuários:", err);
+  }
 };
 
 const loadProfiles = async () => {
   try {
-    await getAll();
-  } catch (err) {
-    console.error("Erro ao carregar perfis:", err);
+    const { getAll } = useProfilesApi();
+    const response = await getAll();
+    profiles.value = response.data || [];
+  } catch (error) {
+    console.error("Erro ao carregar perfis:", error);
   }
 };
 
 const create = () => {
-  selectedProfile.value = null;
+  selectedUser.value = null;
   isEditing.value = false;
-  showProfileModal.value = true;
+  showUserModal.value = true;
 };
+
 
 // Funções dos modais
 const handleListReload = async () => {
@@ -338,36 +353,37 @@ const handleListReload = async () => {
 const handleDeleteConfirm = async (item: any) => {
   try {
     await deleteItem(item.id);
-    showSuccessToast("Perfil excluído com sucesso!", "Sucesso!");
+    showSuccessToast("Usuário excluído com sucesso!", "Sucesso!");
     await getAll(); // Recarregar o grid
   } catch (err: any) {
     const errorMessage =
-      err?.response?.data?.message || err?.message || "Erro ao excluir perfil";
+      err?.response?.data?.message || err?.message || "Erro ao excluir usuário";
     showErrorToast(errorMessage, "Erro!");
   }
 };
 
-const handleEditFromView = (profile: any) => {
-  selectedProfile.value = profile;
+const handleEditFromView = (user: any) => {
+  selectedUser.value = user;
   isEditing.value = true;
-  showProfileModal.value = true;
+  showUserModal.value = true;
 };
 
-const manageAbilities = (item: any) => {
-  selectedProfile.value = item;
-  showAbilitiesModal.value = true;
-};
 
 // Reactive data
 const searchQuery = ref("");
+const filters = ref({
+  profile_id: undefined,
+});
 
 // Modal states
-const showProfileModal = ref(false);
+const showUserModal = ref(false);
 const showViewModal = ref(false);
 const showDeleteModal = ref(false);
-const showAbilitiesModal = ref(false);
-const selectedProfile = ref<any>(null);
+const selectedUser = ref<any>(null);
 const isEditing = ref(false);
+
+// Profiles for filter
+const profiles = ref<any[]>([]);
 
 // Methods
 const formatDate = (dateString: string) => {
@@ -387,16 +403,20 @@ const formatDate = (dateString: string) => {
 
 const performSearch = async () => {
   try {
-    const filters: any = {};
+    const searchFilters: any = {};
 
     if (searchQuery.value) {
-      filters.search = searchQuery.value;
+      searchFilters.search = searchQuery.value;
+    }
+
+    if (filters.value.profile_id) {
+      searchFilters.profile_id = filters.value.profile_id;
     }
 
     // Reset to first page when searching
-    filters.page = 1;
+    searchFilters.page = 1;
 
-    await getAll(filters);
+    await getAll(searchFilters);
   } catch (err) {
     console.error("Erro ao realizar busca:", err);
   }
@@ -404,21 +424,26 @@ const performSearch = async () => {
 
 const clearFilters = async () => {
   searchQuery.value = "";
+  filters.value.profile_id = undefined;
 
-  // Reset to first page and reload all profiles
+  // Reset to first page and reload all users
   await getAll({ page: 1 });
 };
 
 // Pagination handlers
 const handlePageChange = async (page: number) => {
   try {
-    const filters: any = { page };
+    const pageFilters: any = { page };
 
     if (searchQuery.value) {
-      filters.search = searchQuery.value;
+      pageFilters.search = searchQuery.value;
     }
 
-    await getAll(filters);
+    if (filters.value.profile_id) {
+      pageFilters.profile_id = filters.value.profile_id;
+    }
+
+    await getAll(pageFilters);
   } catch (err) {
     console.error("Erro ao alterar página:", err);
   }
@@ -426,25 +451,49 @@ const handlePageChange = async (page: number) => {
 
 const handlePerPageChange = async (perPage: number) => {
   try {
-    const filters: any = {
+    const pageFilters: any = {
       page: 1, // Reset to first page when changing items per page
       per_page: perPage,
     };
 
     if (searchQuery.value) {
-      filters.search = searchQuery.value;
+      pageFilters.search = searchQuery.value;
     }
 
-    await getAll(filters);
+    if (filters.value.profile_id) {
+      pageFilters.profile_id = filters.value.profile_id;
+    }
+
+    await getAll(pageFilters);
   } catch (err) {
     console.error("Erro ao alterar itens por página:", err);
   }
 };
 
+// Utility methods
+const { formatPhone } = useMask();
+
+const getProfileColor = (profileName?: string) => {
+  switch (profileName) {
+    case 'admin': return 'error';
+    case 'secretary': return 'warning';
+    case 'client': return 'success';
+    default: return 'grey';
+  }
+};
+
+const getProfileIcon = (profileName?: string) => {
+  switch (profileName) {
+    case 'admin': return 'mdi-shield-crown';
+    case 'secretary': return 'mdi-account-tie';
+    case 'client': return 'mdi-account';
+    default: return 'mdi-help';
+  }
+};
 </script>
 
 <style scoped>
-/* Estilos específicos da página de perfis */
+/* Estilos específicos da página de usuários */
 
 /* Filters Header */
 .filters-header {
@@ -472,40 +521,40 @@ const handlePerPageChange = async (perPage: number) => {
 }
 
 /* Loading State */
-.profiles-loading {
+.users-loading {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
 /* Empty State */
-.profiles-empty {
+.users-empty {
   text-align: center;
   padding: 64px 32px;
   color: rgba(var(--v-theme-on-surface), 0.6);
 }
 
-/* Profiles Grid */
-.profiles-grid {
+/* Users Grid */
+.users-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
   gap: 24px;
   margin-bottom: 32px;
 }
 
-/* Profile Card */
-.profile-card {
+/* User Card */
+.user-card {
   border-radius: 16px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
 }
 
-.profile-card:hover {
+.user-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
 }
 
-.profile-card-header {
+.user-card-header {
   background: linear-gradient(
     135deg,
     rgba(var(--v-theme-primary), 0.05),
@@ -515,17 +564,16 @@ const handlePerPageChange = async (perPage: number) => {
   border-bottom: 1px solid rgba(var(--v-theme-outline), 0.12);
 }
 
-.profile-card-content {
+.user-card-content {
   padding: 20px 24px;
 }
 
-.profile-description {
-  min-height: 48px;
+.profile-badge {
   display: flex;
-  align-items: center;
+  justify-content: flex-start;
 }
 
-.profile-stats {
+.user-stats {
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -537,7 +585,7 @@ const handlePerPageChange = async (perPage: number) => {
   padding: 8px 0;
 }
 
-.profile-card-actions {
+.user-card-actions {
   padding: 16px 24px;
   background: rgba(var(--v-theme-surface-variant), 0.3);
   border-top: 1px solid rgba(var(--v-theme-outline), 0.12);
@@ -594,7 +642,7 @@ const handlePerPageChange = async (perPage: number) => {
 }
 
 /* Pagination */
-.profiles-pagination {
+.users-pagination {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -640,7 +688,7 @@ const handlePerPageChange = async (perPage: number) => {
 
 /* Responsividade */
 @media (max-width: 768px) {
-  .profiles-grid {
+  .users-grid {
     grid-template-columns: 1fr;
     gap: 16px;
   }
@@ -660,21 +708,21 @@ const handlePerPageChange = async (perPage: number) => {
     justify-content: center;
   }
 
-  .profile-card-header {
+  .user-card-header {
     padding: 16px 20px;
   }
 
-  .profile-card-content {
+  .user-card-content {
     padding: 16px 20px;
   }
 
-  .profile-card-actions {
+  .user-card-actions {
     padding: 12px 20px;
     flex-direction: column;
     gap: 8px;
   }
 
-  .profile-card-actions .v-btn {
+  .user-card-actions .v-btn {
     width: 100%;
   }
 
@@ -691,19 +739,19 @@ const handlePerPageChange = async (perPage: number) => {
 }
 
 @media (max-width: 480px) {
-  .profiles-grid {
+  .users-grid {
     gap: 12px;
   }
 
-  .profile-card-header {
+  .user-card-header {
     padding: 12px 16px;
   }
 
-  .profile-card-content {
+  .user-card-content {
     padding: 12px 16px;
   }
 
-  .profile-card-actions {
+  .user-card-actions {
     padding: 8px 16px;
   }
 }

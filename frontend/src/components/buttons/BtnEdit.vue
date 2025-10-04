@@ -38,7 +38,7 @@ const props = withDefaults(defineProps<Props>(), {
   text: 'Editar',
   color: 'warning',
   variant: 'text',
-  size: 'small',
+  size: 'default',
   prependIcon: 'mdi-pencil-outline',
   appendIcon: undefined,
   loading: false,

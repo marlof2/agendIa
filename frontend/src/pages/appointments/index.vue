@@ -537,7 +537,6 @@ const performSearch = async () => {
     }
 
     await getAll(filters);
-    console.log("Busca realizada com filtros:", filters);
   } catch (err) {
     console.error('Erro ao realizar busca:', err);
   }

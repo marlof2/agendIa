@@ -21,7 +21,7 @@ declare module 'vue' {
     BtnFilter: typeof import('./components/buttons/BtnFilter.vue')['default']
     BtnNew: typeof import('./components/buttons/BtnNew.vue')['default']
     BtnSave: typeof import('./components/buttons/BtnSave.vue')['default']
-    BtnSearch: typeof import('./components/buttons/BtnSearch.vue')['default']
+    BtnSearch: typeof import('./components/BtnSearch.vue')['default']
     BtnView: typeof import('./components/buttons/BtnView.vue')['default']
     DataTable: typeof import('./components/DataTable.vue')['default']
     ExportActions: typeof import('./components/ExportActions.vue')['default']

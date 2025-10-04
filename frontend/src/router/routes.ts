@@ -3,10 +3,14 @@ import type { RouteRecordRaw } from 'vue-router'
 // Importações das páginas
 
 import routesProfiles from '@/pages/profiles/routes/index'
+import routesCompanies from '@/pages/companies/routes/index'
+import routesUsers from '@/pages/users/routes/index'
 
 
 const routes: RouteRecordRaw[] = [
   ...routesProfiles,
+  ...routesCompanies,
+  ...routesUsers,
   {
     path: '/',
     name: 'index',
@@ -34,7 +38,7 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/pages/dashboard.vue'),
     meta: {
       requiresAuth: true,
-      requiresAbility: 'appointments.index',
+      requiresAbility: 'dashboard.index',
       title: 'Dashboard',
       description: 'Visão geral do sistema'
     }

@@ -81,7 +81,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   iconColor: 'primary',
-  maxWidth: '800px',
+  maxWidth: '900px',
   fullscreen: false,
   showProgress: false,
   progress: 0,
