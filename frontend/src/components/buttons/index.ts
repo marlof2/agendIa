@@ -8,3 +8,4 @@ export { default as BtnNew } from './BtnNew.vue';
 export { default as BtnExport } from './BtnExport.vue';
 export { default as BtnFilter } from './BtnFilter.vue';
 export { default as BtnView } from './BtnView.vue';
+export { default as BtnManageUsers } from './BtnManageUsers.vue';

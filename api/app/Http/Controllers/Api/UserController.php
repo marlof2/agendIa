@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class UserController extends Controller
@@ -152,4 +153,145 @@ class UserController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Buscar profissionais disponíveis para associação a uma empresa
+     */
+    public function availableProfessionals(Request $request): JsonResponse
+    {
+        try {
+            $filters = [
+                'search' => $request->get('search'),
+                'company_id' => $request->get('company_id'),
+                'per_page' => $request->get('per_page', 12),
+            ];
+
+            // Buscar profissionais usando o service com paginação
+            $result = $this->userService->getAvailableProfessionals($filters);
+
+            return response()->json($result);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao buscar profissionais disponíveis: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Adicionar usuário a uma empresa com perfil específico
+     */
+    public function addToCompany(Request $request): JsonResponse
+    {
+        try {
+            $request->validate([
+                'user_id' => 'required|exists:users,id',
+                'company_id' => 'required|exists:companies,id',
+                'profile_id' => 'required|exists:profiles,id',
+            ]);
+
+            $user = User::findOrFail($request->user_id);
+
+            $this->userService->addUserToCompany(
+                $user,
+                $request->company_id,
+                $request->profile_id
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Usuário adicionado à empresa com sucesso'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao adicionar usuário à empresa: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Remover usuário de uma empresa
+     */
+    public function removeFromCompany(Request $request): JsonResponse
+    {
+        try {
+            $request->validate([
+                'user_id' => 'required|exists:users,id',
+                'company_id' => 'required|exists:companies,id',
+            ]);
+
+            $user = User::findOrFail($request->user_id);
+
+            $this->userService->removeUserFromCompany($user, $request->company_id);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Usuário removido da empresa com sucesso'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao remover usuário da empresa: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Atualizar perfil do usuário em uma empresa específica
+     */
+    public function updateProfileInCompany(Request $request): JsonResponse
+    {
+        try {
+            $request->validate([
+                'user_id' => 'required|exists:users,id',
+                'company_id' => 'required|exists:companies,id',
+                'profile_id' => 'required|exists:profiles,id',
+            ]);
+
+            $user = User::findOrFail($request->user_id);
+
+            $this->userService->updateUserProfileInCompany(
+                $user,
+                $request->company_id,
+                $request->profile_id
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Perfil do usuário atualizado com sucesso'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao atualizar perfil do usuário: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Obter empresas do usuário com seus perfis
+     */
+    public function getUserCompanies(User $user): JsonResponse
+    {
+        try {
+            $companies = $this->userService->getUserCompaniesWithProfiles($user);
+
+            return response()->json([
+                'success' => true,
+                'data' => $companies
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao buscar empresas do usuário: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
 }

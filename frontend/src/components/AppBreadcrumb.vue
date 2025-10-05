@@ -1,19 +1,27 @@
 <template>
   <div class="breadcrumb">
     <div class="breadcrumb__items">
-      <span class="breadcrumb__item breadcrumb__item--home">
+      <router-link to="/" class="breadcrumb__item breadcrumb__item--home">
         <v-icon size="16" class="breadcrumb__home-icon">mdi-home</v-icon>
-        AgendIA
-      </span>
-      <v-icon size="14" class="breadcrumb__separator">mdi-chevron-right</v-icon>
-      <span
-        v-for="(item, index) in items"
-        :key="index"
-        class="breadcrumb__item"
-        :class="{ 'breadcrumb__item--current': index === items.length - 1 }"
-      >
-        {{ item.title }}
-      </span>
+        Home
+      </router-link>
+      <template v-for="(item, index) in items" :key="index">
+        <v-icon size="14" class="breadcrumb__separator">mdi-chevron-right</v-icon>
+        <router-link
+          v-if="item.to && !item.disabled && index !== items.length - 1"
+          :to="item.to"
+          class="breadcrumb__item breadcrumb__item--link"
+        >
+          {{ item.title }}
+        </router-link>
+        <span
+          v-else
+          class="breadcrumb__item"
+          :class="{ 'breadcrumb__item--current': index === items.length - 1 }"
+        >
+          {{ item.title }}
+        </span>
+      </template>
     </div>
   </div>
 </template>
@@ -69,6 +77,16 @@ defineProps<Props>()
   font-weight: 600;
 }
 
+.breadcrumb__item--link {
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.breadcrumb__item--link:hover {
+  color: #334155;
+  text-decoration: underline;
+}
+
 .breadcrumb__separator {
   color: #cbd5e1;
   margin: 0 2px;
@@ -94,6 +112,10 @@ defineProps<Props>()
 
 .v-theme--dark .breadcrumb__item--current {
   color: #f1f5f9;
+}
+
+.v-theme--dark .breadcrumb__item--link:hover {
+  color: #cbd5e1;
 }
 
 .v-theme--dark .breadcrumb__separator {

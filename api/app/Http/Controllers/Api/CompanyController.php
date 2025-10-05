@@ -17,7 +17,7 @@ class CompanyController extends Controller
     ) {}
 
     /**
-     * Get all companies
+     * Buscar todas as empresas
      */
     public function index(Request $request): JsonResponse
     {
@@ -32,7 +32,7 @@ class CompanyController extends Controller
     }
 
     /**
-     * Get a specific company
+     * Buscar uma empresa específica
      */
     public function show(Company $company): JsonResponse
     {
@@ -45,7 +45,7 @@ class CompanyController extends Controller
     }
 
     /**
-     * Create a new company
+     * Criar uma nova empresa
      */
     public function store(CompanyRequest $request): JsonResponse
     {
@@ -59,7 +59,7 @@ class CompanyController extends Controller
     }
 
     /**
-     * Update a company
+     * Atualizar uma empresa
      */
     public function update(CompanyRequest $request, Company $company): JsonResponse
     {
@@ -73,7 +73,7 @@ class CompanyController extends Controller
     }
 
     /**
-     * Delete a company
+     * Deletar uma empresa
      */
     public function destroy(Company $company): JsonResponse
     {
@@ -94,7 +94,7 @@ class CompanyController extends Controller
 
 
     /**
-     * Export companies to Excel or PDF
+     * Exportar empresas para Excel ou PDF
      */
     public function export(ExportRequest $request)
     {
@@ -108,4 +108,84 @@ class CompanyController extends Controller
             return $this->companyService->exportToPDF($filters);
         }
     }
+
+    /**
+     * Buscar empresas para combos/autoseleção
+     */
+    public function combo(Request $request): JsonResponse
+    {
+        $companies = \App\Models\Company::select('id', 'name', 'email')
+            ->when($request->search, function ($query, $search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('email', 'like', "%{$search}%");
+                });
+            })
+            ->orderBy('name')
+            ->limit(50)
+            ->get();
+
+        return response()->json([
+            'data' => $companies,
+            'total' => $companies->count()
+        ]);
+    }
+
+    /**
+     * Buscar usuários de uma empresa específica
+     */
+    public function companyUsers(Request $request, $companyId): JsonResponse
+    {
+        try {
+            $filters = [
+                'search' => $request->get('search'),
+                'per_page' => $request->get('per_page', 12),
+            ];
+
+            // Buscar profissionais da empresa usando o service
+            $result = $this->companyService->getCompanyProfessionals((int)$companyId, $filters);
+
+            return response()->json($result);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao buscar profissionais da empresa: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Associar um profissional a uma empresa
+     */
+    public function attachProfessional(Request $request, $companyId, $userId): JsonResponse
+    {
+        try {
+            $result = $this->companyService->attachProfessional((int)$companyId, (int)$userId);
+
+            return response()->json($result, 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 422);
+        }
+    }
+
+    /**
+     * Desassociar um profissional de uma empresa
+     */
+    public function detachProfessional(Request $request, $companyId, $userId): JsonResponse
+    {
+        try {
+            $result = $this->companyService->detachProfessional((int)$companyId, (int)$userId);
+
+            return response()->json($result);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 422);
+        }
+    }
+
 }

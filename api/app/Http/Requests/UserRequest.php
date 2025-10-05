@@ -32,6 +32,7 @@ class UserRequest extends FormRequest
             ],
             'password' => $userId ? 'nullable|string|min:8|confirmed' : 'required|string|min:8|confirmed',
             'phone' => 'nullable|string|max:20',
+            'has_whatsapp' => 'boolean',
             'profile_id' => 'required|exists:profiles,id',
             'company_ids' => 'nullable|array',
             'company_ids.*' => 'exists:companies,id',
@@ -61,6 +62,8 @@ class UserRequest extends FormRequest
             'phone.string' => 'O telefone deve ser um texto.',
             'phone.max' => 'O telefone não pode ter mais de 20 caracteres.',
 
+            'has_whatsapp.boolean' => 'O campo WhatsApp deve ser verdadeiro ou falso.',
+
             'profile_id.required' => 'O perfil é obrigatório.',
             'profile_id.exists' => 'O perfil selecionado não existe.',
 
@@ -79,6 +82,7 @@ class UserRequest extends FormRequest
             'email' => 'email',
             'password' => 'senha',
             'phone' => 'telefone',
+            'has_whatsapp' => 'WhatsApp',
             'profile_id' => 'perfil',
             'company_ids' => 'empresas',
         ];

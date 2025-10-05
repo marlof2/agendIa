@@ -20,14 +20,14 @@ class CompanySeeder extends Seeder
 
         $companies = [
             [
-                'name' => 'Tech Solutions Ltda',
+                'name' => 'Marques Tech Ltda',
                 'person_type' => 'legal',
                 'cnpj' => '11222333000144',
                 'cpf' => null,
-                'responsible_name' => 'João Silva Santos',
-                'phone_1' => '11999998888',
+                'responsible_name' => 'Marlo Marques da Silva Filho',
+                'phone_1' => '71991717209',
                 'has_whatsapp_1' => true,
-                'phone_2' => '1133334444',
+                'phone_2' => '',
                 'has_whatsapp_2' => false,
                 'timezone_id' => $timezoneId,
             ],

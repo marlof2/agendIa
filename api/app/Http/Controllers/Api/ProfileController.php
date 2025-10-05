@@ -136,4 +136,26 @@ class ProfileController extends Controller
         }
     }
 
+    /**
+     * Get profiles for combos/autoselects
+     */
+    public function combo(Request $request): JsonResponse
+    {
+        $profiles = Profile::select('id', 'name', 'display_name')
+            ->when($request->search, function ($query, $search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('display_name', 'like', "%{$search}%");
+                });
+            })
+            ->orderBy('display_name')
+            ->limit(50)
+            ->get();
+
+        return response()->json([
+            'data' => $profiles,
+            'total' => $profiles->count()
+        ]);
+    }
+
 }

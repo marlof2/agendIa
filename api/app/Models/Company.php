@@ -81,35 +81,6 @@ class Company extends Model
         return $this->hasMany(Appointment::class);
     }
 
-    /**
-     * Get the owner of the company (admin users).
-     */
-    public function owner()
-    {
-        return $this->users()->whereHas('profile', function ($query) {
-            $query->where('name', 'admin');
-        })->first();
-    }
-
-    /**
-     * Get the staff members of the company (admin and secretary users).
-     */
-    public function staff()
-    {
-        return $this->users()->whereHas('profile', function ($query) {
-            $query->whereIn('name', ['admin', 'secretary']);
-        });
-    }
-
-    /**
-     * Get the clients of the company.
-     */
-    public function clients()
-    {
-        return $this->users()->whereHas('profile', function ($query) {
-            $query->where('name', 'client');
-        });
-    }
 
     /**
      * Check if company is active (not soft deleted).

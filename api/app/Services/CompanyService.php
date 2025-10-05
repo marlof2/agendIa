@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Company;
 use App\Models\Timezone;
 use App\Factories\ExportFactory;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Response;
@@ -252,6 +253,104 @@ class CompanyService
     {
         $cpf = preg_replace('/[^0-9]/', '', $cpf);
         return preg_replace('/^(\d{3})(\d{3})(\d{3})(\d{2})$/', '$1.$2.$3-$4', $cpf);
+    }
+
+    /**
+     * Buscar profissionais de uma empresa específica
+     */
+    public function getCompanyProfessionals(int $companyId, array $filters = []): \Illuminate\Pagination\LengthAwarePaginator
+    {
+        $query = User::select([
+            'users.id',
+            'users.name',
+            'users.email',
+            'users.phone',
+            'users.has_whatsapp',
+            'users.profile_id',
+            'users.created_at'
+        ])
+        ->with('profile:id,name,display_name')
+        ->whereHas('companies', function ($query) use ($companyId) {
+            $query->where('companies.id', $companyId);
+        })
+        ->whereHas('profile', function ($query) {
+            $query->where('name', 'professional');
+        });
+
+        // Busca por nome ou email
+        if (!empty($filters['search'])) {
+            $search = $filters['search'];
+            $query->where(function ($q) use ($search) {
+                $q->where('users.name', 'like', "%{$search}%")
+                  ->orWhere('users.email', 'like', "%{$search}%");
+            });
+        }
+
+        // Paginação
+        $perPage = $filters['per_page'] ?? 12;
+
+        return $query->orderBy('users.name', 'asc')->paginate($perPage);
+    }
+
+    /**
+     * Associar um profissional a uma empresa
+     */
+    public function attachProfessional(int $companyId, int $userId): array
+    {
+        $company = Company::findOrFail($companyId);
+        $user = \App\Models\User::findOrFail($userId);
+
+        // Verificar se o usuário é um profissional
+        if (!$user->profile || $user->profile->name !== 'professional') {
+            throw new \Exception('Apenas usuários com perfil profissional podem ser associados a empresas.');
+        }
+
+        // Verificar se já está associado
+        if ($company->users()->where('user_id', $userId)->exists()) {
+            throw new \Exception('Este profissional já está associado a esta empresa.');
+        }
+
+        // Associar o profissional à empresa usando a tabela pivot
+        $company->users()->attach($userId);
+
+        return [
+            'success' => true,
+            'message' => 'Profissional associado com sucesso à empresa.',
+            'data' => [
+                'company_id' => $companyId,
+                'user_id' => $userId,
+                'user_name' => $user->name,
+                'company_name' => $company->name
+            ]
+        ];
+    }
+
+    /**
+     * Desassociar um profissional de uma empresa
+     */
+    public function detachProfessional(int $companyId, int $userId): array
+    {
+        $company = Company::findOrFail($companyId);
+        $user = \App\Models\User::findOrFail($userId);
+
+        // Verificar se está associado
+        if (!$company->users()->where('user_id', $userId)->exists()) {
+            throw new \Exception('Este profissional não está associado a esta empresa.');
+        }
+
+        // Desassociar o profissional da empresa usando a tabela pivot
+        $company->users()->detach($userId);
+
+        return [
+            'success' => true,
+            'message' => 'Profissional desassociado com sucesso da empresa.',
+            'data' => [
+                'company_id' => $companyId,
+                'user_id' => $userId,
+                'user_name' => $user->name,
+                'company_name' => $company->name
+            ]
+        ];
     }
 
     /**

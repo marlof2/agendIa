@@ -18,12 +18,8 @@ class UserSeeder extends Seeder
         // Buscar perfis
         $adminProfile = Profile::where('name', 'admin')->first();
         $secretaryProfile = Profile::where('name', 'secretary')->first();
+        $professionalProfile = Profile::where('name', 'professional')->first();
         $clientProfile = Profile::where('name', 'client')->first();
-
-        if (!$adminProfile || !$secretaryProfile || !$clientProfile) {
-            $this->command->error('Perfis não encontrados! Execute o ProfileSeeder primeiro.');
-            return;
-        }
 
         // Buscar empresas
         $companies = Company::all();
@@ -50,74 +46,42 @@ class UserSeeder extends Seeder
                 'companies' => [$companies->first()->id],
             ],
             [
-                'name' => 'Maria Silva Santos',
-                'email' => 'maria@techsolutions.com',
-                'password' => Hash::make('12345678'),
-                'phone' => '11988887777',
+                'name' => 'Secretária Maria',
+                'email' => 'secretaria@empresa.com',
+                'password' => Hash::make('123456'),
+                'phone' => '11999997777',
+                'has_whatsapp' => true,
                 'profile_id' => $secretaryProfile->id,
                 'companies' => [$companies->first()->id],
             ],
             [
-                'name' => 'João Oliveira Costa',
-                'email' => 'joao.oliveira@email.com',
-                'password' => Hash::make('12345678'),
-                'phone' => '11977776666',
+                'name' => 'Dr. João Silva',
+                'email' => 'joao@empresa.com',
+                'password' => Hash::make('123456'),
+                'phone' => '11999996666',
+                'has_whatsapp' => true,
+                'profile_id' => $professionalProfile->id,
+                'companies' => [$companies->first()->id],
+            ],
+            [
+                'name' => 'Cliente Ana',
+                'email' => 'ana@cliente.com',
+                'password' => Hash::make('123456'),
+                'phone' => '11999995555',
+                'has_whatsapp' => true,
                 'profile_id' => $clientProfile->id,
-                'companies' => [$companies->first()->id],
-            ],
-            [
-                'name' => 'Ana Paula Ferreira',
-                'email' => 'ana@techsolutions.com',
-                'password' => Hash::make('12345678'),
-                'phone' => '11966665555',
-                'profile_id' => $secretaryProfile->id,
-                'companies' => [$companies->first()->id],
-            ],
-            [
-                'name' => 'Pedro Henrique Lima',
-                'email' => 'pedro.lima@email.com',
-                'password' => Hash::make('12345678'),
-                'phone' => '11955554444',
-                'profile_id' => $clientProfile->id,
-                'companies' => [$companies->first()->id],
-            ],
-            [
-                'name' => 'Carla Mendes',
-                'email' => 'carla@techsolutions.com',
-                'password' => Hash::make('12345678'),
-                'phone' => '11944443333',
-                'profile_id' => $adminProfile->id,
-                'companies' => [$companies->first()->id],
-            ],
-            [
-                'name' => 'Roberto Carlos Silva',
-                'email' => 'roberto@email.com',
-                'password' => Hash::make('12345678'),
-                'phone' => '11933332222',
-                'profile_id' => $clientProfile->id,
-                'companies' => [$companies->first()->id],
-            ],
-            [
-                'name' => 'Fernanda Alves',
-                'email' => 'fernanda@techsolutions.com',
-                'password' => Hash::make('12345678'),
-                'phone' => '11922221111',
-                'profile_id' => $secretaryProfile->id,
                 'companies' => [$companies->first()->id],
             ],
         ];
 
         foreach ($users as $userData) {
-            $companyIds = $userData['companies'];
+            $companies = $userData['companies'];
             unset($userData['companies']);
 
-            $user = User::firstOrCreate(
-                ['email' => $userData['email']],
-                $userData
-            );
+            $user = User::create($userData);
+            $user->companies()->attach($companies);
 
-            // Attach to companies
-            $user->companies()->sync($companyIds);
+            $this->command->info("Usuário criado: {$user->name} ({$user->email})");
         }
 
         $this->command->info('Usuários criados com sucesso!');

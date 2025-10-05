@@ -127,11 +127,14 @@
           <v-switch
             v-model="form.has_whatsapp_1"
             label="Este telefone tem WhatsApp"
-            color="success"
+            color="primary"
             density="compact"
-            prepend-icon="mdi-whatsapp"
             hide-details
-          />
+          >
+            <template #prepend>
+              <v-icon :color="form.has_whatsapp_1 ? 'success' : 'grey'">mdi-whatsapp</v-icon>
+            </template>
+          </v-switch>
         </v-col>
 
         <v-col cols="12" md="6">
@@ -154,12 +157,15 @@
           <v-switch
             v-model="form.has_whatsapp_2"
             label="Este telefone tem WhatsApp"
-            color="success"
+            color="primary"
             density="compact"
-            prepend-icon="mdi-whatsapp"
             hide-details
             :disabled="!form.phone_2"
-          />
+          >
+            <template #prepend>
+              <v-icon :color="form.has_whatsapp_2 ? 'success' : 'grey'">mdi-whatsapp</v-icon>
+            </template>
+          </v-switch>
         </v-col>
 
         <v-col cols="12">

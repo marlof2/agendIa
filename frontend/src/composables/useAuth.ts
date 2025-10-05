@@ -49,9 +49,8 @@ export function useAuth() {
         token: response.data.token,
         isAuthenticated: true,
       };
-
       // Carregar abilities automaticamente se disponíveis
-      if (response.data.abilities && response.data.profile) {
+      if (response.data.abilities) {
         const { saveWithEncrypted } = await import('@/utils/storage');
 
         const abilitiesData = {
@@ -159,6 +158,7 @@ export function useAuth() {
 
   // Inicializar verificação de auth
   checkAuth();
+
 
   return {
     // Estado

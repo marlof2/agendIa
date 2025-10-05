@@ -27,6 +27,7 @@ class AbilitySeeder extends Seeder
             ['name' => 'companies.edit', 'category' => 'companies', 'action' => 'edit', 'display_name' => 'Editar Empresas', 'description' => 'Permite editar empresas existentes'],
             ['name' => 'companies.show', 'category' => 'companies', 'action' => 'show', 'display_name' => 'Visualizar Empresas', 'description' => 'Permite visualizar empresas'],
             ['name' => 'companies.delete', 'category' => 'companies', 'action' => 'delete', 'display_name' => 'Deletar Empresas', 'description' => 'Permite deletar empresas'],
+            ['name' => 'companies.manage_professionals', 'category' => 'companies', 'action' => 'manage_professionals', 'display_name' => 'Gerenciar Profissionais das Empresas', 'description' => 'Permite gerenciar profissionais das empresas'],
 
             // Perfis
             ['name' => 'profiles.index', 'category' => 'profiles', 'action' => 'index', 'display_name' => 'Listar Perfis', 'description' => 'Permite visualizar perfis'],
@@ -37,12 +38,6 @@ class AbilitySeeder extends Seeder
             ['name' => 'profiles.list_abilities', 'category' => 'profiles', 'action' => 'list_abilities', 'display_name' => 'Listar Abilidades dos Perfis', 'description' => 'Permite listar habilidades dos perfis'],
             ['name' => 'profiles.update_abilities', 'category' => 'profiles', 'action' => 'update_abilities', 'display_name' => 'Atualizar Abilidades dos Perfis', 'description' => 'Permite atualizar habilidades dos perfis'],
 
-            // companies
-            ['name' => 'companies.index', 'category' => 'companies', 'action' => 'index', 'display_name' => 'Listar Empresas', 'description' => 'Permite visualizar empresas'],
-            ['name' => 'companies.create', 'category' => 'companies', 'action' => 'create', 'display_name' => 'Criar Empresas', 'description' => 'Permite criar empresas'],
-            ['name' => 'companies.edit', 'category' => 'companies', 'action' => 'edit', 'display_name' => 'Editar Empresas', 'description' => 'Permite editar empresas'],
-            ['name' => 'companies.show', 'category' => 'companies', 'action' => 'show', 'display_name' => 'Visualizar Empresas', 'description' => 'Permite visualizar empresas'],
-            ['name' => 'companies.delete', 'category' => 'companies', 'action' => 'delete', 'display_name' => 'Deletar Empresas', 'description' => 'Permite deletar empresas'],
 
             //abilities
             ['name' => 'abilities.index', 'category' => 'abilities', 'action' => 'index', 'display_name' => 'Listar Abilidades', 'description' => 'Permite visualizar habilidades'],

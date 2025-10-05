@@ -172,6 +172,15 @@
                 <span class="text-body-2">
                   <strong class="text-high-emphasis">Telefone: </strong>
                   {{ item.phone ? formatPhone(item.phone) : 'Não informado' }}
+                  <v-chip
+                    v-if="item.phone && item.has_whatsapp"
+                    color="success"
+                    size="x-small"
+                    class="ml-1"
+                  >
+                    <v-icon start size="10">mdi-whatsapp</v-icon>
+                    WhatsApp
+                  </v-chip>
                 </span>
               </div>
               <div class="stat-item">
@@ -283,6 +292,7 @@ import { useUsersApi } from "./api";
 import { useProfilesApi } from "@/pages/profiles/api";
 import { useAbilities } from "@/composables/useAbilities";
 import { useMask } from "@/composables/useMask";
+import { useProfileUtils } from "@/composables/useProfileUtils";
 import { showSuccessToast, showErrorToast } from "@/utils/swal";
 import UserModal from "./components/UserModal.vue";
 
@@ -472,24 +482,8 @@ const handlePerPageChange = async (perPage: number) => {
 
 // Utility methods
 const { formatPhone } = useMask();
+const { getProfileColor, getProfileIcon } = useProfileUtils();
 
-const getProfileColor = (profileName?: string) => {
-  switch (profileName) {
-    case 'admin': return 'error';
-    case 'secretary': return 'warning';
-    case 'client': return 'success';
-    default: return 'grey';
-  }
-};
-
-const getProfileIcon = (profileName?: string) => {
-  switch (profileName) {
-    case 'admin': return 'mdi-shield-crown';
-    case 'secretary': return 'mdi-account-tie';
-    case 'client': return 'mdi-account';
-    default: return 'mdi-help';
-  }
-};
 </script>
 
 <style scoped>

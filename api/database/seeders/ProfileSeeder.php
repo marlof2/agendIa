@@ -29,6 +29,11 @@ class ProfileSeeder extends Seeder
                 'description' => 'Perfil para secretárias com acesso a agendamentos e clientes',
             ],
             [
+                'name' => 'professional',
+                'display_name' => 'Profissional',
+                'description' => 'Perfil para profissionais que prestam serviços',
+            ],
+            [
                 'name' => 'client',
                 'display_name' => 'Cliente',
                 'description' => 'Perfil para clientes com acesso limitado',

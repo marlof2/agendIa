@@ -59,7 +59,7 @@ defineProps<Props>()
 }
 
 .page-header__title {
-  font-size: 2rem;
+  font-size: 1.60rem;
   font-weight: 700;
   color: #1e293b;
   margin: 0 0 8px 0;

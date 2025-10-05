@@ -1,28 +1,31 @@
 <template>
   <BasePage
-    title="Empresas"
-    subtitle="Gerencie todas as empresas do sistema"
-    :breadcrumbs="[{ title: 'Empresas' }]"
+    :title="`Profissionais da Empresa - ${company?.name || 'Carregando...'}`"
+    subtitle="Gerencie os profissionais associados a esta empresa"
+    :breadcrumbs="[
+      { title: 'Empresas', to: '/companies' },
+      { title: 'Profissionais' }
+    ]"
   >
     <!-- Action Bar -->
     <template #actionBar>
       <ActionBar>
         <template #left>
           <BtnNew
-            v-if="hasPermission('companies.create')"
-            @click="create"
+            text="Adicionar Profissional"
+            @click="showAddUserModal = true"
           />
         </template>
         <template #right>
           <div class="d-flex action-buttons-container">
             <ExportActions
-              :data="companies"
-              filename="empresas"
+              :data="companyUsers"
+              filename="usuarios-empresa"
               button-text="Exportar"
               color="primary"
               variant="outlined"
               prepend-icon="mdi-download"
-              endpoint="/companies"
+              :endpoint="`/companies/${companyId}/bind-professional`"
               :filters="{ search: searchQuery || undefined }"
             />
           </div>
@@ -44,7 +47,7 @@
             <v-col cols="12" md="3">
               <v-text-field
                 v-model="searchQuery"
-                label="Buscar nome, CNPJ ou telefone"
+                label="Buscar nome ou email"
                 prepend-inner-icon="mdi-magnify"
                 variant="outlined"
                 density="compact"
@@ -66,60 +69,37 @@
     <!-- Content -->
     <template #content>
       <!-- Loading State -->
-      <div v-if="loading" class="companies-loading">
+      <div v-if="loading" class="users-loading">
         <v-skeleton-loader v-for="i in 5" :key="i" type="card" class="mb-4" />
       </div>
 
       <!-- Empty State -->
-      <div v-else-if="companies.length === 0" class="companies-empty">
-        <v-icon size="64" color="grey-lighten-1">mdi-domain-off</v-icon>
-        <p class="text-h6 mt-4">Nenhuma empresa encontrada</p>
+      <div v-else-if="companyUsers.length === 0" class="users-empty">
+        <v-icon size="64" color="grey-lighten-1">mdi-account-multiple-outline</v-icon>
+        <p class="text-h6 mt-4">Nenhum profissional associado</p>
         <p class="text-body-2 text-medium-emphasis">
-          Crie sua primeira empresa para começar
+          Adicione profissionais para começar a gerenciar esta empresa
         </p>
       </div>
 
-      <!-- Companies Grid -->
-      <div v-else class="companies-grid">
+      <!-- Users Grid -->
+      <div v-else class="users-grid">
         <v-card
-          v-for="item in companies"
+          v-for="item in companyUsers"
           :key="item.id"
-          class="company-card"
+          class="user-card"
           elevation="2"
           hover
         >
           <!-- Card Header -->
-          <v-card-title class="company-card-header">
+          <v-card-title class="user-card-header">
             <div class="d-flex align-center">
               <div class="flex-grow-1">
                 <div class="text-h6 font-weight-bold">
-                  {{ item.name || "Empresa não informada" }}
+                  {{ item.name || "Usuário sem nome" }}
                 </div>
                 <div class="text-body-2 text-medium-emphasis">
-                  <template v-if="item.person_type === 'legal'">
-                    <v-chip
-                      color="primary"
-                      variant="outlined"
-                      size="small"
-                      class="document-chip"
-                    >
-                      <v-icon start size="14">mdi-domain</v-icon>
-                      <span class="chip-label">CNPJ:</span>
-                      <span class="chip-value">{{ formatCNPJ(item?.cnpj || '') }}</span>
-                    </v-chip>
-                  </template>
-                  <template v-else>
-                    <v-chip
-                      color="primary"
-                      variant="outlined"
-                      size="small"
-                      class="document-chip"
-                    >
-                      <v-icon start size="14">mdi-account</v-icon>
-                      <span class="chip-label">CPF:</span>
-                      <span class="chip-value">{{ formatCPF(item?.cpf || '') }}</span>
-                    </v-chip>
-                  </template>
+                  {{ item.email }}
                 </div>
               </div>
               <v-menu location="bottom end" offset="8">
@@ -150,9 +130,9 @@
                   />
                   <v-divider />
                   <v-list-item
-                    prepend-icon="mdi-delete-outline"
-                    title="Excluir"
-                    @click="remove(item)"
+                    prepend-icon="mdi-link-off"
+                    title="Desassociar"
+                    @click="removeAssociation(item)"
                     class="action-item danger-action"
                   />
                 </v-list>
@@ -161,50 +141,67 @@
           </v-card-title>
 
           <!-- Card Content -->
-          <v-card-text class="company-card-content">
-            <!-- Company Info - Simplified -->
-            <div class="company-info">
-              <div class="info-item mb-3">
-                <v-icon size="18" color="primary" class="mr-2">mdi-account-group</v-icon>
-                <span class="text-body-2">
-                  <strong class="text-high-emphasis">Tipo: </strong>
-                  {{ item.person_type === 'legal' ? 'Pessoa Jurídica' : 'Pessoa Física' }}
-                </span>
-              </div>
+          <v-card-text class="user-card-content">
+            <!-- Profile Badge -->
+            <div v-if="item.profile" class="profile-badge mb-4">
+              <v-chip
+                :color="getProfileColor(item.profile.name)"
+                variant="tonal"
+                size="small"
+              >
+                <v-icon start size="14">{{ getProfileIcon(item.profile.name) }}</v-icon>
+                {{ item.profile.display_name || item.profile.name }}
+              </v-chip>
+            </div>
 
-              <div class="info-item mb-3">
-                <v-icon size="18" color="primary" class="mr-2">mdi-account</v-icon>
-                <span class="text-body-2">
-                  <strong class="text-high-emphasis">Responsável: </strong>{{ item.responsible_name }}
-                </span>
-              </div>
-
-              <div class="info-item">
+            <!-- User Stats -->
+            <div class="user-stats">
+              <div class="stat-item">
                 <v-icon size="18" color="primary" class="mr-2">mdi-phone</v-icon>
                 <span class="text-body-2">
-                  <strong class="text-high-emphasis">Telefone: </strong>{{ formatPhone(item.phone_1) }}
-                  <v-chip v-if="item.has_whatsapp_1" color="success" size="x-small" class="ml-1">
+                  <strong class="text-high-emphasis">Telefone: </strong>
+                  {{ item.phone ? formatPhone(item.phone) : 'Não informado' }}
+                  <v-chip
+                    v-if="item.phone && item.has_whatsapp"
+                    color="success"
+                    size="x-small"
+                    class="ml-1"
+                  >
                     <v-icon start size="10">mdi-whatsapp</v-icon>
                     WhatsApp
                   </v-chip>
+                </span>
+              </div>
+              <div class="stat-item">
+                <v-icon size="18" color="info" class="mr-2">mdi-calendar</v-icon>
+                <span class="text-body-2">
+                  <strong class="text-high-emphasis">Associado em: </strong>
+                  {{ formatDate(item.pivot?.created_at || item.created_at) }}
                 </span>
               </div>
             </div>
           </v-card-text>
 
           <!-- Card Actions -->
-          <v-card-actions class="company-card-actions">
+          <v-card-actions class="user-card-actions">
             <BtnView @click="view(item)" />
             <v-spacer />
-            <BtnManageUsers :icon-only="true" @click="manageUsers(item)" />
             <BtnEdit :icon-only="true" @click="edit(item)" />
-            <BtnDelete :icon-only="true" @click="remove(item)" />
+            <v-btn
+              color="error"
+              variant="text"
+              size="small"
+              prepend-icon="mdi-link-off"
+              @click="removeAssociation(item)"
+            >
+              Desassociar
+            </v-btn>
           </v-card-actions>
         </v-card>
       </div>
 
       <!-- Pagination -->
-      <div v-if="companies.length > 0" class="companies-pagination mt-6">
+      <div v-if="companyUsers.length > 0" class="users-pagination mt-6">
         <div class="pagination-controls-container">
           <!-- Pagination component (centered) -->
           <v-pagination
@@ -217,7 +214,9 @@
 
           <!-- Items per page selector (right side) -->
           <div class="items-per-page-selector">
-            <span class="text-body-2 text-medium-emphasis mr-3">Itens por página:</span>
+            <span class="text-body-2 text-medium-emphasis mr-3"
+              >Itens por página:</span
+            >
             <v-select
               v-model="pagination.per_page"
               :items="[6, 12, 24, 48]"
@@ -241,138 +240,206 @@
                 pagination.total
               )
             }}
-            de {{ pagination.total }} empresas
+            de {{ pagination.total }} profissionais
           </span>
         </div>
       </div>
     </template>
+
   </BasePage>
 
   <!-- Modals -->
-  <CompanyModal
-    v-model="showCompanyModal"
-    :company="selectedCompany"
+  <AddUserToCompanyModal
+    v-model="showAddUserModal"
+    :company="company"
     @reload="handleListReload"
   />
 
-  <CompanyViewModal
+  <UserViewModal
     v-model="showViewModal"
-    :company="selectedCompany"
+    :user="selectedUser"
     @edit="handleEditFromView"
     @reload="handleListReload"
   />
 
-  <DeleteConfirmModal
-    v-model="showDeleteModal"
-    :item="selectedCompany"
-    item-type="empresa"
-    @confirm="handleDeleteConfirm"
+  <UserModal
+    v-model="showUserModal"
+    :user="selectedUser"
+    @reload="handleListReload"
+  />
+
+  <DetachProfessionalModal
+    v-model="showDetachModal"
+    :user="selectedUser"
+    @confirm="handleDetachConfirm"
   />
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted } from "vue";
-import { useRouter } from "vue-router";
+import { ref, onMounted, computed } from "vue";
+import { useRoute } from "vue-router";
 import BasePage from "@/components/BasePage.vue";
 import ActionBar from "@/components/ActionBar.vue";
 import FiltersCard from "@/components/FiltersCard.vue";
 import ExportActions from "@/components/ExportActions.vue";
-import CompanyModal from "./components/CompanyModal.vue";
-import CompanyViewModal from "./components/CompanyViewModal.vue";
-import DeleteConfirmModal from "./components/DeleteConfirmModal.vue";
-import { useCompaniesApi } from "./api";
+import AddUserToCompanyModal from "./AddUserToCompanyModal.vue";
+import UserViewModal from "@/pages/users/components/UserViewModal.vue";
+import UserModal from "@/pages/users/components/UserModal.vue";
+import DetachProfessionalModal from "./DetachProfessionalModal.vue";
+import { useCompaniesApi } from "@/pages/companies/api";
 import { useAbilities } from "@/composables/useAbilities";
 import { useMask } from "@/composables/useMask";
+import { useProfileUtils } from "@/composables/useProfileUtils";
 import { showSuccessToast, showErrorToast } from "@/utils/swal";
-import { BtnManageUsers } from "@/components/buttons";
+import { BtnNew, BtnSearch, BtnFilter, BtnView, BtnEdit } from "@/components/buttons";
 
+const route = useRoute();
 const { hasPermission } = useAbilities();
-const router = useRouter();
+
+// Get company ID from route
+const companyId = computed(() => route.params.id as string);
 
 onMounted(async () => {
-  await loadCompanies();
+  await loadCompany();
+  await loadCompanyUsers();
 });
 
 // Composables
-const {
-  items: companies,
-  loading,
-  error,
-  pagination,
-  getAll,
-  deleteItem,
-} = useCompaniesApi();
+const { getById: getCompany, getCompanyUsers, detachProfessional } = useCompaniesApi();
+const { getProfileColor, getProfileIcon } = useProfileUtils();
 
-// Funções de navegação específicas da página
-const view = (item: any) => {
-  selectedCompany.value = item;
-  showViewModal.value = true;
-};
+// State
+const company = ref<any>(null);
+const companyUsers = ref<any[]>([]);
+const loading = ref(false);
+const pagination = ref({
+  current_page: 1,
+  last_page: 1,
+  per_page: 12,
+  total: 0
+});
 
-const edit = (item: any) => {
-  selectedCompany.value = item;
-  isEditing.value = true;
-  showCompanyModal.value = true;
-};
+// Modal states
+const showAddUserModal = ref(false);
+const showViewModal = ref(false);
+const showUserModal = ref(false);
+const showDetachModal = ref(false);
+const selectedUser = ref<any>(null);
+const isEditing = ref(false);
 
-const remove = (item: any) => {
-  selectedCompany.value = item;
-  showDeleteModal.value = true;
-};
-
-const manageUsers = (item: any) => {
-  // Navegar para a página de gerenciamento de usuários da empresa
-  router.push(`/companies/${item.id}/bind-professional`);
-};
-
-const loadCompanies = async () => {
-  try {
-    await getAll();
-  } catch (err) {
-    console.error("Erro ao carregar empresas:", err);
-  }
-};
-
-const create = () => {
-  selectedCompany.value = null;
-  isEditing.value = false;
-  showCompanyModal.value = true;
-};
-
-// Funções dos modais
-const handleListReload = async () => {
-  await getAll();
-};
-
-const handleDeleteConfirm = async (item: any) => {
-  try {
-    await deleteItem(item.id);
-    showSuccessToast("Empresa excluída com sucesso!", "Sucesso!");
-    await getAll(); // Recarregar o grid
-  } catch (err: any) {
-    const errorMessage =
-      err?.response?.data?.message || err?.message || "Erro ao excluir empresa";
-    showErrorToast(errorMessage, "Erro!");
-  }
-};
-
-const handleEditFromView = (company: any) => {
-  selectedCompany.value = company;
-  isEditing.value = true;
-  showCompanyModal.value = true;
-};
+// Profiles for filter
 
 // Reactive data
 const searchQuery = ref("");
 
-// Modal states
-const showCompanyModal = ref(false);
-const showViewModal = ref(false);
-const showDeleteModal = ref(false);
-const selectedCompany = ref<any>(null);
-const isEditing = ref(false);
-
 // Methods
+const loadCompany = async () => {
+  try {
+    const response = await getCompany(parseInt(companyId.value));
+    company.value = response;
+  } catch (err) {
+    console.error("Erro ao carregar empresa:", err);
+    showErrorToast("Erro ao carregar dados da empresa", "Erro!");
+  }
+};
+
+const loadCompanyUsers = async () => {
+  try {
+    loading.value = true;
+
+    if (!company.value?.id) {
+      companyUsers.value = [];
+      pagination.value = {
+        current_page: 1,
+        last_page: 1,
+        per_page: 12,
+        total: 0
+      };
+      return;
+    }
+
+    const result = await getCompanyUsers(
+      company.value.id,
+      searchQuery.value,
+      pagination.value.current_page,
+      pagination.value.per_page
+    );
+
+    companyUsers.value = result.data || [];
+    pagination.value = {
+      current_page: result.current_page || 1,
+      last_page: result.last_page || 1,
+      per_page: result.per_page || 12,
+      total: result.total || 0
+    };
+  } catch (err) {
+    console.error("Erro ao carregar usuários da empresa:", err);
+  } finally {
+    loading.value = false;
+  }
+};
+
+
+// Funções de navegação específicas da página
+const view = (item: any) => {
+  selectedUser.value = item;
+  showViewModal.value = true;
+};
+
+const edit = (item: any) => {
+  selectedUser.value = item;
+  isEditing.value = true;
+  showUserModal.value = true;
+};
+
+const removeAssociation = (item: any) => {
+  selectedUser.value = item;
+  showDetachModal.value = true;
+};
+
+const handleDetachProfessional = async (user: any) => {
+  try {
+    loading.value = true;
+
+    await detachProfessional(company.value.id, user.id);
+
+    showSuccessToast(
+      `${user.name} foi desassociado com sucesso da empresa!`,
+      "Sucesso!"
+    );
+
+    // Recarregar lista
+    await loadCompanyUsers();
+
+  } catch (error: any) {
+    console.error("Erro ao desassociar profissional:", error);
+    showErrorToast(
+      error.response?.data?.message || "Erro ao desassociar profissional",
+      "Erro!"
+    );
+  } finally {
+    loading.value = false;
+  }
+};
+
+// Funções dos modals
+const handleListReload = async () => {
+  await loadCompanyUsers();
+};
+
+const handleDetachConfirm = async (user: any) => {
+  await handleDetachProfessional(user);
+};
+
+const handleEditFromView = (user: any) => {
+  selectedUser.value = user;
+  isEditing.value = true;
+  showUserModal.value = true;
+};
+
+// Utility methods
+const { formatPhone } = useMask();
+
 const formatDate = (dateString: string) => {
   if (!dateString) return "Data não informada";
 
@@ -388,21 +455,10 @@ const formatDate = (dateString: string) => {
   }
 };
 
-// Funções de formatação
-const { formatCNPJ, formatCPF, formatPhone } = useMask();
-
 const performSearch = async () => {
   try {
-    const filters: any = {};
-
-    if (searchQuery.value) {
-      filters.search = searchQuery.value;
-    }
-
-    // Reset to first page when searching
-    filters.page = 1;
-
-    await getAll(filters);
+    // TODO: Implementar busca com filtros
+    await loadCompanyUsers();
   } catch (err) {
     console.error("Erro ao realizar busca:", err);
   }
@@ -410,21 +466,14 @@ const performSearch = async () => {
 
 const clearFilters = async () => {
   searchQuery.value = "";
-
-  // Reset to first page and reload all companies
-  await getAll({ page: 1 });
+  await loadCompanyUsers();
 };
 
 // Pagination handlers
 const handlePageChange = async (page: number) => {
   try {
-    const filters: any = { page };
-
-    if (searchQuery.value) {
-      filters.search = searchQuery.value;
-    }
-
-    await getAll(filters);
+    pagination.value.current_page = page;
+    await loadCompanyUsers();
   } catch (err) {
     console.error("Erro ao alterar página:", err);
   }
@@ -432,24 +481,18 @@ const handlePageChange = async (page: number) => {
 
 const handlePerPageChange = async (perPage: number) => {
   try {
-    const filters: any = {
-      page: 1, // Reset to first page when changing items per page
-      per_page: perPage,
-    };
-
-    if (searchQuery.value) {
-      filters.search = searchQuery.value;
-    }
-
-    await getAll(filters);
+    pagination.value.per_page = perPage;
+    pagination.value.current_page = 1;
+    await loadCompanyUsers();
   } catch (err) {
     console.error("Erro ao alterar itens por página:", err);
   }
 };
+
 </script>
 
 <style scoped>
-/* Estilos específicos da página de empresas */
+/* Estilos específicos da página de usuários da empresa */
 
 /* Filters Header */
 .filters-header {
@@ -477,40 +520,40 @@ const handlePerPageChange = async (perPage: number) => {
 }
 
 /* Loading State */
-.companies-loading {
+.users-loading {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
 /* Empty State */
-.companies-empty {
+.users-empty {
   text-align: center;
   padding: 64px 32px;
   color: rgba(var(--v-theme-on-surface), 0.6);
 }
 
-/* Companies Grid */
-.companies-grid {
+/* Users Grid */
+.users-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
   gap: 24px;
   margin-bottom: 32px;
 }
 
-/* Company Card */
-.company-card {
+/* User Card */
+.user-card {
   border-radius: 16px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
 }
 
-.company-card:hover {
+.user-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
 }
 
-.company-card-header {
+.user-card-header {
   background: linear-gradient(
     135deg,
     rgba(var(--v-theme-primary), 0.05),
@@ -520,23 +563,16 @@ const handlePerPageChange = async (perPage: number) => {
   border-bottom: 1px solid rgba(var(--v-theme-outline), 0.12);
 }
 
-.company-card-content {
+.user-card-content {
   padding: 20px 24px;
 }
 
-.company-info {
+.profile-badge {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
+  justify-content: flex-start;
 }
 
-.info-item {
-  display: flex;
-  align-items: center;
-  padding: 4px 0;
-}
-
-.company-stats {
+.user-stats {
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -548,7 +584,7 @@ const handlePerPageChange = async (perPage: number) => {
   padding: 8px 0;
 }
 
-.company-card-actions {
+.user-card-actions {
   padding: 16px 24px;
   background: rgba(var(--v-theme-surface-variant), 0.3);
   border-top: 1px solid rgba(var(--v-theme-outline), 0.12);
@@ -592,6 +628,10 @@ const handlePerPageChange = async (perPage: number) => {
   background: rgba(var(--v-theme-primary), 0.1);
 }
 
+.info-action:hover {
+  background: rgba(var(--v-theme-info), 0.1);
+}
+
 .warning-action:hover {
   background: rgba(var(--v-theme-warning), 0.1);
 }
@@ -601,7 +641,7 @@ const handlePerPageChange = async (perPage: number) => {
 }
 
 /* Pagination */
-.companies-pagination {
+.users-pagination {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -647,7 +687,7 @@ const handlePerPageChange = async (perPage: number) => {
 
 /* Responsividade */
 @media (max-width: 768px) {
-  .companies-grid {
+  .users-grid {
     grid-template-columns: 1fr;
     gap: 16px;
   }
@@ -667,21 +707,21 @@ const handlePerPageChange = async (perPage: number) => {
     justify-content: center;
   }
 
-  .company-card-header {
+  .user-card-header {
     padding: 16px 20px;
   }
 
-  .company-card-content {
+  .user-card-content {
     padding: 16px 20px;
   }
 
-  .company-card-actions {
+  .user-card-actions {
     padding: 12px 20px;
     flex-direction: column;
     gap: 8px;
   }
 
-  .company-card-actions .v-btn {
+  .user-card-actions .v-btn {
     width: 100%;
   }
 
@@ -698,47 +738,20 @@ const handlePerPageChange = async (perPage: number) => {
 }
 
 @media (max-width: 480px) {
-  .companies-grid {
+  .users-grid {
     gap: 12px;
   }
 
-  .company-card-header {
+  .user-card-header {
     padding: 12px 16px;
   }
 
-  .company-card-content {
+  .user-card-content {
     padding: 12px 16px;
   }
 
-  .company-card-actions {
+  .user-card-actions {
     padding: 8px 16px;
-  }
-}
-
-/* Estilos para chips de documento */
-.document-chip {
-  font-weight: 500;
-}
-
-.document-chip .chip-label {
-  font-weight: 600;
-  margin-right: 4px;
-}
-
-.document-chip .chip-value {
-  font-family: 'Roboto Mono', monospace;
-  font-weight: 500;
-  letter-spacing: 0.5px;
-}
-
-/* Responsividade para chips */
-@media (max-width: 600px) {
-  .document-chip {
-    font-size: 0.75rem;
-  }
-
-  .document-chip .v-icon {
-    font-size: 12px !important;
   }
 }
 </style>

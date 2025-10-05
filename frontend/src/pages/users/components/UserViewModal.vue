@@ -46,7 +46,19 @@
               Telefone
             </div>
             <div class="info-value">
-              <span class="phone-number">{{ formatPhone(user.phone) }}</span>
+              <div class="d-flex align-center">
+                <span class="phone-number">{{ formatPhone(user.phone) }}</span>
+                <v-chip
+                  v-if="user.has_whatsapp"
+                  size="small"
+                  color="success"
+                  variant="tonal"
+                  class="ml-3"
+                >
+                  <v-icon start size="14">mdi-whatsapp</v-icon>
+                  WhatsApp
+                </v-chip>
+              </div>
             </div>
           </div>
         </div>
@@ -160,6 +172,7 @@
 <script lang="ts" setup>
 import { computed, ref } from 'vue'
 import { useMask } from '@/composables/useMask'
+import { useProfileUtils } from '@/composables/useProfileUtils'
 import BaseDialog from '@/components/BaseDialog.vue'
 
 interface Props {
@@ -180,28 +193,12 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<Emits>()
 
 const { formatPhone } = useMask()
+const { getProfileColor, getProfileIcon } = useProfileUtils()
 
 // Computed
 
 // Methods
 
-const getProfileColor = (profileName?: string) => {
-  switch (profileName) {
-    case 'admin': return 'error';
-    case 'secretary': return 'warning';
-    case 'client': return 'success';
-    default: return 'grey';
-  }
-};
-
-const getProfileIcon = (profileName?: string) => {
-  switch (profileName) {
-    case 'admin': return 'mdi-shield-crown';
-    case 'secretary': return 'mdi-account-tie';
-    case 'client': return 'mdi-account';
-    default: return 'mdi-help';
-  }
-};
 
 const formatDate = (dateString: string) => {
   if (!dateString) return 'Não informado';

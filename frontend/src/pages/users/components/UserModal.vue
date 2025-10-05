@@ -9,7 +9,6 @@
     "
     :icon="isEditing ? 'mdi-pencil' : 'mdi-plus-circle'"
     :icon-color="isEditing ? 'info' : 'primary'"
-    max-width="600px"
     :fullscreen="$vuetify.display.mobile"
     :show-progress="true"
     :progress="formProgress"
@@ -124,6 +123,21 @@
           />
         </v-col>
 
+        <v-col cols="12" md="6">
+          <v-switch
+            v-model="form.has_whatsapp"
+            label="Telefone é WhatsApp ?"
+            color="primary"
+            density="compact"
+            :disabled="!form.phone"
+          >
+            <template #prepend>
+              <v-icon :color="form.has_whatsapp ? 'success' : 'grey'">mdi-whatsapp</v-icon>
+            </template>
+          </v-switch>
+        </v-col>
+
+
       </v-row>
     </v-form>
 
@@ -168,7 +182,7 @@ const emit = defineEmits<Emits>();
 
 // Composables
 const { createItem, updateItem } = useUsersApi();
-const { getAll: getProfiles } = useProfilesApi();
+const { getCombo: getProfilesCombo } = useProfilesApi();
 const { maskPhone, formatPhone } = useMask();
 
 // Reactive data
@@ -184,6 +198,7 @@ const form = ref({
   password: "",
   password_confirmation: "",
   phone: "",
+  has_whatsapp: false,
   profile_id: null as number | null,
 });
 
@@ -272,6 +287,7 @@ const resetForm = () => {
     password: "",
     password_confirmation: "",
     phone: "",
+    has_whatsapp: false,
     profile_id: null,
   };
   showPassword.value = false;
@@ -293,6 +309,7 @@ const loadUserData = () => {
       password: "",
       password_confirmation: "",
       phone: props.user.phone || "",
+      has_whatsapp: props.user.has_whatsapp || false,
       profile_id: props.user.profile_id || null,
     };
   } else {
@@ -300,11 +317,11 @@ const loadUserData = () => {
   }
 };
 
-const loadProfiles = async () => {
+const loadProfilesData = async () => {
   try {
     loadingProfiles.value = true;
-    const response = await getProfiles();
-    profiles.value = response.data || [];
+    const profilesData = await getProfilesCombo();
+    profiles.value = profilesData;
   } catch (error) {
     console.error("Erro ao carregar perfis:", error);
   } finally {
@@ -329,8 +346,8 @@ const handleSubmit = async () => {
             name: form.value.name,
             email: form.value.email,
             phone: form.value.phone,
+            has_whatsapp: form.value.has_whatsapp,
             profile_id: form.value.profile_id,
-            // company_ids removido - associação deve ser feita na tela de empresas
           };
 
     // Adicionar senha apenas se estiver preenchida (para edição) ou se for criação
@@ -366,7 +383,7 @@ watch(
   (newValue) => {
     if (newValue) {
       loadUserData();
-      loadProfiles();
+      loadProfilesData();
       nextTick(() => {
         formRef.value?.resetValidation();
       });

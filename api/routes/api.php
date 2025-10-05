@@ -46,6 +46,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/refresh', [AuthController::class, 'refresh']);
     });
 
+
     // Rotas do sistema
     Route::group([], function () {
 
@@ -54,6 +55,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/', [UserController::class, 'index'])->middleware('ability:users.index');
             Route::post('/', [UserController::class, 'store'])->middleware('ability:users.create');
             Route::get('/export', [UserController::class, 'export'])->middleware('ability:users.index');
+            Route::get('/available-professionals', [UserController::class, 'availableProfessionals'])->middleware('ability:users.index');
             Route::get('/{user}', [UserController::class, 'show'])->middleware('ability:users.show');
             Route::put('/{user}', [UserController::class, 'update'])->middleware('ability:users.edit');
             Route::delete('/{user}', [UserController::class, 'destroy'])->middleware('ability:users.delete');
@@ -91,6 +93,15 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/{company}', [CompanyController::class, 'show'])->middleware('ability:companies.show');
             Route::put('/{company}', [CompanyController::class, 'update'])->middleware('ability:companies.edit');
             Route::delete('/{company}', [CompanyController::class, 'destroy'])->middleware('ability:companies.delete');
+            Route::get('/{companyId}/professionals', [CompanyController::class, 'companyUsers'])->middleware('ability:companies.manage_professionals');
+            Route::post('/{companyId}/professionals/{userId}', [CompanyController::class, 'attachProfessional'])->middleware('ability:companies.manage_professionals');
+            Route::delete('/{companyId}/professionals/{userId}', [CompanyController::class, 'detachProfessional'])->middleware('ability:companies.manage_professionals');
         });
+    });
+
+    // Rotas de combos/autoselects (sem permissão específica)
+    Route::prefix('combos')->group(function () {
+        Route::get('/profiles', [ProfileController::class, 'combo']);
+        Route::get('/companies', [CompanyController::class, 'combo']);
     });
 });

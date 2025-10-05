@@ -199,6 +199,7 @@ class UserService
         return ExportFactory::exportToPDF($data->toArray(), $headers, 'usuarios', 'Relatório de Usuários');
     }
 
+
     /**
      * Format phone for display
      */
@@ -214,4 +215,43 @@ class UserService
 
         return $phone;
     }
+
+    /**
+     * Buscar profissionais disponíveis para associação a uma empresa
+     */
+    public function getAvailableProfessionals(array $filters = []): \Illuminate\Pagination\LengthAwarePaginator
+    {
+        $query = User::select([
+            'users.id',
+            'users.name',
+            'users.email',
+            'users.phone',
+            'users.has_whatsapp',
+            'users.profile_id',
+            'users.created_at'
+        ])
+        ->join('profiles', 'users.profile_id', '=', 'profiles.id')
+        ->where('profiles.name', 'professional');
+
+        // Filtrar usuários que NÃO estão associados à empresa
+        if (!empty($filters['company_id'])) {
+            $query->whereDoesntHave('companies', function ($q) use ($filters) {
+                $q->where('companies.id', $filters['company_id']);
+            });
+        }
+
+        // Busca por nome, email ou telefone
+        if (!empty($filters['search'])) {
+            $search = $filters['search'];
+            $query->where(function ($q) use ($search) {
+                $q->where('users.name', 'like', "%{$search}%")
+                  ->orWhere('users.email', 'like', "%{$search}%")
+                  ->orWhere('users.phone', 'like', "%{$search}%");
+            });
+        }
+
+        // Paginação
+        return $query->orderBy('users.name', 'asc')->paginate($filters['per_page']);
+    }
+
 }

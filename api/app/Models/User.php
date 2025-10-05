@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, HasApiTokens;
+    use HasApiTokens, HasFactory, Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -27,6 +27,7 @@ class User extends Authenticatable
         'password',
         'google_id',
         'phone',
+        'has_whatsapp',
         'profile_id',
     ];
 
@@ -50,7 +51,16 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'has_whatsapp' => 'boolean',
         ];
+    }
+
+    /**
+     * Get the profile that owns the user.
+     */
+    public function profile(): BelongsTo
+    {
+        return $this->belongsTo(Profile::class);
     }
 
     /**
@@ -87,15 +97,7 @@ class User extends Authenticatable
     }
 
     /**
-     * Get the profile for the user.
-     */
-    public function profile(): BelongsTo
-    {
-        return $this->belongsTo(Profile::class);
-    }
-
-    /**
-     * Check if user is admin based on profile.
+     * Check if user is admin.
      */
     public function isAdmin(): bool
     {
@@ -103,7 +105,7 @@ class User extends Authenticatable
     }
 
     /**
-     * Check if user is secretary based on profile.
+     * Check if user is secretary.
      */
     public function isSecretary(): bool
     {
@@ -111,41 +113,11 @@ class User extends Authenticatable
     }
 
     /**
-     * Check if user is client based on profile.
+     * Check if user is client.
      */
     public function isClient(): bool
     {
         return $this->profile && $this->profile->name === 'client';
-    }
-
-    /**
-     * Check if user is owner of a company.
-     */
-    public function isOwnerOf(Company $company): bool
-    {
-        return $this->companies()
-            ->wherePivot('company_id', $company->id)
-            ->exists() && $this->isAdmin();
-    }
-
-    /**
-     * Check if user is staff of a company.
-     */
-    public function isStaffOf(Company $company): bool
-    {
-        return $this->companies()
-            ->wherePivot('company_id', $company->id)
-            ->exists() && ($this->isAdmin() || $this->isSecretary());
-    }
-
-    /**
-     * Check if user is client of a company.
-     */
-    public function isClientOf(Company $company): bool
-    {
-        return $this->companies()
-            ->wherePivot('company_id', $company->id)
-            ->exists() && $this->isClient();
     }
 
     /**
@@ -160,22 +132,24 @@ class User extends Authenticatable
     }
 
     /**
-     * Check if user has a specific ability.
-     */
-    public function hasPermission(string $ability): bool
-    {
-        return in_array($ability, $this->getAbilities());
-    }
-
-    /**
-     * Get user abilities grouped by category.
+     * Get the user's abilities grouped by category.
      */
     public function getAbilitiesGrouped(): array
     {
         if (!$this->profile) {
             return [];
         }
-
         return $this->profile->getAbilitiesGrouped();
+    }
+
+    /**
+     * Check if user has a specific ability.
+     */
+    public function hasPermission(string $ability): bool
+    {
+        if (!$this->profile) {
+            return false;
+        }
+        return $this->profile->abilities->contains('name', $ability);
     }
 }

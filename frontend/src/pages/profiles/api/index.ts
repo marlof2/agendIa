@@ -238,6 +238,26 @@ export function useProfilesApi() {
     return getAll(filters)
   }
 
+  // Combo function for autoselects
+  const getCombo = async (search?: string) => {
+    try {
+      const params = new URLSearchParams();
+      if (search) {
+        params.append('search', search);
+      }
+
+      const url = params.toString()
+        ? `combos/profiles?${params.toString()}`
+        : 'combos/profiles';
+
+      const response = await get(url);
+      return response.data || [];
+    } catch (err: any) {
+      console.error('Erro ao carregar perfis para combo:', err);
+      return [];
+    }
+  };
+
   return {
     // State
     items,
@@ -259,6 +279,9 @@ export function useProfilesApi() {
     updateAbilities,
     getAllAbilities,
     clearError,
-    refresh
+    refresh,
+
+    // Combo method
+    getCombo
   }
 }

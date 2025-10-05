@@ -115,18 +115,16 @@ class AuthController extends Controller
         // Carregar abilities do usuário
         $user->load('profile.abilities');
         $abilities = $user->getAbilities();
-        $abilitiesGrouped = $user->getAbilitiesGrouped();
 
         return response()->json([
             'success' => true,
             'message' => 'Login realizado com sucesso',
             'data' => [
-                'user' => $user->load('companies'),
+                'user' => $user->load('profile.abilities'),
                 'token' => $token,
                 'token_type' => 'Bearer',
                 'abilities' => $abilities,
-                'abilities_grouped' => $abilitiesGrouped,
-                'profile' => $user->profile
+                'abilities_grouped' => $user->getAbilitiesGrouped(),
             ]
         ]);
     }
@@ -158,14 +156,10 @@ class AuthController extends Controller
                       ->first();
 
             if (!$user) {
-                // Buscar profile de cliente
-                $clientProfile = \App\Models\Profile::where('name', 'client')->first();
-
                 $user = User::create([
                     'name' => $request->name,
                     'email' => $request->email,
                     'google_id' => $request->google_id,
-                    'profile_id' => $clientProfile->id,
                 ]);
             } else {
                 // Update Google ID if not set
@@ -176,10 +170,9 @@ class AuthController extends Controller
 
             $token = $user->createToken('auth_token')->plainTextToken;
 
-            // Carregar abilities do usuário
-            $user->load('profile.abilities');
-            $abilities = $user->getAbilities();
-            $abilitiesGrouped = $user->getAbilitiesGrouped();
+            // Carregar abilities do usuário (todas as empresas)
+            $user->load('companies');
+            $abilities = $user->getAllAbilities();
 
             return response()->json([
                 'success' => true,
@@ -189,8 +182,7 @@ class AuthController extends Controller
                     'token' => $token,
                     'token_type' => 'Bearer',
                     'abilities' => $abilities,
-                    'abilities_grouped' => $abilitiesGrouped,
-                    'profile' => $user->profile,
+                    'companies' => $user->companies,
                 ]
             ]);
 
@@ -209,18 +201,16 @@ class AuthController extends Controller
     public function me(Request $request): JsonResponse
     {
         $user = $request->user();
-        $user->load('profile.abilities', 'companies');
+        $user->load('companies');
 
-        $abilities = $user->getAbilities();
-        $abilitiesGrouped = $user->getAbilitiesGrouped();
+        $abilities = $user->getAllAbilities();
 
         return response()->json([
             'success' => true,
             'data' => [
                 'user' => $user,
                 'abilities' => $abilities,
-                'abilities_grouped' => $abilitiesGrouped,
-                'profile' => $user->profile
+                'companies' => $user->companies
             ]
         ]);
     }
@@ -251,7 +241,6 @@ class AuthController extends Controller
         // Carregar abilities do usuário
         $user->load('profile.abilities');
         $abilities = $user->getAbilities();
-        $abilitiesGrouped = $user->getAbilitiesGrouped();
 
         // Create new token
         $token = $user->createToken('auth_token')->plainTextToken;
@@ -260,12 +249,11 @@ class AuthController extends Controller
             'success' => true,
             'message' => 'Token renovado com sucesso',
             'data' => [
-                'user' => $user->load('companies'),
+                'user' => $user->load('profile.abilities'),
                 'token' => $token,
                 'token_type' => 'Bearer',
                 'abilities' => $abilities,
-                'abilities_grouped' => $abilitiesGrouped,
-                'profile' => $user->profile
+                'abilities_grouped' => $user->getAbilitiesGrouped(),
             ]
         ]);
     }

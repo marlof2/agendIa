@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('password')->nullable(); // nullable para login com Google
             $table->string('google_id')->nullable();
             $table->string('phone')->nullable();
+            $table->boolean('has_whatsapp')->default(false);
             $table->rememberToken();
             $table->timestamps();
         });

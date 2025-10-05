@@ -223,6 +223,101 @@ export function useCompaniesApi() {
     return getAll(filters)
   }
 
+  // Combo function for autoselects
+  const getCombo = async (search?: string) => {
+    try {
+      const params = new URLSearchParams();
+      if (search) {
+        params.append('search', search);
+      }
+
+      const url = params.toString()
+        ? `combos/companies?${params.toString()}`
+        : 'combos/companies';
+
+      const response = await get(url);
+      return response.data || [];
+    } catch (err: any) {
+      console.error('Erro ao carregar empresas para combo:', err);
+      return [];
+    }
+  };
+
+  // Get users for a specific company
+  const getCompanyUsers = async (companyId: number, search?: string, page: number = 1, perPage: number = 12) => {
+    try {
+      const params = new URLSearchParams();
+      if (search) {
+        params.append('search', search);
+      }
+      params.append('page', page.toString());
+      params.append('per_page', perPage.toString());
+
+      const url = `companies/${companyId}/professionals?${params.toString()}`;
+      const response = await get(url);
+      return response ;
+    } catch (err: any) {
+      console.error('Erro ao carregar usuários da empresa:', err);
+      return {
+        data: [],
+        current_page: 1,
+        per_page: 12,
+        total: 0,
+        last_page: 1,
+        from: 0,
+        to: 0
+      };
+    }
+  };
+
+  // Get available professionals for a company (not associated yet)
+  const getAvailableUsersForCompany = async (companyId: number, search?: string, page: number = 1, perPage: number = 12) => {
+    try {
+      const params = new URLSearchParams();
+      if (search) {
+        params.append('search', search);
+      }
+      params.append('company_id', companyId.toString());
+      params.append('page', page.toString());
+      params.append('per_page', perPage.toString());
+
+      const url = `users/available-professionals?${params.toString()}`;
+      const response = await get(url);
+      return response || {};
+    } catch (err: any) {
+      console.error('Erro ao carregar profissionais disponíveis:', err);
+      return {
+        data: [],
+        current_page: 1,
+        per_page: 12,
+        total: 0,
+        last_page: 1
+      };
+    }
+  };
+
+  // Attach professional to company
+  const attachProfessional = async (companyId: number, userId: number) => {
+    try {
+      const response = await post(`companies/${companyId}/professionals/${userId}`);
+      return response.data;
+    } catch (err: any) {
+      console.error('Erro ao associar profissional:', err);
+      throw err;
+    }
+  };
+
+  // Detach professional from company
+  const detachProfessional = async (companyId: number, userId: number) => {
+    try {
+      const response = await del(`companies/${companyId}/professionals/${userId}`);
+      return response.data;
+    } catch (err: any) {
+      console.error('Erro ao desassociar profissional:', err);
+      throw err;
+    }
+  };
+
   return {
     // State
     items,
@@ -243,6 +338,15 @@ export function useCompaniesApi() {
     bulkDelete,
     getAllTimezones,
     clearError,
-    refresh
+    refresh,
+
+    // Combo methods
+    getCombo,
+    getCompanyUsers,
+    getAvailableUsersForCompany,
+
+    // Professional management
+    attachProfessional,
+    detachProfessional
   }
 }

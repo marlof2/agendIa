@@ -6,6 +6,7 @@ export interface User {
   name: string
   email: string
   phone?: string
+  has_whatsapp: boolean
   profile_id?: number
   created_at: string
   updated_at: string
@@ -65,6 +66,7 @@ export interface CreateUserData {
   password?: string
   password_confirmation?: string
   phone?: string
+  has_whatsapp?: boolean
   profile_id?: number
   company_ids?: number[]
 }
@@ -243,6 +245,30 @@ export function useUsersApi() {
     return getAll(filters)
   }
 
+  // Combo function for autoselects
+  const getCombo = async (search?: string, profileId?: number) => {
+    try {
+      const params = new URLSearchParams();
+      if (search) {
+        params.append('search', search);
+      }
+      if (profileId) {
+        params.append('profile_id', profileId.toString());
+      }
+
+      const url = params.toString()
+        ? `combos/users?${params.toString()}`
+        : 'combos/users';
+
+      const response = await get(url);
+      return response.data || [];
+    } catch (err: any) {
+      console.error('Erro ao carregar usuários para combo:', err);
+      return [];
+    }
+  };
+
+
   return {
     // State
     items,
@@ -262,6 +288,9 @@ export function useUsersApi() {
     deleteItem,
     bulkDelete,
     clearError,
-    refresh
+    refresh,
+
+    // Combo method
+    getCombo,
   }
 }
