@@ -8,10 +8,7 @@
     <template #actionBar>
       <ActionBar>
         <template #left>
-          <BtnNew
-            v-if="hasPermission('profiles.create')"
-            @click="create"
-          />
+          <BtnNew v-if="hasPermission('profiles.create')" @click="create" />
         </template>
         <template #right>
           <div class="d-flex action-buttons-container">
@@ -99,47 +96,17 @@
                   {{ item.name || "Nome não informado" }}
                 </div> -->
               </div>
-              <v-menu location="bottom end" offset="8">
-                <template v-slot:activator="{ props }">
-                  <v-btn
-                    v-bind="props"
-                    icon
-                    size="small"
-                    variant="text"
-                    color="default"
-                    class="action-btn"
-                  >
-                    <v-icon size="20">mdi-dots-vertical</v-icon>
-                  </v-btn>
-                </template>
-                <v-list density="compact" class="action-menu">
-                  <v-list-item
-                    prepend-icon="mdi-eye-outline"
-                    title="Visualizar"
-                    @click="view(item)"
-                    class="action-item primary-action"
-                  />
-                  <v-list-item
-                    prepend-icon="mdi-shield-account-outline"
-                    title="Permissões"
-                    @click="manageAbilities(item)"
-                    class="action-item info-action"
-                  />
-                  <v-list-item
-                    prepend-icon="mdi-pencil-outline"
-                    title="Editar"
-                    @click="edit(item)"
-                    class="action-item warning-action"
-                  />
-                  <v-divider />
-                  <v-list-item
-                    prepend-icon="mdi-delete-outline"
-                    title="Excluir"
-                    @click="remove(item)"
-                    class="action-item danger-action"
-                  />
-                </v-list>
-              </v-menu>
+              <ActionsMenu
+                :item="item"
+                :custom-actions="profileActions"
+                view-permission="profiles.show"
+                edit-permission="profiles.edit"
+                delete-permission="profiles.delete"
+                @view="view"
+                @edit="edit"
+                @delete="remove"
+                @action="handleProfileAction"
+              />
             </div>
           </v-card-title>
 
@@ -176,8 +143,12 @@
 
           <!-- Card Actions -->
           <v-card-actions class="profile-card-actions">
-            <BtnView @click="view(item)" />
+            <BtnView
+              @click="view(item)"
+              v-if="hasPermission('profiles.show')"
+            />
             <v-btn
+              v-if="hasPermission('profiles.update_abilities')"
               color="info"
               variant="outlined"
               size="small"
@@ -188,8 +159,14 @@
               Permissões
             </v-btn>
             <v-spacer />
-            <BtnEdit :icon-only="true" @click="edit(item)" />
-            <BtnDelete :icon-only="true" @click="remove(item)" />
+            <BtnEdit
+              @click="edit(item)"
+              v-if="hasPermission('profiles.edit')"
+            />
+            <BtnDelete
+              @click="remove(item)"
+              v-if="hasPermission('profiles.delete')"
+            />
           </v-card-actions>
         </v-card>
       </div>
@@ -275,6 +252,7 @@ import BasePage from "@/components/BasePage.vue";
 import ActionBar from "@/components/ActionBar.vue";
 import FiltersCard from "@/components/FiltersCard.vue";
 import ExportActions from "@/components/ExportActions.vue";
+import ActionsMenu, { type CustomAction } from "@/components/ActionsMenu.vue";
 import ProfileModal from "./components/ProfileModal.vue";
 import ProfileViewModal from "./components/ProfileViewModal.vue";
 import DeleteConfirmModal from "./components/DeleteConfirmModal.vue";
@@ -284,6 +262,17 @@ import { useAbilities } from "@/composables/useAbilities";
 import { showSuccessToast, showErrorToast } from "@/utils/swal";
 
 const { hasPermission } = useAbilities();
+
+// Ações customizadas do menu
+const profileActions: CustomAction[] = [
+  {
+    key: "permissions",
+    title: "Permissões",
+    subtitle: "Gerenciar habilidades",
+    icon: "mdi-shield-account-outline",
+    permission: "profiles.update_abilities",
+  },
+];
 
 onMounted(async () => {
   await loadProfiles();
@@ -356,6 +345,12 @@ const handleEditFromView = (profile: any) => {
 const manageAbilities = (item: any) => {
   selectedProfile.value = item;
   showAbilitiesModal.value = true;
+};
+
+const handleProfileAction = (key: string, item: any) => {
+  if (key === "permissions") {
+    manageAbilities(item);
+  }
 };
 
 // Reactive data
@@ -440,7 +435,6 @@ const handlePerPageChange = async (perPage: number) => {
     console.error("Erro ao alterar itens por página:", err);
   }
 };
-
 </script>
 
 <style scoped>
@@ -550,47 +544,6 @@ const handlePerPageChange = async (perPage: number) => {
 
 .action-button:hover {
   transform: translateY(-1px);
-}
-
-.action-btn {
-  border-radius: 8px;
-  transition: all 0.2s ease;
-}
-
-.action-btn:hover {
-  background: rgba(var(--v-theme-primary), 0.08);
-  transform: scale(1.05);
-}
-
-.action-menu {
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-}
-
-.action-item {
-  border-radius: 8px;
-  margin: 2px 4px;
-  transition: all 0.2s ease;
-}
-
-.action-item:hover {
-  background: rgba(var(--v-theme-primary), 0.08);
-}
-
-.primary-action:hover {
-  background: rgba(var(--v-theme-primary), 0.1);
-}
-
-.info-action:hover {
-  background: rgba(var(--v-theme-info), 0.1);
-}
-
-.warning-action:hover {
-  background: rgba(var(--v-theme-warning), 0.1);
-}
-
-.danger-action:hover {
-  background: rgba(var(--v-theme-error), 0.1);
 }
 
 /* Pagination */

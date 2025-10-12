@@ -20,11 +20,15 @@
           <!-- Nome -->
           <div class="info-item">
             <div class="info-label">
-              <v-icon size="20" color="primary" class="mr-3">mdi-account</v-icon>
+              <v-icon size="20" color="primary" class="mr-3"
+                >mdi-account</v-icon
+              >
               Nome Completo
             </div>
             <div class="info-value">
-              <span class="value-text">{{ user?.name || "Não informado" }}</span>
+              <span class="value-text">{{
+                user?.name || "Não informado"
+              }}</span>
             </div>
           </div>
 
@@ -35,7 +39,9 @@
               E-mail
             </div>
             <div class="info-value">
-              <span class="value-text">{{ user?.email || "Não informado" }}</span>
+              <span class="value-text">{{
+                user?.email || "Não informado"
+              }}</span>
             </div>
           </div>
 
@@ -75,7 +81,9 @@
           <!-- Perfil -->
           <div class="info-item">
             <div class="info-label">
-              <v-icon size="20" color="primary" class="mr-3">mdi-shield-account</v-icon>
+              <v-icon size="20" color="primary" class="mr-3"
+                >mdi-shield-account</v-icon
+              >
               Perfil de Acesso
             </div>
             <div class="info-value">
@@ -85,7 +93,9 @@
                   variant="tonal"
                   size="small"
                 >
-                  <v-icon start size="14">{{ getProfileIcon(user.profile.name) }}</v-icon>
+                  <v-icon start size="14">{{
+                    getProfileIcon(user.profile.name)
+                  }}</v-icon>
                   {{ user.profile.display_name || user.profile.name }}
                 </v-chip>
               </div>
@@ -130,7 +140,9 @@
           <!-- Created At -->
           <div class="metadata-item">
             <div class="metadata-label">
-              <v-icon size="20" color="success" class="mr-3">mdi-calendar-plus</v-icon>
+              <v-icon size="20" color="success" class="mr-3"
+                >mdi-calendar-plus</v-icon
+              >
               Data de Criação
             </div>
             <div class="metadata-value">
@@ -141,7 +153,9 @@
           <!-- Updated At -->
           <div class="metadata-item">
             <div class="metadata-label">
-              <v-icon size="20" color="warning" class="mr-3">mdi-calendar-edit</v-icon>
+              <v-icon size="20" color="warning" class="mr-3"
+                >mdi-calendar-edit</v-icon
+              >
               Última Atualização
             </div>
             <div class="metadata-value">
@@ -162,55 +176,56 @@
       <v-spacer />
       <div class="d-flex modal-actions-container">
         <BtnCancel @click="closeModal" />
-        <BtnEdit @click="handleEdit" />
+        <BtnEdit @click="handleEdit" size="default" variant="flat" v-if="hasPermission('users.edit')" />
       </div>
     </template>
   </BaseDialog>
-
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from 'vue'
-import { useMask } from '@/composables/useMask'
-import { useProfileUtils } from '@/composables/useProfileUtils'
-import BaseDialog from '@/components/BaseDialog.vue'
+import { computed, ref } from "vue";
+import { useMask } from "@/composables/useMask";
+import { useProfileUtils } from "@/composables/useProfileUtils";
+import BaseDialog from "@/components/BaseDialog.vue";
+import { useAbilities } from "@/composables/useAbilities";
 
 interface Props {
-  modelValue: boolean
-  user?: any
+  modelValue: boolean;
+  user?: any;
 }
 
 interface Emits {
-  (e: 'update:modelValue', value: boolean): void
-  (e: 'edit', user: any): void
-  (e: 'reload'): void
+  (e: "update:modelValue", value: boolean): void;
+  (e: "edit", user: any): void;
+  (e: "reload"): void;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  user: null
-})
+  user: null,
+});
 
-const emit = defineEmits<Emits>()
+const emit = defineEmits<Emits>();
 
-const { formatPhone } = useMask()
-const { getProfileColor, getProfileIcon } = useProfileUtils()
+const { formatPhone } = useMask();
+const { hasPermission } = useAbilities();
+const { getProfileColor, getProfileIcon } = useProfileUtils();
+
 
 // Computed
 
 // Methods
 
-
 const formatDate = (dateString: string) => {
-  if (!dateString) return 'Não informado';
+  if (!dateString) return "Não informado";
 
   try {
     const date = new Date(dateString);
-    return date.toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    return date.toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   } catch (error) {
     return dateString;
@@ -218,14 +233,13 @@ const formatDate = (dateString: string) => {
 };
 
 const closeModal = () => {
-  emit('update:modelValue', false);
+  emit("update:modelValue", false);
 };
 
 const handleEdit = () => {
-  emit('edit', props.user);
+  emit("edit", props.user);
   closeModal();
 };
-
 </script>
 
 <style scoped>
@@ -291,14 +305,14 @@ const handleEdit = () => {
 }
 
 .phone-number {
-  font-family: 'Roboto Mono', monospace;
+  font-family: "Roboto Mono", monospace;
   font-weight: 500;
   color: rgba(var(--v-theme-on-surface), 0.87);
   font-size: 1rem;
 }
 
 .date-text {
-  font-family: 'Roboto Mono', monospace;
+  font-family: "Roboto Mono", monospace;
   font-weight: 500;
   color: rgba(var(--v-theme-on-surface), 0.87);
   font-size: 0.9rem;

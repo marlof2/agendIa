@@ -8,10 +8,7 @@
     <template #actionBar>
       <ActionBar>
         <template #left>
-          <BtnNew
-            v-if="hasPermission('companies.create')"
-            @click="create"
-          />
+          <BtnNew v-if="hasPermission('companies.create')" @click="create" />
         </template>
         <template #right>
           <div class="d-flex action-buttons-container">
@@ -105,7 +102,9 @@
                     >
                       <v-icon start size="14">mdi-domain</v-icon>
                       <span class="chip-label">CNPJ:</span>
-                      <span class="chip-value">{{ formatCNPJ(item?.cnpj || '') }}</span>
+                      <span class="chip-value">{{
+                        formatCNPJ(item?.cnpj || "")
+                      }}</span>
                     </v-chip>
                   </template>
                   <template v-else>
@@ -117,46 +116,22 @@
                     >
                       <v-icon start size="14">mdi-account</v-icon>
                       <span class="chip-label">CPF:</span>
-                      <span class="chip-value">{{ formatCPF(item?.cpf || '') }}</span>
+                      <span class="chip-value">{{
+                        formatCPF(item?.cpf || "")
+                      }}</span>
                     </v-chip>
                   </template>
                 </div>
               </div>
-              <v-menu location="bottom end" offset="8">
-                <template v-slot:activator="{ props }">
-                  <v-btn
-                    v-bind="props"
-                    icon
-                    size="small"
-                    variant="text"
-                    color="default"
-                    class="action-btn"
-                  >
-                    <v-icon size="20">mdi-dots-vertical</v-icon>
-                  </v-btn>
-                </template>
-                <v-list density="compact" class="action-menu">
-                  <v-list-item
-                    prepend-icon="mdi-eye-outline"
-                    title="Visualizar"
-                    @click="view(item)"
-                    class="action-item primary-action"
-                  />
-                  <v-list-item
-                    prepend-icon="mdi-pencil-outline"
-                    title="Editar"
-                    @click="edit(item)"
-                    class="action-item warning-action"
-                  />
-                  <v-divider />
-                  <v-list-item
-                    prepend-icon="mdi-delete-outline"
-                    title="Excluir"
-                    @click="remove(item)"
-                    class="action-item danger-action"
-                  />
-                </v-list>
-              </v-menu>
+              <ActionsMenu
+                :item="item"
+                view-permission="companies.show"
+                edit-permission="companies.edit"
+                delete-permission="companies.delete"
+                @view="view"
+                @edit="edit"
+                @delete="remove"
+              />
             </div>
           </v-card-title>
 
@@ -165,25 +140,42 @@
             <!-- Company Info - Simplified -->
             <div class="company-info">
               <div class="info-item mb-3">
-                <v-icon size="18" color="primary" class="mr-2">mdi-account-group</v-icon>
+                <v-icon size="18" color="primary" class="mr-2"
+                  >mdi-account-group</v-icon
+                >
                 <span class="text-body-2">
                   <strong class="text-high-emphasis">Tipo: </strong>
-                  {{ item.person_type === 'legal' ? 'Pessoa Jurídica' : 'Pessoa Física' }}
+                  {{
+                    item.person_type === "legal"
+                      ? "Pessoa Jurídica"
+                      : "Pessoa Física"
+                  }}
                 </span>
               </div>
 
               <div class="info-item mb-3">
-                <v-icon size="18" color="primary" class="mr-2">mdi-account</v-icon>
+                <v-icon size="18" color="primary" class="mr-2"
+                  >mdi-account</v-icon
+                >
                 <span class="text-body-2">
-                  <strong class="text-high-emphasis">Responsável: </strong>{{ item.responsible_name }}
+                  <strong class="text-high-emphasis">Responsável: </strong
+                  >{{ item.responsible_name }}
                 </span>
               </div>
 
               <div class="info-item">
-                <v-icon size="18" color="primary" class="mr-2">mdi-phone</v-icon>
+                <v-icon size="18" color="primary" class="mr-2"
+                  >mdi-phone</v-icon
+                >
                 <span class="text-body-2">
-                  <strong class="text-high-emphasis">Telefone: </strong>{{ formatPhone(item.phone_1) }}
-                  <v-chip v-if="item.has_whatsapp_1" color="success" size="x-small" class="ml-1">
+                  <strong class="text-high-emphasis">Telefone: </strong
+                  >{{ formatPhone(item.phone_1) }}
+                  <v-chip
+                    v-if="item.has_whatsapp_1"
+                    color="success"
+                    size="x-small"
+                    class="ml-1"
+                  >
                     <v-icon start size="10">mdi-whatsapp</v-icon>
                     WhatsApp
                   </v-chip>
@@ -194,11 +186,18 @@
 
           <!-- Card Actions -->
           <v-card-actions class="company-card-actions">
-            <BtnView @click="view(item)" />
-            <v-spacer />
-            <BtnManageUsers :icon-only="true" @click="manageUsers(item)" />
-            <BtnEdit :icon-only="true" @click="edit(item)" />
-            <BtnDelete :icon-only="true" @click="remove(item)" />
+            <BtnView
+              @click="view(item)"
+              v-if="hasPermission('companies.show')"
+            />
+            <Btn
+              v-if="hasPermission('companies.attach_professional')"
+              text="GERENCIAR PROFISSIONAIS"
+              icon="mdi-account-multiple-outline"
+              variant="outlined"
+              color="info"
+              @click="manageUsers(item)"
+            />
           </v-card-actions>
         </v-card>
       </div>
@@ -217,7 +216,9 @@
 
           <!-- Items per page selector (right side) -->
           <div class="items-per-page-selector">
-            <span class="text-body-2 text-medium-emphasis mr-3">Itens por página:</span>
+            <span class="text-body-2 text-medium-emphasis mr-3"
+              >Itens por página:</span
+            >
             <v-select
               v-model="pagination.per_page"
               :items="[6, 12, 24, 48]"
@@ -277,6 +278,7 @@ import BasePage from "@/components/BasePage.vue";
 import ActionBar from "@/components/ActionBar.vue";
 import FiltersCard from "@/components/FiltersCard.vue";
 import ExportActions from "@/components/ExportActions.vue";
+import ActionsMenu from "@/components/ActionsMenu.vue";
 import CompanyModal from "./components/CompanyModal.vue";
 import CompanyViewModal from "./components/CompanyViewModal.vue";
 import DeleteConfirmModal from "./components/DeleteConfirmModal.vue";
@@ -284,7 +286,6 @@ import { useCompaniesApi } from "./api";
 import { useAbilities } from "@/composables/useAbilities";
 import { useMask } from "@/composables/useMask";
 import { showSuccessToast, showErrorToast } from "@/utils/swal";
-import { BtnManageUsers } from "@/components/buttons";
 
 const { hasPermission } = useAbilities();
 const router = useRouter();
@@ -563,43 +564,6 @@ const handlePerPageChange = async (perPage: number) => {
   transform: translateY(-1px);
 }
 
-.action-btn {
-  border-radius: 8px;
-  transition: all 0.2s ease;
-}
-
-.action-btn:hover {
-  background: rgba(var(--v-theme-primary), 0.08);
-  transform: scale(1.05);
-}
-
-.action-menu {
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-}
-
-.action-item {
-  border-radius: 8px;
-  margin: 2px 4px;
-  transition: all 0.2s ease;
-}
-
-.action-item:hover {
-  background: rgba(var(--v-theme-primary), 0.08);
-}
-
-.primary-action:hover {
-  background: rgba(var(--v-theme-primary), 0.1);
-}
-
-.warning-action:hover {
-  background: rgba(var(--v-theme-warning), 0.1);
-}
-
-.danger-action:hover {
-  background: rgba(var(--v-theme-error), 0.1);
-}
-
 /* Pagination */
 .companies-pagination {
   display: flex;
@@ -726,7 +690,7 @@ const handlePerPageChange = async (perPage: number) => {
 }
 
 .document-chip .chip-value {
-  font-family: 'Roboto Mono', monospace;
+  font-family: "Roboto Mono", monospace;
   font-weight: 500;
   letter-spacing: 0.5px;
 }

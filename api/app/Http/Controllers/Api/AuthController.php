@@ -62,7 +62,7 @@ class AuthController extends Controller
             $user->companies()->attach($company->id);
 
             // Create token
-            $token = $user->createToken('auth_token')->plainTextToken;
+            $token = $user->createToken('auth_token', $user->getAbilities())->plainTextToken;
 
             return response()->json([
                 'success' => true,
@@ -71,7 +71,6 @@ class AuthController extends Controller
                     'user' => $user->load('companies'),
                     'company' => $company,
                     'token' => $token,
-                    'token_type' => 'Bearer',
                 ]
             ], 201);
 
@@ -109,22 +108,37 @@ class AuthController extends Controller
             ], 401);
         }
 
+        /** @var User $user */
         $user = Auth::user();
-        $token = $user->createToken('auth_token', $user->getAbilities())->plainTextToken;
-
-        // Carregar abilities do usuário
-        $user->load('profile.abilities');
         $abilities = $user->getAbilities();
+        $token = $user->createToken('auth_token', $abilities)->plainTextToken;
+
+        // Carregar relacionamentos do usuário
+        $user->load(['profile:id,name,display_name', 'companies']);
+
+        // Adicionar company_ids ao response
+        $userData = $user->toArray();
+        $userData['company_ids'] = $user->companies->pluck('id')->toArray();
+
+        // Formatar empresas (tenants) para seleção (apenas empresas ativas)
+        $tenants = $user->companies->map(function ($company) {
+            return [
+                'id' => $company->id,
+                'name' => $company->name,
+                'slug' => $company->slug ?? strtolower(str_replace(' ', '-', $company->name)),
+                'logo' => $company->logo ?? null,
+                'created_at' => $company->created_at,
+            ];
+        });
 
         return response()->json([
             'success' => true,
             'message' => 'Login realizado com sucesso',
             'data' => [
-                'user' => $user->load('profile.abilities'),
                 'token' => $token,
-                'token_type' => 'Bearer',
+                'user' => $userData,
                 'abilities' => $abilities,
-                'abilities_grouped' => $user->getAbilitiesGrouped(),
+                'tenants' => $tenants,
             ]
         ]);
     }
@@ -171,18 +185,33 @@ class AuthController extends Controller
             $token = $user->createToken('auth_token')->plainTextToken;
 
             // Carregar abilities do usuário (todas as empresas)
-            $user->load('companies');
-            $abilities = $user->getAllAbilities();
+            $user->load(['profile:id,name,display_name', 'companies']);
+            $abilities = $user->getAbilities();
+
+            // Adicionar company_ids ao response
+            $userData = $user->toArray();
+            $userData['company_ids'] = $user->companies->pluck('id')->toArray();
+
+            // Formatar empresas (tenants) para seleção
+            $tenants = $user->companies->map(function ($company) {
+                return [
+                    'id' => $company->id,
+                    'name' => $company->name,
+                    'slug' => $company->slug ?? strtolower(str_replace(' ', '-', $company->name)),
+                    'logo' => $company->logo ?? null,
+                    'is_active' => $company->is_active ?? true,
+                    'created_at' => $company->created_at,
+                ];
+            });
 
             return response()->json([
                 'success' => true,
                 'message' => 'Login com Google realizado com sucesso',
                 'data' => [
-                    'user' => $user->load('companies'),
                     'token' => $token,
-                    'token_type' => 'Bearer',
+                    'user' => $userData,
                     'abilities' => $abilities,
-                    'companies' => $user->companies,
+                    'tenants' => $tenants,
                 ]
             ]);
 
@@ -201,16 +230,31 @@ class AuthController extends Controller
     public function me(Request $request): JsonResponse
     {
         $user = $request->user();
-        $user->load('companies');
+        $user->load(['profile:id,name,display_name', 'companies']);
 
-        $abilities = $user->getAllAbilities();
+        $abilities = $user->getAbilities();
+
+        // Adicionar company_ids ao response
+        $userData = $user->toArray();
+        $userData['company_ids'] = $user->companies->pluck('id')->toArray();
+
+        // Formatar empresas (tenants) para seleção (apenas empresas ativas)
+        $tenants = $user->companies->map(function ($company) {
+            return [
+                'id' => $company->id,
+                'name' => $company->name,
+                'slug' => $company->slug ?? strtolower(str_replace(' ', '-', $company->name)),
+                'logo' => $company->logo ?? null,
+                'created_at' => $company->created_at,
+            ];
+        });
 
         return response()->json([
             'success' => true,
             'data' => [
-                'user' => $user,
+                'user' => $userData,
                 'abilities' => $abilities,
-                'companies' => $user->companies
+                'tenants' => $tenants,
             ]
         ]);
     }
@@ -251,9 +295,7 @@ class AuthController extends Controller
             'data' => [
                 'user' => $user->load('profile.abilities'),
                 'token' => $token,
-                'token_type' => 'Bearer',
                 'abilities' => $abilities,
-                'abilities_grouped' => $user->getAbilitiesGrouped(),
             ]
         ]);
     }

@@ -368,4 +368,138 @@ class CompanyService
 
         return $phone;
     }
+
+    /**
+     * Export company professionals to Excel
+     */
+    public function exportProfessionalsToExcel(int $companyId, array $filters = []): BinaryFileResponse
+    {
+        // Buscar todos os profissionais (sem paginação)
+        $query = User::select([
+            'users.id',
+            'users.name',
+            'users.email',
+            'users.phone',
+            'users.has_whatsapp',
+            'users.profile_id',
+            'users.created_at'
+        ])
+        ->with('profile:id,name,display_name')
+        ->whereHas('companies', function ($query) use ($companyId) {
+            $query->where('companies.id', $companyId);
+        })
+        ->whereHas('profile', function ($query) {
+            $query->where('name', 'professional');
+        });
+
+        // Busca por nome ou email
+        if (!empty($filters['search'])) {
+            $search = $filters['search'];
+            $query->where(function ($q) use ($search) {
+                $q->where('users.name', 'like', "%{$search}%")
+                  ->orWhere('users.email', 'like', "%{$search}%");
+            });
+        }
+
+        $professionals = $query->orderBy('users.name', 'asc')->get();
+
+        // Buscar o nome da empresa
+        $company = Company::findOrFail($companyId);
+
+        $headers = [
+            ['key' => 'name', 'label' => 'Nome'],
+            ['key' => 'email', 'label' => 'E-mail'],
+            ['key' => 'phone', 'label' => 'Telefone'],
+            ['key' => 'profile', 'label' => 'Perfil'],
+            ['key' => 'created_at', 'label' => 'Data de Cadastro'],
+        ];
+
+        $data = $professionals->map(function ($professional) {
+            // Formatar telefone
+            $phone = $professional->phone ? $this->formatPhone($professional->phone) : 'Não informado';
+            if ($phone !== 'Não informado' && $professional->has_whatsapp) {
+                $phone .= ' (WhatsApp)';
+            }
+
+            return [
+                'name' => $professional->name,
+                'email' => $professional->email,
+                'phone' => $phone,
+                'profile' => $professional->profile?->display_name ?? 'Não informado',
+                'created_at' => $professional->created_at->format('d/m/Y H:i:s'),
+            ];
+        });
+
+        $title = 'Profissionais da Empresa - ' . $company->name;
+        $filename = 'profissionais-' . \Illuminate\Support\Str::slug($company->name);
+
+        return ExportFactory::exportToExcel($data->toArray(), $headers, $filename, $title);
+    }
+
+    /**
+     * Export company professionals to PDF
+     */
+    public function exportProfessionalsToPDF(int $companyId, array $filters = []): Response
+    {
+        // Buscar todos os profissionais (sem paginação)
+        $query = User::select([
+            'users.id',
+            'users.name',
+            'users.email',
+            'users.phone',
+            'users.has_whatsapp',
+            'users.profile_id',
+            'users.created_at'
+        ])
+        ->with('profile:id,name,display_name')
+        ->whereHas('companies', function ($query) use ($companyId) {
+            $query->where('companies.id', $companyId);
+        })
+        ->whereHas('profile', function ($query) {
+            $query->where('name', 'professional');
+        });
+
+        // Busca por nome ou email
+        if (!empty($filters['search'])) {
+            $search = $filters['search'];
+            $query->where(function ($q) use ($search) {
+                $q->where('users.name', 'like', "%{$search}%")
+                  ->orWhere('users.email', 'like', "%{$search}%");
+            });
+        }
+
+        $professionals = $query->orderBy('users.name', 'asc')->get();
+
+        // Buscar o nome da empresa
+        $company = Company::findOrFail($companyId);
+
+        $headers = [
+            ['key' => 'name', 'label' => 'Nome'],
+            ['key' => 'email', 'label' => 'E-mail'],
+            ['key' => 'phone', 'label' => 'Telefone'],
+            ['key' => 'profile', 'label' => 'Perfil'],
+            ['key' => 'created_at', 'label' => 'Data de Cadastro'],
+        ];
+
+        $data = $professionals->map(function ($professional) {
+            // Formatar telefone
+            $phone = $professional->phone ? $this->formatPhone($professional->phone) : 'Não informado';
+            if ($phone !== 'Não informado' && $professional->has_whatsapp) {
+                $phone .= ' (WhatsApp)';
+            }
+
+            return [
+                'name' => $professional->name,
+                'email' => $professional->email,
+                'phone' => $phone,
+                'profile' => $professional->profile?->display_name ?? 'Não informado',
+                'created_at' => $professional->created_at->format('d/m/Y H:i:s'),
+            ];
+        });
+
+        $title = 'Profissionais da Empresa - ' . $company->name;
+        $filename = 'profissionais-' . \Illuminate\Support\Str::slug($company->name);
+
+        return ExportFactory::exportToPDF($data->toArray(), $headers, $filename, $title);
+    }
 }

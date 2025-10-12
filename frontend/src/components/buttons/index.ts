@@ -1,4 +1,5 @@
 // Export all button components for easy importing
+export { default as Btn } from './Btn.vue';
 export { default as BtnSearch } from './BtnSearch.vue';
 export { default as BtnSave } from './BtnSave.vue';
 export { default as BtnCancel } from './BtnCancel.vue';
@@ -8,4 +9,3 @@ export { default as BtnNew } from './BtnNew.vue';
 export { default as BtnExport } from './BtnExport.vue';
 export { default as BtnFilter } from './BtnFilter.vue';
 export { default as BtnView } from './BtnView.vue';
-export { default as BtnManageUsers } from './BtnManageUsers.vue';

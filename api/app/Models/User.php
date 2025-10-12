@@ -72,6 +72,14 @@ class User extends Authenticatable
             ->withTimestamps();
     }
 
+    // /**
+    //  * Get only the company IDs for the user.
+    //  */
+    // public function getCompanyIdsAttribute(): array
+    // {
+    //     return $this->companies()->pluck('companies.id')->toArray();
+    // }
+
     /**
      * Get the appointments where user is the client.
      */
@@ -105,11 +113,27 @@ class User extends Authenticatable
     }
 
     /**
-     * Check if user is secretary.
+     * Check if user is owner.
      */
-    public function isSecretary(): bool
+    public function isOwner(): bool
     {
-        return $this->profile && $this->profile->name === 'secretary';
+        return $this->profile && $this->profile->name === 'owner';
+    }
+
+    /**
+     * Check if user is supervisor.
+     */
+    public function isSupervisor(): bool
+    {
+        return $this->profile && $this->profile->name === 'supervisor';
+    }
+
+    /**
+     * Check if user is professional.
+     */
+    public function isProfessional(): bool
+    {
+        return $this->profile && $this->profile->name === 'professional';
     }
 
     /**

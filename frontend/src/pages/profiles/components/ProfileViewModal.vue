@@ -10,178 +10,203 @@
     @close="closeModal"
   >
     <v-row>
-          <!-- Informações Básicas -->
-          <v-col cols="12" md="6">
-            <v-card variant="outlined" class="info-card">
-              <v-card-title class="info-card__title">
-                <v-icon size="20" class="mr-2">mdi-account-tie</v-icon>
-                Informações Básicas
-              </v-card-title>
-              <v-card-text>
-                <div class="info-item">
-                  <div class="info-label">Nome do perfil</div>
-                  <div class="info-value">{{ profile?.name || 'Não informado' }}</div>
-                </div>
-                <div class="info-item">
-                  <div class="info-label">Nome de exibição</div>
-                  <div class="info-value">{{ profile?.display_name || 'Não informado' }}</div>
-                </div>
-                <div class="info-item">
-                  <div class="info-label">Descrição</div>
-                  <div class="info-value">{{ profile?.description || 'Sem descrição' }}</div>
-                </div>
-              </v-card-text>
-            </v-card>
-          </v-col>
+      <!-- Informações Básicas -->
+      <v-col cols="12" md="6">
+        <v-card variant="outlined" class="info-card">
+          <v-card-title class="info-card__title">
+            <v-icon size="20" class="mr-2">mdi-account-tie</v-icon>
+            Informações Básicas
+          </v-card-title>
+          <v-card-text>
+            <div class="info-item">
+              <div class="info-label">Nome do perfil</div>
+              <div class="info-value">
+                {{ profile?.name || "Não informado" }}
+              </div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Nome de exibição</div>
+              <div class="info-value">
+                {{ profile?.display_name || "Não informado" }}
+              </div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Descrição</div>
+              <div class="info-value">
+                {{ profile?.description || "Sem descrição" }}
+              </div>
+            </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
 
-          <!-- Datas -->
-          <v-col cols="12" md="6">
-            <v-card variant="outlined" class="info-card">
-              <v-card-title class="info-card__title">
-                <v-icon size="20" class="mr-2">mdi-calendar</v-icon>
-                Datas
-              </v-card-title>
-              <v-card-text>
-                <div class="info-item">
-                  <div class="info-label">Criado em</div>
-                  <div class="info-value">{{ formatDate(profile?.created_at) }}</div>
-                </div>
-                <div class="info-item">
-                  <div class="info-label">Última atualização</div>
-                  <div class="info-value">{{ formatDate(profile?.updated_at) }}</div>
-                </div>
-              </v-card-text>
-            </v-card>
-          </v-col>
+      <!-- Datas -->
+      <v-col cols="12" md="6">
+        <v-card variant="outlined" class="info-card">
+          <v-card-title class="info-card__title">
+            <v-icon size="20" class="mr-2">mdi-calendar</v-icon>
+            Datas
+          </v-card-title>
+          <v-card-text>
+            <div class="info-item">
+              <div class="info-label">Criado em</div>
+              <div class="info-value">
+                {{ formatDate(profile?.created_at) }}
+              </div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Última atualização</div>
+              <div class="info-value">
+                {{ formatDate(profile?.updated_at) }}
+              </div>
+            </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
 
-          <!-- Estatísticas -->
-          <v-col cols="12" md="6">
-            <v-card variant="outlined" class="info-card">
-              <v-card-title class="info-card__title">
-                <v-icon size="20" class="mr-2">mdi-chart-line</v-icon>
-                Estatísticas
-              </v-card-title>
-              <v-card-text>
-                <div class="info-item">
-                  <div class="info-label">Total de abilities</div>
-                  <div class="info-value">{{ profile?.abilities?.length || 0 }}</div>
-                </div>
-                <div class="info-item">
-                  <div class="info-label">Usuários com este perfil</div>
-                  <div class="info-value">{{ profile?.users_count || 0 }}</div>
-                </div>
-              </v-card-text>
-            </v-card>
-          </v-col>
+      <!-- Estatísticas -->
+      <v-col cols="12" md="6">
+        <v-card variant="outlined" class="info-card">
+          <v-card-title class="info-card__title">
+            <v-icon size="20" class="mr-2">mdi-chart-line</v-icon>
+            Estatísticas
+          </v-card-title>
+          <v-card-text>
+            <div class="info-item">
+              <div class="info-label">Total de abilities</div>
+              <div class="info-value">
+                {{ profile?.abilities?.length || 0 }}
+              </div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Usuários com este perfil</div>
+              <div class="info-value">{{ profile?.users_count || 0 }}</div>
+            </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
 
-          <!-- Abilities por Categoria -->
-          <v-col cols="12" md="6">
-            <v-card variant="outlined" class="info-card">
-              <v-card-title class="info-card__title">
-                <v-icon size="20" class="mr-2">mdi-shield-account</v-icon>
-                Abilities por Categoria
-              </v-card-title>
-              <v-card-text>
-                <div v-if="abilitiesByCategory && Object.keys(abilitiesByCategory).length" class="category-stats">
-                  <div
-                    v-for="(abilities, category) in abilitiesByCategory"
-                    :key="category"
-                    class="category-item"
+      <!-- Abilities por Categoria -->
+      <v-col cols="12" md="6">
+        <v-card variant="outlined" class="info-card">
+          <v-card-title class="info-card__title">
+            <v-icon size="20" class="mr-2">mdi-shield-account</v-icon>
+            Abilities por Categoria
+          </v-card-title>
+          <v-card-text>
+            <div
+              v-if="
+                abilitiesByCategory && Object.keys(abilitiesByCategory).length
+              "
+              class="category-stats"
+            >
+              <div
+                v-for="(abilities, category) in abilitiesByCategory"
+                :key="category"
+                class="category-item"
+              >
+                <div class="d-flex align-center justify-space-between">
+                  <div class="d-flex align-center">
+                    <v-icon
+                      :color="getCategoryColor(category)"
+                      size="16"
+                      class="mr-2"
+                    >
+                      {{ getCategoryIcon(category) }}
+                    </v-icon>
+                    <span class="text-body-2">{{
+                      getCategoryTitle(category)
+                    }}</span>
+                  </div>
+                  <v-chip
+                    :color="getCategoryColor(category)"
+                    size="x-small"
+                    variant="outlined"
                   >
-                    <div class="d-flex align-center justify-space-between">
-                      <div class="d-flex align-center">
-                        <v-icon
-                          :color="getCategoryColor(category)"
-                          size="16"
-                          class="mr-2"
-                        >
-                          {{ getCategoryIcon(category) }}
-                        </v-icon>
-                        <span class="text-body-2">{{ getCategoryTitle(category) }}</span>
-                      </div>
+                    {{ abilities.length }}
+                  </v-chip>
+                </div>
+              </div>
+            </div>
+            <div v-else class="text-body-2 text-medium-emphasis">
+              Nenhuma ability atribuída
+            </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
+
+      <!-- Abilities Detalhadas -->
+      <v-col cols="12">
+        <v-card variant="outlined" class="info-card">
+          <v-card-title class="info-card__title">
+            <v-icon size="20" class="mr-2">mdi-shield-account</v-icon>
+            Abilities Detalhadas
+          </v-card-title>
+          <v-card-text>
+            <div v-if="profile?.abilities?.length" class="abilities-list">
+              <v-expansion-panels variant="accordion">
+                <v-expansion-panel
+                  v-for="(abilities, category) in abilitiesByCategory"
+                  :key="category"
+                >
+                  <template #title>
+                    <div class="d-flex align-center">
+                      <v-icon
+                        :color="getCategoryColor(category)"
+                        size="20"
+                        class="mr-3"
+                      >
+                        {{ getCategoryIcon(category) }}
+                      </v-icon>
+                      <span class="font-weight-medium">{{
+                        getCategoryTitle(category)
+                      }}</span>
                       <v-chip
                         :color="getCategoryColor(category)"
-                        size="x-small"
+                        size="small"
                         variant="outlined"
+                        class="ml-3"
                       >
                         {{ abilities.length }}
                       </v-chip>
                     </div>
-                  </div>
-                </div>
-                <div v-else class="text-body-2 text-medium-emphasis">
-                  Nenhuma ability atribuída
-                </div>
-              </v-card-text>
-            </v-card>
-          </v-col>
-
-          <!-- Abilities Detalhadas -->
-          <v-col cols="12">
-            <v-card variant="outlined" class="info-card">
-              <v-card-title class="info-card__title">
-                <v-icon size="20" class="mr-2">mdi-shield-account</v-icon>
-                Abilities Detalhadas
-              </v-card-title>
-              <v-card-text>
-                <div v-if="profile?.abilities?.length" class="abilities-list">
-                  <v-expansion-panels variant="accordion">
-                    <v-expansion-panel
-                      v-for="(abilities, category) in abilitiesByCategory"
-                      :key="category"
-                    >
-                      <template #title>
-                        <div class="d-flex align-center">
-                          <v-icon
-                            :color="getCategoryColor(category)"
-                            size="20"
-                            class="mr-3"
-                          >
-                            {{ getCategoryIcon(category) }}
-                          </v-icon>
-                          <span class="font-weight-medium">{{ getCategoryTitle(category) }}</span>
-                          <v-chip
-                            :color="getCategoryColor(category)"
-                            size="small"
-                            variant="outlined"
-                            class="ml-3"
-                          >
-                            {{ abilities.length }}
-                          </v-chip>
-                        </div>
-                      </template>
-                      <template #text>
-                        <div class="abilities-grid">
-                          <v-card
-                            v-for="ability in abilities"
-                            :key="ability.id"
-                            variant="outlined"
-                            class="ability-card"
-                          >
-                            <v-card-text class="pa-3">
-                              <div class="font-weight-medium text-body-1 mb-1">
-                                {{ ability.display_name }}
-                              </div>
-                              <div class="text-caption text-medium-emphasis mb-2">
-                                {{ ability.name }}
-                              </div>
-                              <div v-if="ability.description" class="text-body-2">
-                                {{ ability.description }}
-                              </div>
-                            </v-card-text>
-                          </v-card>
-                        </div>
-                      </template>
-                    </v-expansion-panel>
-                  </v-expansion-panels>
-                </div>
-                <div v-else class="text-center py-8">
-                  <v-icon color="grey" size="64" class="mb-4">mdi-shield-off</v-icon>
-                  <p class="text-body-1 text-grey">Nenhuma ability atribuída a este perfil</p>
-                </div>
-              </v-card-text>
-            </v-card>
-          </v-col>
+                  </template>
+                  <template #text>
+                    <div class="abilities-grid">
+                      <v-card
+                        v-for="ability in abilities"
+                        :key="ability.id"
+                        variant="outlined"
+                        class="ability-card"
+                      >
+                        <v-card-text class="pa-3">
+                          <div class="font-weight-medium text-body-1 mb-1">
+                            {{ ability.display_name }}
+                          </div>
+                          <div class="text-caption text-medium-emphasis mb-2">
+                            {{ ability.name }}
+                          </div>
+                          <div v-if="ability.description" class="text-body-2">
+                            {{ ability.description }}
+                          </div>
+                        </v-card-text>
+                      </v-card>
+                    </div>
+                  </template>
+                </v-expansion-panel>
+              </v-expansion-panels>
+            </div>
+            <div v-else class="text-center py-8">
+              <v-icon color="grey" size="64" class="mb-4"
+                >mdi-shield-off</v-icon
+              >
+              <p class="text-body-1 text-grey">
+                Nenhuma ability atribuída a este perfil
+              </p>
+            </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
     </v-row>
 
     <template #actions>
@@ -193,19 +218,13 @@
           color="primary"
           variant="flat"
           rounded="lg"
-          class="text-none font-weight-medium mr-4"
+          class="text-none font-weight-medium"
           prepend-icon="mdi-cog"
           @click="openAbilitiesModal"
         >
           Gerenciar Permissões
         </v-btn>
-        <BtnEdit
-          v-if="hasPermission('profiles.edit')"
-          text="Editar"
-          color="info"
-          variant="flat"
-          @click="handleEdit"
-        />
+        <BtnEdit v-if="hasPermission('profiles.edit')" @click="handleEdit" size="default" variant="flat" />
       </div>
     </template>
   </BaseDialog>
@@ -219,98 +238,100 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from 'vue'
-import { useAbilities } from '@/composables/useAbilities'
-import ProfileAbilitiesModal from './ProfileAbilitiesModal.vue'
-import BaseDialog from '@/components/BaseDialog.vue'
+import { computed, ref } from "vue";
+import { useAbilities } from "@/composables/useAbilities";
+import ProfileAbilitiesModal from "./ProfileAbilitiesModal.vue";
+import BaseDialog from "@/components/BaseDialog.vue";
 
 interface Props {
-  modelValue: boolean
-  profile?: any
+  modelValue: boolean;
+  profile?: any;
 }
 
 interface Emits {
-  (e: 'update:modelValue', value: boolean): void
-  (e: 'edit', profile: any): void
-  (e: 'reload'): void
+  (e: "update:modelValue", value: boolean): void;
+  (e: "edit", profile: any): void;
+  (e: "reload"): void;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  profile: null
-})
+  profile: null,
+});
 
-const emit = defineEmits<Emits>()
+const emit = defineEmits<Emits>();
 
-const { hasPermission } = useAbilities()
-const showAbilitiesModal = ref(false)
+const { hasPermission } = useAbilities();
+const showAbilitiesModal = ref(false);
 
 // Computed
 const abilitiesByCategory = computed(() => {
-  if (!props.profile?.abilities) return {}
+  if (!props.profile?.abilities) return {};
 
-  const grouped: Record<string, any[]> = {}
+  const grouped: Record<string, any[]> = {};
 
   props.profile.abilities.forEach((ability: any) => {
     if (!grouped[ability.category]) {
-      grouped[ability.category] = []
+      grouped[ability.category] = [];
     }
-    grouped[ability.category]?.push(ability)
-  })
+    grouped[ability.category]?.push(ability);
+  });
 
-  return grouped
-})
+  return grouped;
+});
 
 // Methods
 const getCategoryColor = (category: string) => {
   const colors: Record<string, string> = {
-    appointments: 'blue',
-    clients: 'green',
-    professionals: 'orange',
-    services: 'purple',
-    profiles: 'red',
-    reports: 'teal',
-    companies: 'indigo'
-  }
-  return colors[category] || 'grey'
-}
+    appointments: "blue",
+    clients: "green",
+    professionals: "orange",
+    services: "purple",
+    profiles: "red",
+    reports: "teal",
+    companies: "indigo",
+  };
+  return colors[category] || "grey";
+};
 
 const getCategoryIcon = (category: string) => {
   const icons: Record<string, string> = {
-    appointments: 'mdi-calendar-clock',
-    clients: 'mdi-account-group',
-    professionals: 'mdi-account-tie',
-    services: 'mdi-briefcase',
-    profiles: 'mdi-account-group',
-    reports: 'mdi-chart-line',
-    companies: 'mdi-office-building'
-  }
-  return icons[category] || 'mdi-shield'
-}
+    appointments: "mdi-calendar-clock",
+    clients: "mdi-account-group",
+    professionals: "mdi-account-tie",
+    services: "mdi-briefcase",
+    profiles: "mdi-account-group",
+    reports: "mdi-chart-line",
+    companies: "mdi-office-building",
+  };
+  return icons[category] || "mdi-shield";
+};
 
 const getCategoryTitle = (category: string) => {
   const titles: Record<string, string> = {
-    appointments: 'Agendamentos',
-    clients: 'Clientes',
-    professionals: 'Profissionais',
-    services: 'Serviços',
-    profiles: 'Perfis',
-    reports: 'Relatórios',
-    companies: 'Empresas'
-  }
-  return titles[category] || category.charAt(0).toUpperCase() + category.slice(1)
-}
+    appointments: "Agendamentos",
+    clients: "Clientes",
+    professionals: "Profissionais",
+    services: "Serviços",
+    profiles: "Perfis",
+    reports: "Relatórios",
+    companies: "Empresas",
+  };
+  return (
+    titles[category] || category.charAt(0).toUpperCase() + category.slice(1)
+  );
+};
 
 const formatDate = (dateString: string) => {
-  if (!dateString) return 'Não informado';
+  if (!dateString) return "Não informado";
 
   try {
     const date = new Date(dateString);
-    return date.toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    return date.toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   } catch (error) {
     return dateString;
@@ -318,11 +339,11 @@ const formatDate = (dateString: string) => {
 };
 
 const closeModal = () => {
-  emit('update:modelValue', false);
+  emit("update:modelValue", false);
 };
 
 const handleEdit = () => {
-  emit('edit', props.profile);
+  emit("edit", props.profile);
   closeModal();
 };
 
@@ -331,7 +352,7 @@ const openAbilitiesModal = () => {
 };
 
 const handleAbilitiesReload = () => {
-  emit('reload');
+  emit("reload");
   showAbilitiesModal.value = false;
 };
 </script>

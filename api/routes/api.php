@@ -94,8 +94,9 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::put('/{company}', [CompanyController::class, 'update'])->middleware('ability:companies.edit');
             Route::delete('/{company}', [CompanyController::class, 'destroy'])->middleware('ability:companies.delete');
             Route::get('/{companyId}/professionals', [CompanyController::class, 'companyUsers'])->middleware('ability:companies.manage_professionals');
-            Route::post('/{companyId}/professionals/{userId}', [CompanyController::class, 'attachProfessional'])->middleware('ability:companies.manage_professionals');
-            Route::delete('/{companyId}/professionals/{userId}', [CompanyController::class, 'detachProfessional'])->middleware('ability:companies.manage_professionals');
+            Route::get('/{companyId}/bind-professional/export', [CompanyController::class, 'exportBindProfessional'])->middleware('ability:companies.manage_professionals');
+            Route::post('/{companyId}/professionals/{userId}', [CompanyController::class, 'attachProfessional'])->middleware('ability:companies.attach_professional');
+            Route::delete('/{companyId}/professionals/{userId}', [CompanyController::class, 'detachProfessional'])->middleware('ability:companies.detach_professional');
         });
     });
 

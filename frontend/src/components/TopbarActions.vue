@@ -1,5 +1,17 @@
 <template>
   <div class="topbar-actions">
+    <!-- Current Tenant Display -->
+    <v-chip
+      v-if="currentTenant"
+      class="current-tenant-chip"
+      color="primary"
+      variant="tonal"
+      size="default"
+      prepend-icon="mdi-office-building"
+    >
+      {{ currentTenant.name }}
+    </v-chip>
+
     <!-- Notifications -->
     <v-btn
       icon
@@ -17,20 +29,6 @@
       >
         <v-icon size="22">mdi-bell-outline</v-icon>
       </v-badge>
-    </v-btn>
-
-    <!-- Theme Toggle -->
-    <v-btn
-      icon
-      @click="toggleTheme"
-      class="topbar-actions__btn"
-      variant="text"
-      size="large"
-      :title="isDark ? 'Ativar modo claro' : 'Ativar modo escuro'"
-    >
-      <v-icon size="22">{{
-        isDark ? "mdi-weather-sunny" : "mdi-weather-night"
-      }}</v-icon>
     </v-btn>
 
     <!-- User Menu -->
@@ -87,6 +85,19 @@
             </div>
           </v-list-item>
 
+          <!-- Empresa Atual -->
+          <v-list-item v-if="currentTenant" class="current-tenant-item">
+            <template v-slot:prepend>
+              <v-icon color="primary">mdi-office-building</v-icon>
+            </template>
+            <v-list-item-title class="tenant-name-display">
+              {{ currentTenant.name }}
+            </v-list-item-title>
+            <v-list-item-subtitle class="tenant-subtitle">
+              Empresa atual
+            </v-list-item-subtitle>
+          </v-list-item>
+
           <v-divider class="menu-divider" />
 
           <!-- Menu Simplificado -->
@@ -119,7 +130,33 @@
               @click="navigateToSupport"
               class="menu-item"
             />
+            <v-list-item
+              v-if="hasMultipleTenants"
+              prepend-icon="mdi-swap-horizontal"
+              title="Trocar Empresa"
+              subtitle="Alterar empresa ativa"
+              @click="navigateToSelectTenant"
+              class="menu-item tenant-switch-item"
+            />
           </div>
+
+          <v-divider class="menu-divider" />
+
+          <!-- Theme Toggle -->
+          <v-list-item
+            @click="toggleTheme"
+            class="menu-item theme-item"
+          >
+            <template v-slot:prepend>
+              <div class="action-icon-wrapper theme-icon">
+                <v-icon size="18">{{ isDark ? 'mdi-weather-sunny' : 'mdi-weather-night' }}</v-icon>
+              </div>
+            </template>
+            <v-list-item-title class="action-title">{{ isDark ? 'Modo Claro' : 'Modo Escuro' }}</v-list-item-title>
+            <v-list-item-subtitle class="action-subtitle">
+              {{ isDark ? 'Ativar tema claro' : 'Ativar tema escuro' }}
+            </v-list-item-subtitle>
+          </v-list-item>
 
           <v-divider class="menu-divider" />
 
@@ -142,13 +179,16 @@ import { computed, ref } from "vue";
 import { useTheme } from "vuetify";
 import { useRouter } from "vue-router";
 import { useAuth } from "@/composables/useAuth";
+import { useTenant } from "@/composables/useTenant";
 
 const theme = useTheme();
 const router = useRouter();
 const { logout, user } = useAuth();
+const { hasMultipleTenants, currentTenant } = useTenant();
+
 // User data (em produção, isso viria de um store/API)
-const userName = ref(user.value.name);
-const userRole = ref(user.value.profile.display_name);
+const userName = ref(user.value?.name || "Usuário");
+const userRole = ref(user.value?.profile?.display_name || "Perfil");
 const userAvatar = ref("");
 const userStatus = ref("online"); // online, away, busy, offline
 const notificationCount = ref(1);
@@ -228,6 +268,10 @@ const navigateToSupport = () => {
   router.push('/support');
 };
 
+const navigateToSelectTenant = () => {
+  router.push('/select-tenant');
+};
+
 </script>
 
 <style scoped>
@@ -237,6 +281,19 @@ const navigateToSupport = () => {
   flex-shrink: 0;
   margin-left: auto;
   gap: 8px;
+}
+
+.current-tenant-chip {
+  font-weight: 600;
+  font-size: 0.875rem;
+  margin-right: 8px;
+  box-shadow: 0 2px 8px rgba(30, 41, 59, 0.1);
+  transition: all 0.2s ease;
+}
+
+.current-tenant-chip:hover {
+  box-shadow: 0 4px 12px rgba(30, 41, 59, 0.15);
+  transform: translateY(-1px);
 }
 
 .topbar-actions__btn {
@@ -402,6 +459,28 @@ const navigateToSupport = () => {
   opacity: 0.1;
 }
 
+/* Current Tenant Display */
+.current-tenant-item {
+  background: rgba(30, 41, 59, 0.05);
+  padding: 12px 16px;
+  margin: 4px 8px;
+  border-radius: 8px;
+  border-left: 3px solid #1e293b;
+}
+
+.tenant-name-display {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #1e293b;
+}
+
+.tenant-subtitle {
+  font-size: 0.75rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 .menu-section {
   padding: 8px 0;
 }
@@ -427,6 +506,83 @@ const navigateToSupport = () => {
   opacity: 0.7;
 }
 
+.tenant-switch-item {
+  background: rgba(30, 41, 59, 0.03);
+  border-left: 3px solid #1e293b;
+}
+
+.tenant-switch-item:hover {
+  background: rgba(30, 41, 59, 0.08);
+}
+
+/* Theme Toggle Item */
+.theme-item {
+  border-radius: 12px !important;
+  margin: 4px 8px !important;
+  padding: 12px 16px !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.theme-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3px;
+  height: 100%;
+  background: transparent;
+  transition: all 0.3s ease;
+}
+
+.theme-item:hover {
+  background: rgba(103, 58, 183, 0.08);
+  transform: translateX(4px);
+}
+
+.theme-item:hover::before {
+  background: #673AB7;
+}
+
+.action-icon-wrapper {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.theme-item:hover .action-icon-wrapper {
+  transform: scale(1.1) rotate(5deg);
+}
+
+.theme-icon {
+  background: rgba(103, 58, 183, 0.1);
+  color: #673AB7;
+}
+
+.theme-item:hover .theme-icon {
+  background: rgba(103, 58, 183, 0.2);
+  box-shadow: 0 0 0 4px rgba(103, 58, 183, 0.1);
+}
+
+.action-title {
+  font-weight: 600 !important;
+  font-size: 0.9375rem !important;
+  color: #1e293b;
+  line-height: 1.4 !important;
+}
+
+.action-subtitle {
+  font-size: 0.75rem !important;
+  color: #64748b !important;
+  margin-top: 2px !important;
+  line-height: 1.3 !important;
+}
 
 .logout-item {
   transition: all 0.2s ease;
@@ -469,10 +625,52 @@ const navigateToSupport = () => {
   color: #64748b;
 }
 
+.v-theme--dark .current-tenant-item {
+  background: rgba(51, 65, 85, 0.3);
+  border-left-color: #475569;
+}
+
+.v-theme--dark .tenant-name-display {
+  color: #f1f5f9;
+}
+
+.v-theme--dark .tenant-subtitle {
+  color: #94a3b8;
+}
+
+.v-theme--dark .theme-item:hover {
+  background: rgba(103, 58, 183, 0.15);
+}
+
+.v-theme--dark .theme-icon {
+  background: rgba(103, 58, 183, 0.2);
+}
+
+.v-theme--dark .theme-item:hover .theme-icon {
+  background: rgba(103, 58, 183, 0.3);
+}
+
+.v-theme--dark .action-title {
+  color: #f1f5f9;
+}
+
+.v-theme--dark .action-subtitle {
+  color: #94a3b8 !important;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .topbar-actions {
     gap: 8px;
+  }
+
+  .current-tenant-chip {
+    font-size: 0.75rem;
+    margin-right: 4px;
+  }
+
+  .current-tenant-chip :deep(.v-chip__prepend) {
+    margin-right: 4px;
   }
 
   .topbar-actions__btn {
@@ -511,6 +709,16 @@ const navigateToSupport = () => {
 @media (max-width: 480px) {
   .topbar-actions {
     gap: 4px;
+  }
+
+  .current-tenant-chip {
+    max-width: 140px;
+  }
+
+  .current-tenant-chip :deep(.v-chip__content) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .topbar-actions__btn {

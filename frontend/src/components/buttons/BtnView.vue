@@ -19,8 +19,8 @@
 interface Props {
   text?: string;
   color?: string;
-  variant?: string;
-  size?: string;
+  variant?: 'flat' | 'text' | 'outlined' | 'plain' | 'elevated' | 'tonal';
+  size?: 'x-small' | 'small' | 'default' | 'large' | 'x-large';
   prependIcon?: string;
   appendIcon?: string;
   loading?: boolean;
@@ -43,7 +43,7 @@ const props = withDefaults(defineProps<Props>(), {
   appendIcon: undefined,
   loading: false,
   disabled: false,
-  rounded: undefined,
+  rounded: 'lg',
   buttonClass: 'action-button',
   iconOnly: false,
 });

@@ -43,7 +43,7 @@ const props = withDefaults(defineProps<Props>(), {
   appendIcon: undefined,
   loading: false,
   disabled: false,
-  rounded: undefined,
+  rounded: 'lg',
   buttonClass: 'action-button',
   iconOnly: false,
 });

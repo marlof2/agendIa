@@ -17,7 +17,8 @@ class UserSeeder extends Seeder
     {
         // Buscar perfis
         $adminProfile = Profile::where('name', 'admin')->first();
-        $secretaryProfile = Profile::where('name', 'secretary')->first();
+        $ownerProfile = Profile::where('name', 'owner')->first();
+        $supervisorProfile = Profile::where('name', 'supervisor')->first();
         $professionalProfile = Profile::where('name', 'professional')->first();
         $clientProfile = Profile::where('name', 'client')->first();
 
@@ -43,22 +44,31 @@ class UserSeeder extends Seeder
                 'password' => Hash::make('123456'),
                 'phone' => '71991717209',
                 'profile_id' => $adminProfile->id,
-                'companies' => [$companies->first()->id],
+                'companies' => [$companies->first()->id, 2],
             ],
             [
-                'name' => 'Secretária Maria',
-                'email' => 'secretaria@empresa.com',
+                'name' => 'Carlos Proprietário',
+                'email' => 'proprietario@empresa.com',
                 'password' => Hash::make('123456'),
                 'phone' => '11999997777',
                 'has_whatsapp' => true,
-                'profile_id' => $secretaryProfile->id,
+                'profile_id' => $ownerProfile->id,
+                'companies' => [$companies->first()->id],
+            ],
+            [
+                'name' => 'Marcos Supervisor',
+                'email' => 'supervisor@empresa.com',
+                'password' => Hash::make('123456'),
+                'phone' => '11999996666',
+                'has_whatsapp' => true,
+                'profile_id' => $supervisorProfile->id,
                 'companies' => [$companies->first()->id],
             ],
             [
                 'name' => 'Dr. João Silva',
                 'email' => 'joao@empresa.com',
                 'password' => Hash::make('123456'),
-                'phone' => '11999996666',
+                'phone' => '11999995555',
                 'has_whatsapp' => true,
                 'profile_id' => $professionalProfile->id,
                 'companies' => [$companies->first()->id],
@@ -67,7 +77,7 @@ class UserSeeder extends Seeder
                 'name' => 'Cliente Ana',
                 'email' => 'ana@cliente.com',
                 'password' => Hash::make('123456'),
-                'phone' => '11999995555',
+                'phone' => '11999994444',
                 'has_whatsapp' => true,
                 'profile_id' => $clientProfile->id,
                 'companies' => [$companies->first()->id],
@@ -78,12 +88,15 @@ class UserSeeder extends Seeder
             $companies = $userData['companies'];
             unset($userData['companies']);
 
-            $user = User::create($userData);
-            $user->companies()->attach($companies);
+            $user = User::firstOrCreate(
+                ['email' => $userData['email']],
+                $userData
+            );
 
-            $this->command->info("Usuário criado: {$user->name} ({$user->email})");
+            // Sincroniza as empresas (evita duplicação)
+            $user->companies()->sync($companies);
+
         }
 
-        $this->command->info('Usuários criados com sucesso!');
     }
 }

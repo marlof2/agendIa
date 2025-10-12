@@ -1,5 +1,19 @@
 <template>
   <v-btn
+    v-if="iconOnly"
+    :icon="displayIcon"
+    :color="color"
+    :variant="variant"
+    :size="size"
+    :loading="loading"
+    :disabled="disabled"
+    :rounded="rounded"
+    :class="buttonClass"
+    :title="text"
+    @click="$emit('click')"
+  />
+  <v-btn
+    v-else
     :color="color"
     :variant="variant"
     :size="size"
@@ -11,7 +25,7 @@
     :class="buttonClass"
     @click="$emit('click')"
   >
-    {{ text }}
+    {{ displayText }}
   </v-btn>
 </template>
 
@@ -37,13 +51,13 @@ interface Emits {
 const props = withDefaults(defineProps<Props>(), {
   text: 'Editar',
   color: 'warning',
-  variant: 'text',
-  size: 'default',
+  variant: 'outlined',
+  size: 'small',
   prependIcon: 'mdi-pencil-outline',
   appendIcon: undefined,
   loading: false,
   disabled: false,
-  rounded: undefined,
+  rounded: 'lg',
   buttonClass: 'action-button',
   iconOnly: false,
 });

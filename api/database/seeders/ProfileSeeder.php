@@ -24,9 +24,14 @@ class ProfileSeeder extends Seeder
                 'description' => 'Perfil com acesso total ao sistema',
             ],
             [
-                'name' => 'secretary',
-                'display_name' => 'Secretária',
-                'description' => 'Perfil para secretárias com acesso a agendamentos e clientes',
+                'name' => 'owner',
+                'display_name' => 'Proprietário',
+                'description' => 'Perfil para proprietários da empresa com amplo acesso ao sistema',
+            ],
+            [
+                'name' => 'supervisor',
+                'display_name' => 'Supervisor',
+                'description' => 'Perfil para supervisores com acesso a gestão de agendamentos e equipe',
             ],
             [
                 'name' => 'professional',

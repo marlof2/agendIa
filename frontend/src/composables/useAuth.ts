@@ -3,6 +3,7 @@
  */
 import { ref, computed } from "vue";
 import { useHttp } from "@/composables/useHttp";
+import { useTenant } from "@/composables/useTenant";
 import router from "@/router";
 import { showErrorToast } from "@/utils/swal";
 const { post } = useHttp();
@@ -49,6 +50,7 @@ export function useAuth() {
         token: response.data.token,
         isAuthenticated: true,
       };
+
       // Carregar abilities automaticamente se disponíveis
       if (response.data.abilities) {
         const { saveWithEncrypted } = await import('@/utils/storage');
@@ -59,6 +61,12 @@ export function useAuth() {
 
         // Salvar abilities criptografadas no localStorage
         await saveWithEncrypted('agendia_user_abilities', abilitiesData);
+      }
+
+      // Salvar empresas (tenants) disponíveis se retornadas
+      if (response.data.tenants && Array.isArray(response.data.tenants)) {
+        const { setAvailableTenants } = useTenant();
+        setAvailableTenants(response.data.tenants);
       }
 
       return true;
@@ -114,6 +122,9 @@ export function useAuth() {
       const response = await post("/auth/logout");
 
       if (response.success) {
+        // Limpar dados de tenant
+        const { clearTenant } = useTenant();
+        clearTenant();
 
         authState.value = {
           user: null,
@@ -125,6 +136,11 @@ export function useAuth() {
       }
     } catch (error) {
       showErrorToast("Erro no logout", "Autenticação");
+
+      // Limpar dados de tenant mesmo em caso de erro
+      const { clearTenant } = useTenant();
+      clearTenant();
+
       authState.value = {
         user: null,
         token: null,

@@ -9,6 +9,7 @@ import { createRouter, createWebHistory } from "vue-router";
 import { setupLayouts } from "virtual:generated-layouts";
 import routes from "./routes";
 import { useAuth } from "@/composables/useAuth";
+import { useTenant } from "@/composables/useTenant";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -16,7 +17,7 @@ const router = createRouter({
 });
 
 // Configurações de rotas
-const PUBLIC_ROUTES = ["/", "/login", "/register"];
+const PUBLIC_ROUTES = ["/", "/login", "/register", "/select-tenant"];
 
 // Funções auxiliares para guards
 const isPublicRoute = (path: string): boolean => {
@@ -40,8 +41,17 @@ const checkUserPermissions = async (
 };
 
 const redirectAuthenticatedUser = (to: any, next: any): boolean => {
-  if (to.name === "login" && useAuth().isAuthenticated.value) {
-    next("/dashboard");
+  const { isAuthenticated } = useAuth();
+  const { hasTenantSelected } = useTenant();
+
+  // Se usuário autenticado tenta acessar login, redireciona
+  if (to.name === "login" && isAuthenticated.value) {
+    // Se não tem tenant selecionado, vai para seleção
+    if (!hasTenantSelected.value) {
+      next("/select-tenant");
+    } else {
+      next("/dashboard");
+    }
     return true;
   }
   return false;
@@ -59,6 +69,9 @@ const redirectUnauthenticatedUser = (to: any, next: any): boolean => {
 
 // Guards globais
 router.beforeEach(async (to, from, next) => {
+  const { isAuthenticated } = useAuth();
+  const { hasTenantSelected, loadCurrentTenant } = useTenant();
+
   // 1. Redirecionar usuário autenticado que tenta acessar login
   if (redirectAuthenticatedUser(to, next)) {
     return;
@@ -69,11 +82,27 @@ router.beforeEach(async (to, from, next) => {
     return;
   }
 
-  // 3. Verificar permissões específicas da rota
+  // 3. Verificar se usuário autenticado precisa selecionar tenant
   const requiresAuth = to.meta.requiresAuth as boolean;
+  const requiresTenant = to.meta.requiresTenant !== false; // Por padrão, requer tenant
+
+  if (requiresAuth && requiresTenant && isAuthenticated.value) {
+    // Carrega tenant do localStorage se ainda não carregou
+    if (!hasTenantSelected.value) {
+      loadCurrentTenant();
+    }
+
+    // Se ainda não tem tenant selecionado e não está indo para seleção
+    if (!hasTenantSelected.value && to.path !== '/select-tenant') {
+      next('/select-tenant');
+      return;
+    }
+  }
+
+  // 4. Verificar permissões específicas da rota
   const requiresAbility = to.meta.requiresAbility as string;
 
-  if (requiresAuth) {
+  if (requiresAuth && requiresAbility) {
     const hasPermission = await checkUserPermissions(requiresAbility);
 
     if (!hasPermission) {
@@ -82,7 +111,7 @@ router.beforeEach(async (to, from, next) => {
     }
   }
 
-  // 4. Permitir acesso à rota
+  // 5. Permitir acesso à rota
   next();
 });
 

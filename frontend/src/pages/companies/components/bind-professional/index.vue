@@ -4,7 +4,7 @@
     subtitle="Gerencie os profissionais associados a esta empresa"
     :breadcrumbs="[
       { title: 'Empresas', to: '/companies' },
-      { title: 'Profissionais' }
+      { title: 'Profissionais' },
     ]"
   >
     <!-- Action Bar -->
@@ -12,6 +12,7 @@
       <ActionBar>
         <template #left>
           <BtnNew
+            v-if="hasPermission('companies.attach_professional')"
             text="Adicionar Profissional"
             @click="showAddUserModal = true"
           />
@@ -20,7 +21,7 @@
           <div class="d-flex action-buttons-container">
             <ExportActions
               :data="companyUsers"
-              filename="usuarios-empresa"
+              filename="profissionais-empresa"
               button-text="Exportar"
               color="primary"
               variant="outlined"
@@ -75,7 +76,9 @@
 
       <!-- Empty State -->
       <div v-else-if="companyUsers.length === 0" class="users-empty">
-        <v-icon size="64" color="grey-lighten-1">mdi-account-multiple-outline</v-icon>
+        <v-icon size="64" color="grey-lighten-1"
+          >mdi-account-multiple-outline</v-icon
+        >
         <p class="text-h6 mt-4">Nenhum profissional associado</p>
         <p class="text-body-2 text-medium-emphasis">
           Adicione profissionais para começar a gerenciar esta empresa
@@ -102,41 +105,16 @@
                   {{ item.email }}
                 </div>
               </div>
-              <v-menu location="bottom end" offset="8">
-                <template v-slot:activator="{ props }">
-                  <v-btn
-                    v-bind="props"
-                    icon
-                    size="small"
-                    variant="text"
-                    color="default"
-                    class="action-btn"
-                  >
-                    <v-icon size="20">mdi-dots-vertical</v-icon>
-                  </v-btn>
-                </template>
-                <v-list density="compact" class="action-menu">
-                  <v-list-item
-                    prepend-icon="mdi-eye-outline"
-                    title="Visualizar"
-                    @click="view(item)"
-                    class="action-item primary-action"
-                  />
-                  <v-list-item
-                    prepend-icon="mdi-pencil-outline"
-                    title="Editar"
-                    @click="edit(item)"
-                    class="action-item warning-action"
-                  />
-                  <v-divider />
-                  <v-list-item
-                    prepend-icon="mdi-link-off"
-                    title="Desassociar"
-                    @click="removeAssociation(item)"
-                    class="action-item danger-action"
-                  />
-                </v-list>
-              </v-menu>
+              <ActionsMenu
+                :item="item"
+                :show-delete="false"
+                :custom-actions="professionalActions"
+                view-permission="companies.show"
+                edit-permission="companies.edit"
+                @view="view"
+                @edit="edit"
+                @action="handleProfessionalAction"
+              />
             </div>
           </v-card-title>
 
@@ -149,7 +127,9 @@
                 variant="tonal"
                 size="small"
               >
-                <v-icon start size="14">{{ getProfileIcon(item.profile.name) }}</v-icon>
+                <v-icon start size="14">{{
+                  getProfileIcon(item.profile.name)
+                }}</v-icon>
                 {{ item.profile.display_name || item.profile.name }}
               </v-chip>
             </div>
@@ -157,10 +137,12 @@
             <!-- User Stats -->
             <div class="user-stats">
               <div class="stat-item">
-                <v-icon size="18" color="primary" class="mr-2">mdi-phone</v-icon>
+                <v-icon size="18" color="primary" class="mr-2"
+                  >mdi-phone</v-icon
+                >
                 <span class="text-body-2">
                   <strong class="text-high-emphasis">Telefone: </strong>
-                  {{ item.phone ? formatPhone(item.phone) : 'Não informado' }}
+                  {{ item.phone ? formatPhone(item.phone) : "Não informado" }}
                   <v-chip
                     v-if="item.phone && item.has_whatsapp"
                     color="success"
@@ -173,7 +155,9 @@
                 </span>
               </div>
               <div class="stat-item">
-                <v-icon size="18" color="info" class="mr-2">mdi-calendar</v-icon>
+                <v-icon size="18" color="info" class="mr-2"
+                  >mdi-calendar</v-icon
+                >
                 <span class="text-body-2">
                   <strong class="text-high-emphasis">Associado em: </strong>
                   {{ formatDate(item.pivot?.created_at || item.created_at) }}
@@ -184,15 +168,23 @@
 
           <!-- Card Actions -->
           <v-card-actions class="user-card-actions">
-            <BtnView @click="view(item)" />
+            <BtnView
+              @click="view(item)"
+              v-if="hasPermission('companies.show')"
+            />
             <v-spacer />
-            <BtnEdit :icon-only="true" @click="edit(item)" />
+            <BtnEdit
+              @click="edit(item)"
+              v-if="hasPermission('companies.edit')"
+            />
             <v-btn
+              rounded="lg"
               color="error"
-              variant="text"
+              variant="outlined"
               size="small"
               prepend-icon="mdi-link-off"
               @click="removeAssociation(item)"
+              v-if="hasPermission('companies.detach_professional')"
             >
               Desassociar
             </v-btn>
@@ -245,7 +237,6 @@
         </div>
       </div>
     </template>
-
   </BasePage>
 
   <!-- Modals -->
@@ -282,6 +273,7 @@ import BasePage from "@/components/BasePage.vue";
 import ActionBar from "@/components/ActionBar.vue";
 import FiltersCard from "@/components/FiltersCard.vue";
 import ExportActions from "@/components/ExportActions.vue";
+import ActionsMenu, { type CustomAction } from "@/components/ActionsMenu.vue";
 import AddUserToCompanyModal from "./AddUserToCompanyModal.vue";
 import UserViewModal from "@/pages/users/components/UserViewModal.vue";
 import UserModal from "@/pages/users/components/UserModal.vue";
@@ -291,10 +283,28 @@ import { useAbilities } from "@/composables/useAbilities";
 import { useMask } from "@/composables/useMask";
 import { useProfileUtils } from "@/composables/useProfileUtils";
 import { showSuccessToast, showErrorToast } from "@/utils/swal";
-import { BtnNew, BtnSearch, BtnFilter, BtnView, BtnEdit } from "@/components/buttons";
+import {
+  BtnNew,
+  BtnSearch,
+  BtnFilter,
+  BtnView,
+  BtnEdit,
+} from "@/components/buttons";
 
 const route = useRoute();
 const { hasPermission } = useAbilities();
+
+// Ações customizadas do menu
+const professionalActions: CustomAction[] = [
+  {
+    key: "detach",
+    title: "Desassociar",
+    subtitle: "Remover vínculo",
+    icon: "mdi-link-off",
+    class: "delete-action",
+    permission: "companies.detach_professional",
+  },
+];
 
 // Get company ID from route
 const companyId = computed(() => route.params.id as string);
@@ -305,7 +315,11 @@ onMounted(async () => {
 });
 
 // Composables
-const { getById: getCompany, getCompanyUsers, detachProfessional } = useCompaniesApi();
+const {
+  getById: getCompany,
+  getCompanyUsers,
+  detachProfessional,
+} = useCompaniesApi();
 const { getProfileColor, getProfileIcon } = useProfileUtils();
 
 // State
@@ -316,7 +330,7 @@ const pagination = ref({
   current_page: 1,
   last_page: 1,
   per_page: 12,
-  total: 0
+  total: 0,
 });
 
 // Modal states
@@ -353,7 +367,7 @@ const loadCompanyUsers = async () => {
         current_page: 1,
         last_page: 1,
         per_page: 12,
-        total: 0
+        total: 0,
       };
       return;
     }
@@ -370,7 +384,7 @@ const loadCompanyUsers = async () => {
       current_page: result.current_page || 1,
       last_page: result.last_page || 1,
       per_page: result.per_page || 12,
-      total: result.total || 0
+      total: result.total || 0,
     };
   } catch (err) {
     console.error("Erro ao carregar usuários da empresa:", err);
@@ -378,7 +392,6 @@ const loadCompanyUsers = async () => {
     loading.value = false;
   }
 };
-
 
 // Funções de navegação específicas da página
 const view = (item: any) => {
@@ -397,6 +410,12 @@ const removeAssociation = (item: any) => {
   showDetachModal.value = true;
 };
 
+const handleProfessionalAction = (key: string, item: any) => {
+  if (key === "detach") {
+    removeAssociation(item);
+  }
+};
+
 const handleDetachProfessional = async (user: any) => {
   try {
     loading.value = true;
@@ -410,7 +429,6 @@ const handleDetachProfessional = async (user: any) => {
 
     // Recarregar lista
     await loadCompanyUsers();
-
   } catch (error: any) {
     console.error("Erro ao desassociar profissional:", error);
     showErrorToast(
@@ -488,7 +506,6 @@ const handlePerPageChange = async (perPage: number) => {
     console.error("Erro ao alterar itens por página:", err);
   }
 };
-
 </script>
 
 <style scoped>
@@ -597,47 +614,6 @@ const handlePerPageChange = async (perPage: number) => {
 
 .action-button:hover {
   transform: translateY(-1px);
-}
-
-.action-btn {
-  border-radius: 8px;
-  transition: all 0.2s ease;
-}
-
-.action-btn:hover {
-  background: rgba(var(--v-theme-primary), 0.08);
-  transform: scale(1.05);
-}
-
-.action-menu {
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-}
-
-.action-item {
-  border-radius: 8px;
-  margin: 2px 4px;
-  transition: all 0.2s ease;
-}
-
-.action-item:hover {
-  background: rgba(var(--v-theme-primary), 0.08);
-}
-
-.primary-action:hover {
-  background: rgba(var(--v-theme-primary), 0.1);
-}
-
-.info-action:hover {
-  background: rgba(var(--v-theme-info), 0.1);
-}
-
-.warning-action:hover {
-  background: rgba(var(--v-theme-warning), 0.1);
-}
-
-.danger-action:hover {
-  background: rgba(var(--v-theme-error), 0.1);
 }
 
 /* Pagination */

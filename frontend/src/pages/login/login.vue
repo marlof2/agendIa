@@ -204,7 +204,8 @@ const handleLogin = async () => {
     const success = await login(form.email, form.password)
 
     if (success) {
-      router.push('/dashboard')
+      // Redireciona para seleção de empresa (o router guard verificará se necessário)
+      router.push('/select-tenant')
     } else {
       // Erro de credenciais - o toast já foi mostrado pelo useHttp
       loginError.value = 'Credenciais inválidas. Verifique seu email e senha.'
@@ -227,7 +228,8 @@ const handleGoogleLogin = async () => {
     const success = await loginWithGoogle()
 
     if (success) {
-      router.push('/dashboard')
+      // Redireciona para seleção de empresa (o router guard verificará se necessário)
+      router.push('/select-tenant')
     } else {
       // Mostrar erro de login
       console.error('Erro no login com Google')
@@ -259,7 +261,7 @@ const clearError = () => {
 /* Main Container */
 .login-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  background: linear-gradient(135deg, #1e293b 0%, #334155 50%, #475569 100%);
   position: relative;
   overflow: hidden;
   display: flex;
@@ -363,7 +365,7 @@ const clearError = () => {
 
 /* Header Section */
 .login-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
   padding: 2rem 1.5rem;
   text-align: center;
   position: relative;
@@ -450,25 +452,25 @@ const clearError = () => {
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(10px);
-  border: 2px solid rgba(102, 126, 234, 0.2);
+  border: 2px solid rgba(30, 41, 59, 0.2);
   transition: all 0.3s ease;
 }
 
 .custom-input :deep(.v-field:hover) {
-  border-color: rgba(102, 126, 234, 0.4);
+  border-color: rgba(30, 41, 59, 0.4);
   transform: translateY(-1px);
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.1);
+  box-shadow: 0 4px 15px rgba(30, 41, 59, 0.1);
 }
 
 .custom-input :deep(.v-field--focused) {
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: #1e293b;
+  box-shadow: 0 0 0 3px rgba(30, 41, 59, 0.1);
 }
 
 /* Buttons */
 .login-btn {
   margin-top: 0.5rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
   color: white;
   font-weight: 600;
   font-size: 1rem;
@@ -496,7 +498,7 @@ const clearError = () => {
 
 .login-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 6px 20px rgba(30, 41, 59, 0.3);
 }
 
 .google-btn {
@@ -524,12 +526,12 @@ const clearError = () => {
 
 .divider {
   flex: 1;
-  border-color: rgba(102, 126, 234, 0.2);
+  border-color: rgba(30, 41, 59, 0.2);
 }
 
 .divider-text {
   padding: 0 1rem;
-  color: rgba(102, 126, 234, 0.7);
+  color: rgba(30, 41, 59, 0.7);
   font-weight: 500;
   font-size: 0.9rem;
   background: rgba(255, 255, 255, 0.9);
@@ -555,8 +557,8 @@ const clearError = () => {
 /* Footer */
 .login-footer {
   padding: 1rem 1.5rem;
-  background: rgba(102, 126, 234, 0.05);
-  border-top: 1px solid rgba(102, 126, 234, 0.1);
+  background: rgba(30, 41, 59, 0.05);
+  border-top: 1px solid rgba(30, 41, 59, 0.1);
 }
 
 .footer-content {
@@ -565,7 +567,7 @@ const clearError = () => {
 }
 
 .footer-text {
-  color: rgba(102, 126, 234, 0.8);
+  color: rgba(30, 41, 59, 0.8);
   margin: 0;
   font-size: 0.95rem;
 }
@@ -584,29 +586,29 @@ const clearError = () => {
 
 .v-theme--dark .custom-input :deep(.v-field) {
   background: rgba(30, 41, 59, 0.8);
-  border-color: rgba(139, 92, 246, 0.3);
+  border-color: rgba(71, 85, 105, 0.3);
 }
 
 .v-theme--dark .custom-input :deep(.v-field:hover) {
-  border-color: rgba(139, 92, 246, 0.5);
+  border-color: rgba(71, 85, 105, 0.5);
 }
 
 .v-theme--dark .custom-input :deep(.v-field--focused) {
-  border-color: #8b5cf6;
+  border-color: #475569;
 }
 
 .v-theme--dark .divider-text {
   background: rgba(30, 41, 59, 0.9);
-  color: rgba(139, 92, 246, 0.7);
+  color: rgba(100, 116, 139, 0.7);
 }
 
 .v-theme--dark .login-footer {
-  background: rgba(139, 92, 246, 0.05);
-  border-top-color: rgba(139, 92, 246, 0.1);
+  background: rgba(51, 65, 85, 0.05);
+  border-top-color: rgba(51, 65, 85, 0.1);
 }
 
 .v-theme--dark .footer-text {
-  color: rgba(139, 92, 246, 0.8);
+  color: rgba(148, 163, 184, 0.8);
 }
 
 /* Responsive Design */

@@ -159,7 +159,7 @@
       <v-spacer />
       <div class="d-flex modal-actions-container">
         <BtnCancel @click="closeModal" />
-        <BtnEdit @click="handleEdit" />
+        <BtnEdit @click="handleEdit" size="default" v-if="hasPermission('companies.edit')" variant="flat" />
       </div>
     </template>
   </BaseDialog>
@@ -168,6 +168,7 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useMask } from "@/composables/useMask";
+import { useAbilities } from "@/composables/useAbilities";
 
 interface Props {
   modelValue: boolean;
@@ -188,6 +189,8 @@ const emit = defineEmits<Emits>();
 
 // Computed
 const company = computed(() => props.company);
+
+const { hasPermission } = useAbilities();
 
 // Methods
 const closeModal = () => {

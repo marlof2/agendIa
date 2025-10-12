@@ -33,6 +33,18 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/select-tenant',
+    name: 'select-tenant',
+    component: () => import('@/pages/select-tenant/SelectTenant.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresTenant: false, // Não requer tenant selecionado
+      title: 'Selecione a Empresa',
+      description: 'Escolha qual empresa você deseja acessar',
+      layout: 'public'
+    }
+  },
+  {
     path: '/dashboard',
     name: 'dashboard',
     component: () => import('@/pages/dashboard.vue'),

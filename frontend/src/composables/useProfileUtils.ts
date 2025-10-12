@@ -10,7 +10,8 @@ export function useProfileUtils() {
   const getProfileColor = (profileName?: string): string => {
     switch (profileName) {
       case 'admin': return 'error';
-      case 'secretary': return 'warning';
+      case 'owner': return 'purple';
+      case 'supervisor': return 'warning';
       case 'professional': return 'info';
       case 'client': return 'success';
       default: return 'grey';
@@ -23,7 +24,8 @@ export function useProfileUtils() {
   const getProfileIcon = (profileName?: string): string => {
     switch (profileName) {
       case 'admin': return 'mdi-shield-crown';
-      case 'secretary': return 'mdi-account-tie';
+      case 'owner': return 'mdi-crown';
+      case 'supervisor': return 'mdi-account-tie';
       case 'professional': return 'mdi-briefcase';
       case 'client': return 'mdi-account';
       default: return 'mdi-help';

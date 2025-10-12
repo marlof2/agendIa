@@ -28,6 +28,9 @@ class AbilitySeeder extends Seeder
             ['name' => 'companies.show', 'category' => 'companies', 'action' => 'show', 'display_name' => 'Visualizar Empresas', 'description' => 'Permite visualizar empresas'],
             ['name' => 'companies.delete', 'category' => 'companies', 'action' => 'delete', 'display_name' => 'Deletar Empresas', 'description' => 'Permite deletar empresas'],
             ['name' => 'companies.manage_professionals', 'category' => 'companies', 'action' => 'manage_professionals', 'display_name' => 'Gerenciar Profissionais das Empresas', 'description' => 'Permite gerenciar profissionais das empresas'],
+            ['name' => 'companies.attach_professional', 'category' => 'companies', 'action' => 'attach_professional', 'display_name' => 'Associar Profissional à Empresa', 'description' => 'Permite associar profissional à empresa'],
+            ['name' => 'companies.detach_professional', 'category' => 'companies', 'action' => 'detach_professional', 'display_name' => 'Desassociar Profissional da Empresa', 'description' => 'Permite desassociar profissional da empresa'],
+
 
             // Perfis
             ['name' => 'profiles.index', 'category' => 'profiles', 'action' => 'index', 'display_name' => 'Listar Perfis', 'description' => 'Permite visualizar perfis'],
@@ -101,6 +104,5 @@ class AbilitySeeder extends Seeder
             );
         }
 
-        $this->command->info('Abilities criadas com sucesso!');
     }
 }

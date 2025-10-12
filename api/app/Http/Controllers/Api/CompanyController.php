@@ -188,4 +188,20 @@ class CompanyController extends Controller
         }
     }
 
+    /**
+     * Exportar profissionais vinculados à empresa para Excel ou PDF
+     */
+    public function exportBindProfessional(ExportRequest $request, $companyId)
+    {
+        $filters = [
+            'search' => $request->get('search')
+        ];
+
+        if ($request->format === 'excel') {
+            return $this->companyService->exportProfessionalsToExcel((int)$companyId, $filters);
+        } else {
+            return $this->companyService->exportProfessionalsToPDF((int)$companyId, $filters);
+        }
+    }
+
 }

@@ -8,10 +8,7 @@
     <template #actionBar>
       <ActionBar>
         <template #left>
-          <BtnNew
-            v-if="hasPermission('users.create')"
-            @click="create"
-          />
+          <BtnNew v-if="hasPermission('users.create')" @click="create" />
         </template>
         <template #right>
           <div class="d-flex action-buttons-container">
@@ -23,7 +20,10 @@
               variant="outlined"
               prepend-icon="mdi-download"
               endpoint="/users"
-              :filters="{ search: searchQuery || undefined, profile_id: filters.profile_id }"
+              :filters="{
+                search: searchQuery || undefined,
+                profile_id: filters.profile_id,
+              }"
             />
           </div>
         </template>
@@ -86,7 +86,9 @@
 
       <!-- Empty State -->
       <div v-else-if="users.length === 0" class="users-empty">
-        <v-icon size="64" color="grey-lighten-1">mdi-account-multiple-outline</v-icon>
+        <v-icon size="64" color="grey-lighten-1"
+          >mdi-account-multiple-outline</v-icon
+        >
         <p class="text-h6 mt-4">Nenhum usuário encontrado</p>
         <p class="text-body-2 text-medium-emphasis">
           Crie seu primeiro usuário para começar
@@ -113,41 +115,15 @@
                   {{ item.email }}
                 </div>
               </div>
-              <v-menu location="bottom end" offset="8">
-                <template v-slot:activator="{ props }">
-                  <v-btn
-                    v-bind="props"
-                    icon
-                    size="small"
-                    variant="text"
-                    color="default"
-                    class="action-btn"
-                  >
-                    <v-icon size="20">mdi-dots-vertical</v-icon>
-                  </v-btn>
-                </template>
-                <v-list density="compact" class="action-menu">
-                  <v-list-item
-                    prepend-icon="mdi-eye-outline"
-                    title="Visualizar"
-                    @click="view(item)"
-                    class="action-item primary-action"
-                  />
-                  <v-list-item
-                    prepend-icon="mdi-pencil-outline"
-                    title="Editar"
-                    @click="edit(item)"
-                    class="action-item warning-action"
-                  />
-                  <v-divider />
-                  <v-list-item
-                    prepend-icon="mdi-delete-outline"
-                    title="Excluir"
-                    @click="remove(item)"
-                    class="action-item danger-action"
-                  />
-                </v-list>
-              </v-menu>
+              <ActionsMenu
+                :item="item"
+                view-permission="users.show"
+                edit-permission="users.edit"
+                delete-permission="users.delete"
+                @view="view"
+                @edit="edit"
+                @delete="remove"
+              />
             </div>
           </v-card-title>
 
@@ -160,7 +136,9 @@
                 variant="tonal"
                 size="small"
               >
-                <v-icon start size="14">{{ getProfileIcon(item.profile.name) }}</v-icon>
+                <v-icon start size="14">{{
+                  getProfileIcon(item.profile.name)
+                }}</v-icon>
                 {{ item.profile.display_name || item.profile.name }}
               </v-chip>
             </div>
@@ -168,10 +146,12 @@
             <!-- User Stats -->
             <div class="user-stats">
               <div class="stat-item">
-                <v-icon size="18" color="primary" class="mr-2">mdi-phone</v-icon>
+                <v-icon size="18" color="primary" class="mr-2"
+                  >mdi-phone</v-icon
+                >
                 <span class="text-body-2">
                   <strong class="text-high-emphasis">Telefone: </strong>
-                  {{ item.phone ? formatPhone(item.phone) : 'Não informado' }}
+                  {{ item.phone ? formatPhone(item.phone) : "Não informado" }}
                   <v-chip
                     v-if="item.phone && item.has_whatsapp"
                     color="success"
@@ -191,7 +171,9 @@
                 </span>
               </div>
               <div class="stat-item">
-                <v-icon size="18" color="success" class="mr-2">mdi-calendar</v-icon>
+                <v-icon size="18" color="success" class="mr-2"
+                  >mdi-calendar</v-icon
+                >
                 <span class="text-body-2">
                   <strong class="text-high-emphasis">Criado em: </strong>
                   {{ formatDate(item.created_at) }}
@@ -202,10 +184,10 @@
 
           <!-- Card Actions -->
           <v-card-actions class="user-card-actions">
-            <BtnView @click="view(item)" />
+            <BtnView @click="view(item)" v-if="hasPermission('users.show')" />
             <v-spacer />
-            <BtnEdit :icon-only="true" @click="edit(item)" />
-            <BtnDelete :icon-only="true" @click="remove(item)" />
+            <BtnEdit @click="edit(item)" v-if="hasPermission('users.edit')" />
+            <BtnDelete @click="remove(item) " v-if="hasPermission('users.delete')"  />
           </v-card-actions>
         </v-card>
       </div>
@@ -255,7 +237,6 @@
         </div>
       </div>
     </template>
-
   </BasePage>
 
   <!-- Modals - Fora do BasePage para funcionar corretamente -->
@@ -286,6 +267,7 @@ import BasePage from "@/components/BasePage.vue";
 import ActionBar from "@/components/ActionBar.vue";
 import FiltersCard from "@/components/FiltersCard.vue";
 import ExportActions from "@/components/ExportActions.vue";
+import ActionsMenu from "@/components/ActionsMenu.vue";
 import UserViewModal from "./components/UserViewModal.vue";
 import DeleteConfirmModal from "./components/DeleteConfirmModal.vue";
 import { useUsersApi } from "./api";
@@ -354,7 +336,6 @@ const create = () => {
   showUserModal.value = true;
 };
 
-
 // Funções dos modais
 const handleListReload = async () => {
   await getAll();
@@ -377,7 +358,6 @@ const handleEditFromView = (user: any) => {
   isEditing.value = true;
   showUserModal.value = true;
 };
-
 
 // Reactive data
 const searchQuery = ref("");
@@ -483,7 +463,6 @@ const handlePerPageChange = async (perPage: number) => {
 // Utility methods
 const { formatPhone } = useMask();
 const { getProfileColor, getProfileIcon } = useProfileUtils();
-
 </script>
 
 <style scoped>
@@ -592,47 +571,6 @@ const { getProfileColor, getProfileIcon } = useProfileUtils();
 
 .action-button:hover {
   transform: translateY(-1px);
-}
-
-.action-btn {
-  border-radius: 8px;
-  transition: all 0.2s ease;
-}
-
-.action-btn:hover {
-  background: rgba(var(--v-theme-primary), 0.08);
-  transform: scale(1.05);
-}
-
-.action-menu {
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-}
-
-.action-item {
-  border-radius: 8px;
-  margin: 2px 4px;
-  transition: all 0.2s ease;
-}
-
-.action-item:hover {
-  background: rgba(var(--v-theme-primary), 0.08);
-}
-
-.primary-action:hover {
-  background: rgba(var(--v-theme-primary), 0.1);
-}
-
-.info-action:hover {
-  background: rgba(var(--v-theme-info), 0.1);
-}
-
-.warning-action:hover {
-  background: rgba(var(--v-theme-warning), 0.1);
-}
-
-.danger-action:hover {
-  background: rgba(var(--v-theme-error), 0.1);
 }
 
 /* Pagination */
