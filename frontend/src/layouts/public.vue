@@ -14,7 +14,7 @@
 <style scoped>
 .public-main {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #1e293b 0%, #334155 50%, #475569 100%);
   position: relative;
 }
 
@@ -32,7 +32,7 @@
 
 /* Dark theme */
 .v-theme--dark .public-main {
-  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
 }
 
 .v-theme--dark .public-main::before {

@@ -16,9 +16,30 @@ class CompanyService
     /**
      * Get all companies with pagination and search
      */
-    public function getAllCompanies(array $filters = []): LengthAwarePaginator
+    public function getAllCompanies(array $filters = [], ?User $user = null): LengthAwarePaginator
     {
         $query = Company::with('timezone');
+
+        // Filtrar por status (ativas, inativas, todas)
+        $status = $filters['status'] ?? 'active';
+        if ($status === 'inactive') {
+            $query->onlyTrashed();
+        } elseif ($status === 'all') {
+            $query->withTrashed();
+        }
+        // Por padrão, sem chamada adicional, já mostra apenas ativas
+
+        // Filtrar por acesso do usuário (se não for admin)
+        if ($user) {
+            $user->load('profile');
+
+            // Se não for admin, mostra apenas empresas que o usuário tem acesso
+            if (!$user->isAdmin()) {
+                $companyIds = $user->companies()->pluck('companies.id')->toArray();
+                $query->whereIn('id', $companyIds);
+            }
+            // Se for admin, mostra todas (não adiciona filtro)
+        }
 
         // Filter by search term
         if (!empty($filters['search'])) {
@@ -26,7 +47,7 @@ class CompanyService
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                   ->orWhere('cnpj', 'like', "%{$search}%")
-                  ->orWhere('phone', 'like', "%{$search}%");
+                  ->orWhere('phone_1', 'like', "%{$search}%");
             });
         }
 
@@ -139,9 +160,9 @@ class CompanyService
     /**
      * Export companies to Excel or PDF
      */
-    public function exportToExcel(array $filters = []): BinaryFileResponse
+    public function exportToExcel(array $filters = [], ?User $user = null): BinaryFileResponse
     {
-        $companies = $this->getAllCompanies($filters);
+        $companies = $this->getAllCompanies($filters, $user);
 
         $headers = [
             ['key' => 'name', 'label' => 'Nome da Empresa'],
@@ -190,9 +211,9 @@ class CompanyService
     /**
      * Export companies to PDF
      */
-    public function exportToPDF(array $filters = []): Response
+    public function exportToPDF(array $filters = [], ?User $user = null): Response
     {
-        $companies = $this->getAllCompanies($filters);
+        $companies = $this->getAllCompanies($filters, $user);
         $headers = [
             ['key' => 'name', 'label' => 'Nome da Empresa'],
             ['key' => 'person_type', 'label' => 'Tipo'],

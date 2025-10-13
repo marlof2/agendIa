@@ -125,9 +125,6 @@ class AuthController extends Controller
             return [
                 'id' => $company->id,
                 'name' => $company->name,
-                'slug' => $company->slug ?? strtolower(str_replace(' ', '-', $company->name)),
-                'logo' => $company->logo ?? null,
-                'created_at' => $company->created_at,
             ];
         });
 
@@ -197,10 +194,6 @@ class AuthController extends Controller
                 return [
                     'id' => $company->id,
                     'name' => $company->name,
-                    'slug' => $company->slug ?? strtolower(str_replace(' ', '-', $company->name)),
-                    'logo' => $company->logo ?? null,
-                    'is_active' => $company->is_active ?? true,
-                    'created_at' => $company->created_at,
                 ];
             });
 
@@ -243,9 +236,6 @@ class AuthController extends Controller
             return [
                 'id' => $company->id,
                 'name' => $company->name,
-                'slug' => $company->slug ?? strtolower(str_replace(' ', '-', $company->name)),
-                'logo' => $company->logo ?? null,
-                'created_at' => $company->created_at,
             ];
         });
 
@@ -297,6 +287,36 @@ class AuthController extends Controller
                 'token' => $token,
                 'abilities' => $abilities,
             ]
+        ]);
+    }
+
+    /**
+     * Alterar senha do usuário autenticado
+     */
+    public function changePassword(Request $request): JsonResponse
+    {
+        $request->validate([
+            'current_password' => 'required|string',
+            'new_password' => 'required|string|min:6|confirmed',
+        ]);
+
+        $user = $request->user();
+
+        // Verificar se a senha atual está correta
+        if (!Hash::check($request->current_password, $user->password)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Senha atual incorreta'
+            ], 422);
+        }
+
+        // Atualizar a senha
+        $user->password = Hash::make($request->new_password);
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Senha alterada com sucesso'
         ]);
     }
 }

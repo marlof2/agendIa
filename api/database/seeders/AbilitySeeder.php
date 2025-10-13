@@ -41,6 +41,12 @@ class AbilitySeeder extends Seeder
             ['name' => 'profiles.list_abilities', 'category' => 'profiles', 'action' => 'list_abilities', 'display_name' => 'Listar Abilidades dos Perfis', 'description' => 'Permite listar habilidades dos perfis'],
             ['name' => 'profiles.update_abilities', 'category' => 'profiles', 'action' => 'update_abilities', 'display_name' => 'Atualizar Abilidades dos Perfis', 'description' => 'Permite atualizar habilidades dos perfis'],
 
+             // Clientes
+            ['name' => 'clients.index', 'category' => 'clients', 'action' => 'index', 'display_name' => 'Listar Clientes', 'description' => 'Permite visualizar clientes'],
+            ['name' => 'clients.show', 'category' => 'clients', 'action' => 'show', 'display_name' => 'Visualizar Cliente', 'description' => 'Permite visualizar detalhes do cliente'],
+            ['name' => 'clients.create', 'category' => 'clients', 'action' => 'create', 'display_name' => 'Criar Clientes', 'description' => 'Permite criar novos clientes'],
+            ['name' => 'clients.edit', 'category' => 'clients', 'action' => 'edit', 'display_name' => 'Editar Clientes', 'description' => 'Permite editar clientes existentes'],
+            ['name' => 'clients.delete', 'category' => 'clients', 'action' => 'delete', 'display_name' => 'Deletar Clientes', 'description' => 'Permite deletar clientes'],
 
             //abilities
             ['name' => 'abilities.index', 'category' => 'abilities', 'action' => 'index', 'display_name' => 'Listar Abilidades', 'description' => 'Permite visualizar habilidades'],
@@ -88,12 +94,7 @@ class AbilitySeeder extends Seeder
             // ['name' => 'integrations.create', 'category' => 'integrations', 'action' => 'create', 'display_name' => 'Criar Integrações', 'description' => 'Permite criar integrações'],
             // ['name' => 'integrations.edit', 'category' => 'integrations', 'action' => 'edit', 'display_name' => 'Editar Integrações', 'description' => 'Permite editar integrações'],
 
-            // // Clientes
-            // ['name' => 'clients.index', 'category' => 'clients', 'action' => 'index', 'display_name' => 'Listar Clientes', 'description' => 'Permite visualizar clientes'],
-            // ['name' => 'clients.create', 'category' => 'clients', 'action' => 'create', 'display_name' => 'Criar Clientes', 'description' => 'Permite criar novos clientes'],
-            // ['name' => 'clients.edit', 'category' => 'clients', 'action' => 'edit', 'display_name' => 'Editar Clientes', 'description' => 'Permite editar clientes existentes'],
-            // ['name' => 'clients.delete', 'category' => 'clients', 'action' => 'delete', 'display_name' => 'Deletar Clientes', 'description' => 'Permite deletar clientes'],
-            // ['name' => 'clients.view', 'category' => 'clients', 'action' => 'view', 'display_name' => 'Visualizar Cliente', 'description' => 'Permite visualizar detalhes do cliente'],
+
         ];
 
         // Criar abilities usando firstOrCreate para evitar duplicatas

@@ -1,7 +1,7 @@
 /**
  * Composable para gerenciar autenticação e permissões
  */
-import { ref, computed } from "vue";
+import { ref, computed, nextTick } from "vue";
 import { useHttp } from "@/composables/useHttp";
 import { useTenant } from "@/composables/useTenant";
 import router from "@/router";
@@ -118,37 +118,41 @@ export function useAuth() {
 
   // Logout
   const logout = async (): Promise<void> => {
+    // Salvar tema antes de fazer qualquer coisa
+    const currentTheme = localStorage.getItem('agendia-theme');
+
     try {
-      const response = await post("/auth/logout");
-
-      if (response.success) {
-        // Limpar dados de tenant
-        const { clearTenant } = useTenant();
-        clearTenant();
-
-        authState.value = {
-          user: null,
-          token: null,
-          isAuthenticated: false,
-        };
-        localStorage.clear();
-        router.push("/login");
-      }
-    } catch (error) {
-      showErrorToast("Erro no logout", "Autenticação");
-
-      // Limpar dados de tenant mesmo em caso de erro
-      const { clearTenant } = useTenant();
-      clearTenant();
-
-      authState.value = {
-        user: null,
-        token: null,
-        isAuthenticated: false,
-      };
-      localStorage.clear();
-      router.push("/login");
+      // 1. Fazer logout no backend PRIMEIRO (enquanto token ainda é válido)
+      await post("/auth/logout");
+    } catch (backendError) {
+      console.warn("Erro ao fazer logout no backend:", backendError);
+      // Continua o logout local mesmo se backend falhar
     }
+
+    // 2. Limpar estado local
+    authState.value = {
+      user: null,
+      token: null,
+      isAuthenticated: false,
+    };
+
+    // 3. Limpar dados de tenant
+    const { clearTenant } = useTenant();
+    clearTenant();
+
+    // 4. Limpar localStorage
+    localStorage.clear();
+
+    // 5. Restaurar tema
+    if (currentTheme) {
+      localStorage.setItem('agendia-theme', currentTheme);
+    }
+
+    // 6. Aguardar atualização do estado reativo
+    await nextTick();
+
+    // 7. Redirecionar para login
+    await router.push("/login");
   };
 
   // Verificar autenticação no carregamento da página

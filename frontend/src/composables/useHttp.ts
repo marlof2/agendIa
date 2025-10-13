@@ -10,12 +10,18 @@ const createAxiosInstance = (): AxiosInstance => {
     headers: API_CONFIG.HEADERS
   })
 
-  // Interceptor para adicionar token de autenticação
+  // Interceptor para adicionar token de autenticação e tenant_id
   instance.interceptors.request.use(
     (config) => {
       const token = localStorage.getItem('auth_token')
       if (token) {
         config.headers.Authorization = `Bearer ${token}`
+      }
+
+      // Adicionar tenant_id se disponível
+      const tenantId = localStorage.getItem('agendia-tenant-id')
+      if (tenantId) {
+        config.headers['X-Tenant-ID'] = tenantId
       }
 
       // Log de requisições em desenvolvimento

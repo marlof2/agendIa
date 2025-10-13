@@ -104,13 +104,6 @@ class User extends Authenticatable
         return $this->hasMany(Notification::class);
     }
 
-    /**
-     * Check if user is admin.
-     */
-    public function isAdmin(): bool
-    {
-        return $this->profile && $this->profile->name === 'admin';
-    }
 
     /**
      * Check if user is owner.
@@ -175,5 +168,16 @@ class User extends Authenticatable
             return false;
         }
         return $this->profile->abilities->contains('name', $ability);
+    }
+
+    /**
+     * Check if user is admin.
+     */
+    public function isAdmin(): bool
+    {
+        if (!$this->profile) {
+            return false;
+        }
+        return $this->profile->name === 'admin';
     }
 }

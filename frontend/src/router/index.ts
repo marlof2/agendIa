@@ -44,15 +44,25 @@ const redirectAuthenticatedUser = (to: any, next: any): boolean => {
   const { isAuthenticated } = useAuth();
   const { hasTenantSelected } = useTenant();
 
-  // Se usuário autenticado tenta acessar login, redireciona
-  if (to.name === "login" && isAuthenticated.value) {
-    // Se não tem tenant selecionado, vai para seleção
-    if (!hasTenantSelected.value) {
-      next("/select-tenant");
-    } else {
-      next("/dashboard");
+  // Permitir acesso ao login se vindo de logout ou se não autenticado
+  if (to.name === "login") {
+    // Verificar localStorage diretamente para evitar estado desatualizado
+    const hasToken = localStorage.getItem('auth_token');
+
+    if (!hasToken || !isAuthenticated.value) {
+      return false; // Permite acessar login
     }
-    return true;
+
+    // Se está autenticado e tem token, redireciona
+    if (isAuthenticated.value) {
+      // Se não tem tenant selecionado, vai para seleção
+      if (!hasTenantSelected.value) {
+        next("/select-tenant");
+      } else {
+        next("/dashboard");
+      }
+      return true;
+    }
   }
   return false;
 };

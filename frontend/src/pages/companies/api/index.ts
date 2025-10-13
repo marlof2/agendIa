@@ -23,6 +23,7 @@ export interface Company {
   has_whatsapp_2: boolean
   timezone_id?: number
   timezone?: Timezone
+  deleted_at?: string | null
   created_at: string
   updated_at: string
 }
@@ -48,6 +49,7 @@ export interface CompanyFilters {
   search?: string
   page?: number
   per_page?: number
+  status?: 'active' | 'inactive' | 'all'
 }
 
 export function useCompaniesApi() {
@@ -182,6 +184,50 @@ export function useCompaniesApi() {
       }
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Erro ao excluir empresa'
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const deactivateItem = async (id: number): Promise<void> => {
+    loading.value = true
+    error.value = null
+
+    try {
+      const response = await patch(`/companies/${id}/deactivate`)
+
+      // Update the item in the list
+      const index = items.value.findIndex(item => item.id === id)
+      if (index !== -1) {
+        items.value[index].deleted_at = new Date().toISOString()
+      }
+
+      return response
+    } catch (err: any) {
+      error.value = err.response?.data?.message || 'Erro ao inativar empresa'
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const activateItem = async (id: number): Promise<Company> => {
+    loading.value = true
+    error.value = null
+
+    try {
+      const response = await patch(`/companies/${id}/activate`)
+
+      // Update the item in the list
+      const index = items.value.findIndex(item => item.id === id)
+      if (index !== -1 && response.data) {
+        items.value[index] = response.data
+      }
+
+      return response.data as Company
+    } catch (err: any) {
+      error.value = err.response?.data?.message || 'Erro ao ativar empresa'
       throw err
     } finally {
       loading.value = false
@@ -335,6 +381,8 @@ export function useCompaniesApi() {
     createItem,
     updateItem,
     deleteItem,
+    deactivateItem,
+    activateItem,
     bulkDelete,
     getAllTimezones,
     clearError,

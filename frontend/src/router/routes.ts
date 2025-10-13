@@ -5,12 +5,16 @@ import type { RouteRecordRaw } from 'vue-router'
 import routesProfiles from '@/pages/profiles/routes/index'
 import routesCompanies from '@/pages/companies/routes/index'
 import routesUsers from '@/pages/users/routes/index'
+import routesClients from '@/pages/clients/routes/index'
+import routesProfile from '@/pages/profile/routes/index'
 
 
 const routes: RouteRecordRaw[] = [
   ...routesProfiles,
   ...routesCompanies,
   ...routesUsers,
+  ...routesClients,
+  ...routesProfile,
   {
     path: '/',
     name: 'index',
@@ -29,6 +33,17 @@ const routes: RouteRecordRaw[] = [
       requiresAuth: false,
       title: 'Login',
       description: 'Faça login no sistema AgendIA',
+      layout: 'public'
+    }
+  },
+  {
+    path: '/register',
+    name: 'register',
+    component: () => import('@/pages/register/Register.vue'),
+    meta: {
+      requiresAuth: false,
+      title: 'Criar Conta',
+      description: 'Crie sua conta no sistema AgendIA',
       layout: 'public'
     }
   },
@@ -53,17 +68,6 @@ const routes: RouteRecordRaw[] = [
       requiresAbility: 'dashboard.index',
       title: 'Dashboard',
       description: 'Visão geral do sistema'
-    }
-  },
-  {
-    path: '/clients',
-    name: 'clients',
-    component: () => import('@/pages/clients/index.vue'),
-    meta: {
-      requiresAuth: true,
-      requiresAbility: 'clients.index',
-      title: 'Clientes',
-      description: 'Gerencie todos os clientes cadastrados'
     }
   },
   {

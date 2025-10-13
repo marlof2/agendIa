@@ -61,12 +61,124 @@
                 <p class="mt-4 text-body-2">Carregando empresas...</p>
               </div>
 
-              <div v-else-if="availableTenants.length === 0" class="text-center py-8">
-                <v-icon size="64" color="grey">mdi-office-building-off-outline</v-icon>
-                <p class="mt-4 text-h6 text-grey">Nenhuma empresa disponível</p>
-                <p class="text-body-2 text-grey">
-                  Entre em contato com o administrador
+              <div v-else-if="availableTenants.length === 0" class="no-companies-section">
+                <v-icon size="64" color="warning">mdi-alert-circle-outline</v-icon>
+                <p class="mt-4 text-h6 font-weight-bold">Associação Obrigatória</p>
+                <p class="text-body-2 text-medium-emphasis mb-4">
+                  Para acessar o sistema, você precisa se associar a pelo menos uma empresa
                 </p>
+
+                <v-alert
+                  type="warning"
+                  variant="tonal"
+                  density="compact"
+                  class="mb-6"
+                >
+                  <template #prepend>
+                    <v-icon>mdi-information</v-icon>
+                  </template>
+                  <span class="text-body-2">
+                    Selecione abaixo as empresas às quais deseja se associar
+                  </span>
+                </v-alert>
+
+                <!-- Search -->
+                <v-text-field
+                  v-model="searchCompanies"
+                  label="Buscar empresa"
+                  variant="outlined"
+                  density="compact"
+                  rounded="lg"
+                  prepend-inner-icon="mdi-magnify"
+                  clearable
+                  class="mb-4"
+                  @keyup.enter="loadAvailableCompanies"
+                  @click:clear="loadAvailableCompanies"
+                />
+
+                <!-- Loading Companies -->
+                <div v-if="loadingCompanies" class="companies-loading">
+                  <v-skeleton-loader v-for="i in 3" :key="i" type="card" class="mb-3" />
+                </div>
+
+                <!-- Empty Companies -->
+                <div v-else-if="publicCompanies.length === 0" class="text-center py-4">
+                  <v-icon size="48" color="grey">mdi-office-building-off</v-icon>
+                  <p class="text-body-2 text-medium-emphasis mt-2">Nenhuma empresa encontrada</p>
+                </div>
+
+                <!-- Companies List -->
+                <div v-else class="companies-list-container">
+                  <v-card
+                    v-for="company in publicCompanies"
+                    :key="company.id"
+                    class="company-select-card mb-3"
+                    :class="{ 'company-selected': isCompanySelected(company.id) }"
+                    elevation="1"
+                    @click="toggleCompanySelection(company.id)"
+                  >
+                    <v-card-text class="d-flex align-center pa-3">
+                      <v-checkbox
+                        :model-value="isCompanySelected(company.id)"
+                        color="primary"
+                        hide-details
+                        @click.stop="toggleCompanySelection(company.id)"
+                      />
+                      <div class="flex-grow-1 ml-3">
+                        <div class="text-subtitle-2 font-weight-bold">{{ company.name }}</div>
+                        <div class="text-caption text-medium-emphasis">
+                          <v-icon size="12" class="mr-1">mdi-account</v-icon>
+                          {{ company.responsible_name }}
+                        </div>
+                      </div>
+                      <v-chip
+                        v-if="isCompanySelected(company.id)"
+                        color="success"
+                        size="x-small"
+                      >
+                        <v-icon start size="12">mdi-check</v-icon>
+                        Selecionada
+                      </v-chip>
+                    </v-card-text>
+                  </v-card>
+                </div>
+
+                <!-- Pagination -->
+                <div v-if="publicCompanies.length > 0 && companiesPagination.last_page > 1" class="text-center mt-4">
+                  <v-pagination
+                    v-model="companiesPagination.current_page"
+                    :length="companiesPagination.last_page"
+                    :total-visible="5"
+                    size="small"
+                    @update:model-value="handleCompanyPageChange"
+                  />
+                </div>
+
+                <!-- Association Button -->
+                <v-btn
+                  v-if="selectedCompanyIds.length > 0"
+                  color="success"
+                  size="large"
+                  block
+                  rounded="lg"
+                  class="mt-6"
+                  :loading="associating"
+                  @click="associateToCompanies"
+                >
+                  <v-icon left>mdi-check-circle</v-icon>
+                  Associar a {{ selectedCompanyIds.length }} {{ selectedCompanyIds.length === 1 ? 'empresa' : 'empresas' }}
+                </v-btn>
+
+                <v-btn
+                  color="grey"
+                  variant="text"
+                  size="small"
+                  class="mt-3"
+                  block
+                  @click="handleLogout"
+                >
+                  Cancelar e Sair
+                </v-btn>
               </div>
 
               <div v-else class="tenants-grid">
@@ -82,14 +194,6 @@
                   <div class="tenant-card-content">
                     <div class="tenant-icon">
                       <v-avatar
-                        v-if="tenant.logo"
-                        size="64"
-                        rounded="lg"
-                      >
-                        <v-img :src="tenant.logo" :alt="tenant.name" />
-                      </v-avatar>
-                      <v-avatar
-                        v-else
                         size="64"
                         color="primary"
                         rounded="lg"
@@ -100,7 +204,6 @@
 
                     <div class="tenant-info">
                       <h3 class="tenant-name">{{ tenant.name }}</h3>
-                      <p class="tenant-slug">@{{ tenant.slug }}</p>
                       <v-chip
                         size="x-small"
                         color="success"
@@ -160,12 +263,16 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import { useTenant, type Tenant } from '@/composables/useTenant'
+import { useHttp } from '@/composables/useHttp'
+import { showSuccessToast, showErrorToast } from '@/utils/swal'
 
 const router = useRouter()
 const { user, logout } = useAuth()
+const http = useHttp()
 const {
   availableTenants,
   setCurrentTenant,
+  setAvailableTenants,
   loadAvailableTenants,
   switchTenant
 } = useTenant()
@@ -174,6 +281,19 @@ const {
 const loading = ref(true)
 const selecting = ref(false)
 const selectedTenantId = ref<number | null>(null)
+
+// Estado para associação de empresas
+const loadingCompanies = ref(false)
+const associating = ref(false)
+const publicCompanies = ref<any[]>([])
+const searchCompanies = ref('')
+const selectedCompanyIds = ref<number[]>([])
+const companiesPagination = ref({
+  current_page: 1,
+  last_page: 1,
+  per_page: 5,
+  total: 0
+})
 
 // Computed
 const userName = computed(() => user.value?.name || 'Usuário')
@@ -210,10 +330,102 @@ const handleLogout = async () => {
   router.push('/login')
 }
 
+// Company association methods
+const isCompanySelected = (companyId: number) => {
+  return selectedCompanyIds.value.includes(companyId)
+}
+
+const toggleCompanySelection = (companyId: number) => {
+  const index = selectedCompanyIds.value.indexOf(companyId)
+  if (index > -1) {
+    selectedCompanyIds.value.splice(index, 1)
+  } else {
+    selectedCompanyIds.value.push(companyId)
+  }
+}
+
+const loadAvailableCompanies = async () => {
+  loadingCompanies.value = true
+  try {
+    const queryParams = new URLSearchParams()
+    if (searchCompanies.value) queryParams.append('search', searchCompanies.value)
+    queryParams.append('page', companiesPagination.value.current_page.toString())
+    queryParams.append('per_page', companiesPagination.value.per_page.toString())
+
+    const url = `/companies/public?${queryParams.toString()}`
+    const response = await http.get(url)
+
+    publicCompanies.value = response.data || []
+    companiesPagination.value = {
+      current_page: response.current_page || 1,
+      last_page: response.last_page || 1,
+      per_page: response.per_page || 6,
+      total: response.total || 0
+    }
+  } catch (error) {
+    showErrorToast('Erro ao carregar empresas', 'Erro!')
+  } finally {
+    loadingCompanies.value = false
+  }
+}
+
+const handleCompanyPageChange = async (page: number) => {
+  companiesPagination.value.current_page = page
+  await loadAvailableCompanies()
+}
+
+const associateToCompanies = async () => {
+  if (selectedCompanyIds.value.length === 0) {
+    showErrorToast('Selecione pelo menos uma empresa', 'Atenção!')
+    return
+  }
+
+  associating.value = true
+  try {
+    const response = await http.post('/users/associate-companies', {
+      company_ids: selectedCompanyIds.value
+    })
+
+    showSuccessToast('Associação realizada com sucesso!', 'Sucesso!')
+
+    // Atualizar tenants disponíveis com os dados retornados
+    const companies = response.data.companies || []
+    const tenants = companies.map((company: any) => ({
+      id: company.id,
+      name: company.name
+    }))
+
+    // Usar setAvailableTenants do useTenant (salva no localStorage automaticamente)
+    setAvailableTenants(tenants)
+
+    // Selecionar a primeira empresa
+    if (tenants.length > 0) {
+      const firstTenant = tenants[0]
+
+      // Usar switchTenant do useTenant (salva no localStorage automaticamente)
+      await switchTenant(firstTenant)
+
+      // Redirecionar para o dashboard
+      showSuccessToast('Bem-vindo ao sistema!', 'Sucesso!')
+      await router.push('/dashboard')
+    }
+  } catch (error: any) {
+    const errorMessage = error.response?.data?.message || 'Erro ao associar empresas'
+    showErrorToast(errorMessage, 'Erro!')
+  } finally {
+    associating.value = false
+  }
+}
+
 // Lifecycle
-onMounted(() => {
+onMounted(async () => {
   // Carrega os tenants disponíveis
   loadAvailableTenants()
+
+  // Se não tiver empresas, carregar lista pública
+  if (availableTenants.value.length === 0) {
+    await loadAvailableCompanies()
+  }
 
   // Se só houver uma empresa, seleciona automaticamente
   if (availableTenants.value.length === 1) {
@@ -441,13 +653,7 @@ onMounted(() => {
   font-size: 1.125rem;
   font-weight: 600;
   color: #1e293b;
-  margin: 0 0 0.25rem 0;
-}
-
-.tenant-slug {
-  font-size: 0.875rem;
-  color: #64748b;
-  margin: 0;
+  margin: 0 0 0.5rem 0;
 }
 
 .selected-indicator {
@@ -514,13 +720,57 @@ onMounted(() => {
   color: #f1f5f9;
 }
 
-.v-theme--dark .tenant-slug {
-  color: #94a3b8;
-}
-
 .v-theme--dark .select-footer {
   background: rgba(51, 65, 85, 0.3);
   border-top-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Company Association Styles */
+.no-companies-section {
+  max-width: 100%;
+}
+
+.companies-loading {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.companies-list-container {
+  max-height: 350px;
+  overflow-y: auto;
+  padding-right: 8px;
+  margin-bottom: 12px;
+}
+
+.companies-list-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.companies-list-container::-webkit-scrollbar-track {
+  background: rgba(var(--v-theme-surface-variant), 0.3);
+  border-radius: 3px;
+}
+
+.companies-list-container::-webkit-scrollbar-thumb {
+  background: rgba(var(--v-theme-primary), 0.3);
+  border-radius: 3px;
+}
+
+.company-select-card {
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.company-select-card:hover {
+  border-color: rgba(var(--v-theme-primary), 0.3);
+  transform: translateX(4px);
+}
+
+.company-selected {
+  border-color: rgba(var(--v-theme-success), 0.5) !important;
+  background: rgba(var(--v-theme-success), 0.05);
 }
 
 /* Responsive */
@@ -543,6 +793,14 @@ onMounted(() => {
 
   .tenants-grid {
     grid-template-columns: 1fr;
+  }
+
+  .companies-list-container {
+    max-height: 250px;
+  }
+
+  .company-select-card:hover {
+    transform: none;
   }
 }
 

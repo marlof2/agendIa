@@ -75,11 +75,11 @@
           <v-list-item
             v-for="action in filteredCustomActions"
             :key="action.key"
-            @click="handleAction(action.key)"
-            :class="['action-item', action.class || 'custom-action']"
+            @click="handleCustomAction(action)"
+            :class="['action-item', action.class || getActionClass(action.color)]"
           >
             <template v-slot:prepend>
-              <div class="action-icon-wrapper custom-icon">
+              <div :class="['action-icon-wrapper', getIconClass(action.color)]">
                 <v-icon size="18">{{ action.icon }}</v-icon>
               </div>
             </template>
@@ -106,8 +106,10 @@ export interface CustomAction {
   title: string
   subtitle?: string
   icon: string
+  color?: string
   class?: string
   permission?: string
+  onClick?: () => void
 }
 
 interface Props {
@@ -210,6 +212,28 @@ const handleAction = (action: string) => {
     emit('action', action, props.item)
   }
 }
+
+const handleCustomAction = (action: CustomAction) => {
+  if (action.onClick) {
+    action.onClick()
+  } else {
+    emit('action', action.key, props.item)
+  }
+}
+
+const getActionClass = (color?: string): string => {
+  if (color === 'success' || color === 'green') return 'success-action'
+  if (color === 'error' || color === 'red') return 'error-action'
+  if (color === 'warning') return 'warning-action'
+  return 'custom-action'
+}
+
+const getIconClass = (color?: string): string => {
+  if (color === 'success' || color === 'green') return 'success-icon'
+  if (color === 'error' || color === 'red') return 'error-icon'
+  if (color === 'warning') return 'warning-icon'
+  return 'custom-icon'
+}
 </script>
 
 <style scoped>
@@ -300,6 +324,11 @@ const handleAction = (action: string) => {
   color: #673AB7;
 }
 
+.success-icon {
+  background: rgba(76, 175, 80, 0.1);
+  color: #4CAF50;
+}
+
 /* Hover específico por ação */
 .view-action:hover {
   background: rgba(33, 150, 243, 0.08);
@@ -351,6 +380,32 @@ const handleAction = (action: string) => {
 .custom-action:hover .custom-icon {
   background: rgba(103, 58, 183, 0.2);
   box-shadow: 0 0 0 4px rgba(103, 58, 183, 0.1);
+}
+
+.success-action:hover {
+  background: rgba(76, 175, 80, 0.08);
+}
+
+.success-action:hover::before {
+  background: #4CAF50;
+}
+
+.success-action:hover .success-icon {
+  background: rgba(76, 175, 80, 0.2);
+  box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.1);
+}
+
+.error-action:hover {
+  background: rgba(244, 67, 54, 0.08);
+}
+
+.error-action:hover::before {
+  background: #F44336;
+}
+
+.error-action:hover .error-icon {
+  background: rgba(244, 67, 54, 0.2);
+  box-shadow: 0 0 0 4px rgba(244, 67, 54, 0.1);
 }
 
 /* Títulos */
@@ -441,6 +496,10 @@ const handleAction = (action: string) => {
   background: rgba(103, 58, 183, 0.2);
 }
 
+.v-theme--dark .success-icon {
+  background: rgba(76, 175, 80, 0.2);
+}
+
 .v-theme--dark .view-action:hover {
   background: rgba(33, 150, 243, 0.15);
 }
@@ -455,6 +514,14 @@ const handleAction = (action: string) => {
 
 .v-theme--dark .custom-action:hover {
   background: rgba(103, 58, 183, 0.15);
+}
+
+.v-theme--dark .success-action:hover {
+  background: rgba(76, 175, 80, 0.15);
+}
+
+.v-theme--dark .error-action:hover {
+  background: rgba(244, 67, 54, 0.15);
 }
 
 /* Responsive */

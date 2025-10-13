@@ -4,7 +4,7 @@ import type { Ref } from 'vue'
 export interface Tenant {
   id: number
   name: string
-  slug: string
+  slug?: string
   logo?: string
   created_at?: string
 }
@@ -12,6 +12,9 @@ export interface Tenant {
 // Estado global do tenant
 const currentTenant: Ref<Tenant | null> = ref(null)
 const availableTenants: Ref<Tenant[]> = ref([])
+
+// Flag para saber se já inicializou
+let initialized = false
 
 export const useTenant = () => {
   /**
@@ -115,6 +118,20 @@ export const useTenant = () => {
   const currentTenantId = computed(() => {
     return currentTenant.value?.id || null
   })
+
+  /**
+   * Inicializa os dados do localStorage (executa apenas uma vez)
+   */
+  const initialize = () => {
+    if (!initialized) {
+      loadCurrentTenant()
+      loadAvailableTenants()
+      initialized = true
+    }
+  }
+
+  // Inicializa automaticamente
+  initialize()
 
   return {
     // Estado

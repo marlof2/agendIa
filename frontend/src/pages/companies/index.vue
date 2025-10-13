@@ -51,6 +51,19 @@
                 @keyup.enter="performSearch"
               />
             </v-col>
+            <v-col cols="12" md="3">
+              <v-select
+                v-model="statusFilter"
+                :items="statusOptions"
+                label="Status"
+                prepend-inner-icon="mdi-toggle-switch"
+                variant="outlined"
+                density="compact"
+                rounded="lg"
+                hide-details
+                @update:model-value="performSearch"
+              />
+            </v-col>
           </v-row>
         </template>
         <template #actionsFilters>
@@ -89,7 +102,7 @@
           <v-card-title class="company-card-header">
             <div class="d-flex align-center">
               <div class="flex-grow-1">
-                <div class="text-h6 font-weight-bold">
+                <div class="text-h6 font-weight-bold mb-1">
                   {{ item.name || "Empresa não informada" }}
                 </div>
                 <div class="text-body-2 text-medium-emphasis">
@@ -127,10 +140,10 @@
                 :item="item"
                 view-permission="companies.show"
                 edit-permission="companies.edit"
-                delete-permission="companies.delete"
+                :show-delete="false"
+                :custom-actions="getCustomActions(item)"
                 @view="view"
                 @edit="edit"
-                @delete="remove"
               />
             </div>
           </v-card-title>
@@ -163,7 +176,7 @@
                 </span>
               </div>
 
-              <div class="info-item">
+              <div class="info-item mb-3">
                 <v-icon size="18" color="primary" class="mr-2"
                   >mdi-phone</v-icon
                 >
@@ -180,6 +193,22 @@
                     WhatsApp
                   </v-chip>
                 </span>
+              </div>
+
+              <div class="info-item">
+                <v-icon size="18" color="primary" class="mr-2"
+                  >mdi-toggle-switch</v-icon
+                >
+                <span class="text-body-2">
+                  <strong class="text-high-emphasis">Status: </strong>
+                </span>
+                <v-chip
+                  :color="item.deleted_at ? 'error' : 'success'"
+                  :text="item.deleted_at ? 'Inativa' : 'Ativa'"
+                  size="x-small"
+                  variant="outlined"
+                  class="ml-1"
+                />
               </div>
             </div>
           </v-card-text>
@@ -263,11 +292,16 @@
     @reload="handleListReload"
   />
 
-  <DeleteConfirmModal
-    v-model="showDeleteModal"
+  <ActivateConfirmModal
+    v-model="showActivateModal"
     :item="selectedCompany"
-    item-type="empresa"
-    @confirm="handleDeleteConfirm"
+    @confirm="handleActivateConfirm"
+  />
+
+  <DeactivateConfirmModal
+    v-model="showDeactivateModal"
+    :item="selectedCompany"
+    @confirm="handleDeactivateConfirm"
   />
 </template>
 
@@ -281,7 +315,8 @@ import ExportActions from "@/components/ExportActions.vue";
 import ActionsMenu from "@/components/ActionsMenu.vue";
 import CompanyModal from "./components/CompanyModal.vue";
 import CompanyViewModal from "./components/CompanyViewModal.vue";
-import DeleteConfirmModal from "./components/DeleteConfirmModal.vue";
+import ActivateConfirmModal from "./components/ActivateConfirmModal.vue";
+import DeactivateConfirmModal from "./components/DeactivateConfirmModal.vue";
 import { useCompaniesApi } from "./api";
 import { useAbilities } from "@/composables/useAbilities";
 import { useMask } from "@/composables/useMask";
@@ -301,7 +336,8 @@ const {
   error,
   pagination,
   getAll,
-  deleteItem,
+  deactivateItem,
+  activateItem,
 } = useCompaniesApi();
 
 // Funções de navegação específicas da página
@@ -316,19 +352,80 @@ const edit = (item: any) => {
   showCompanyModal.value = true;
 };
 
-const remove = (item: any) => {
-  selectedCompany.value = item;
-  showDeleteModal.value = true;
-};
-
 const manageUsers = (item: any) => {
   // Navegar para a página de gerenciamento de usuários da empresa
   router.push(`/companies/${item.id}/bind-professional`);
 };
 
+const handleDeactivate = (item: any) => {
+  selectedCompany.value = item;
+  showDeactivateModal.value = true;
+};
+
+const handleActivate = (item: any) => {
+  selectedCompany.value = item;
+  showActivateModal.value = true;
+};
+
+const handleDeactivateConfirm = async (item: any) => {
+  try {
+    await deactivateItem(item.id);
+    showDeactivateModal.value = false;
+    showSuccessToast("Empresa inativada com sucesso!", "Sucesso!");
+    await performSearch(); // Recarregar com os filtros atuais
+  } catch (err: any) {
+    const errorMessage =
+      err?.response?.data?.message || err?.message || "Erro ao inativar empresa";
+    showErrorToast(errorMessage, "Erro!");
+  }
+};
+
+const handleActivateConfirm = async (item: any) => {
+  try {
+    await activateItem(item.id);
+    showActivateModal.value = false;
+    showSuccessToast("Empresa ativada com sucesso!", "Sucesso!");
+    await performSearch(); // Recarregar com os filtros atuais
+  } catch (err: any) {
+    const errorMessage =
+      err?.response?.data?.message || err?.message || "Erro ao ativar empresa";
+    showErrorToast(errorMessage, "Erro!");
+  }
+};
+
+const getCustomActions = (item: any) => {
+  const actions = [];
+
+  if (item.deleted_at) {
+    // Empresa inativa - mostrar botão de ativar
+    actions.push({
+      key: 'activate',
+      icon: 'mdi-check-circle-outline',
+      color: 'green',
+      title: 'Ativar',
+      subtitle: 'Ativar empresa',
+      permission: 'companies.edit',
+      onClick: () => handleActivate(item)
+    });
+  } else {
+    // Empresa ativa - mostrar botão de inativar
+    actions.push({
+      key: 'deactivate',
+      icon: 'mdi-cancel',
+      color: 'red',
+      title: 'Inativar',
+      subtitle: 'Inativar empresa',
+      permission: 'companies.edit',
+      onClick: () => handleDeactivate(item)
+    });
+  }
+
+  return actions;
+};
+
 const loadCompanies = async () => {
   try {
-    await getAll();
+    await getAll({ status: statusFilter.value });
   } catch (err) {
     console.error("Erro ao carregar empresas:", err);
   }
@@ -345,18 +442,6 @@ const handleListReload = async () => {
   await getAll();
 };
 
-const handleDeleteConfirm = async (item: any) => {
-  try {
-    await deleteItem(item.id);
-    showSuccessToast("Empresa excluída com sucesso!", "Sucesso!");
-    await getAll(); // Recarregar o grid
-  } catch (err: any) {
-    const errorMessage =
-      err?.response?.data?.message || err?.message || "Erro ao excluir empresa";
-    showErrorToast(errorMessage, "Erro!");
-  }
-};
-
 const handleEditFromView = (company: any) => {
   selectedCompany.value = company;
   isEditing.value = true;
@@ -365,11 +450,20 @@ const handleEditFromView = (company: any) => {
 
 // Reactive data
 const searchQuery = ref("");
+const statusFilter = ref<'active' | 'inactive' | 'all'>('active');
+
+// Status options
+const statusOptions = [
+  { title: 'Ativas', value: 'active' },
+  { title: 'Inativas', value: 'inactive' },
+  { title: 'Todas', value: 'all' }
+];
 
 // Modal states
 const showCompanyModal = ref(false);
 const showViewModal = ref(false);
-const showDeleteModal = ref(false);
+const showActivateModal = ref(false);
+const showDeactivateModal = ref(false);
 const selectedCompany = ref<any>(null);
 const isEditing = ref(false);
 
@@ -400,6 +494,10 @@ const performSearch = async () => {
       filters.search = searchQuery.value;
     }
 
+    if (statusFilter.value) {
+      filters.status = statusFilter.value;
+    }
+
     // Reset to first page when searching
     filters.page = 1;
 
@@ -411,9 +509,10 @@ const performSearch = async () => {
 
 const clearFilters = async () => {
   searchQuery.value = "";
+  statusFilter.value = 'active';
 
   // Reset to first page and reload all companies
-  await getAll({ page: 1 });
+  await getAll({ page: 1, status: 'active' });
 };
 
 // Pagination handlers
@@ -423,6 +522,10 @@ const handlePageChange = async (page: number) => {
 
     if (searchQuery.value) {
       filters.search = searchQuery.value;
+    }
+
+    if (statusFilter.value) {
+      filters.status = statusFilter.value;
     }
 
     await getAll(filters);
@@ -440,6 +543,10 @@ const handlePerPageChange = async (perPage: number) => {
 
     if (searchQuery.value) {
       filters.search = searchQuery.value;
+    }
+
+    if (statusFilter.value) {
+      filters.status = statusFilter.value;
     }
 
     await getAll(filters);

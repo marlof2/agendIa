@@ -3,11 +3,13 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\RegisterController;
 use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\Api\TimezoneController;
 use App\Http\Controllers\Api\AbilityController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\ClientController;
 
 /*
 |--------------------------------------------------------------------------
@@ -37,6 +39,20 @@ Route::prefix('auth')->group(function () {
     Route::post('/google-login', [AuthController::class, 'googleLogin']);
 });
 
+// Rotas de registro (públicas)
+Route::prefix('register')->group(function () {
+    Route::post('/', [RegisterController::class, 'register']);
+});
+
+// Rotas de combos públicas (para registro e uso geral)
+Route::prefix('combos')->group(function () {
+    Route::get('/companies', [CompanyController::class, 'combo']);
+    Route::get('/profiles', [ProfileController::class, 'combo']);
+});
+
+// Rotas públicas de empresas (para registro com paginação)
+Route::get('/companies/public', [CompanyController::class, 'publicList']);
+
 // Rotas protegidas por autenticação
 Route::middleware('auth:sanctum')->group(function () {
     // Rotas de autenticação (protegidas)
@@ -44,6 +60,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/me', [AuthController::class, 'me']);
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::post('/refresh', [AuthController::class, 'refresh']);
+        Route::post('/change-password', [AuthController::class, 'changePassword']);
     });
 
 
@@ -54,6 +71,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::prefix('users')->group(function () {
             Route::get('/', [UserController::class, 'index'])->middleware('ability:users.index');
             Route::post('/', [UserController::class, 'store'])->middleware('ability:users.create');
+            Route::post('/associate-companies', [UserController::class, 'associateCompanies']); // Sem ability check - usuário se associando
+            Route::delete('/detach-company/{companyId}', [UserController::class, 'detachCompany']); // Desvincular empresa - usuário desvinculando-se
             Route::get('/export', [UserController::class, 'export'])->middleware('ability:users.index');
             Route::get('/available-professionals', [UserController::class, 'availableProfessionals'])->middleware('ability:users.index');
             Route::get('/{user}', [UserController::class, 'show'])->middleware('ability:users.show');
@@ -93,16 +112,21 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/{company}', [CompanyController::class, 'show'])->middleware('ability:companies.show');
             Route::put('/{company}', [CompanyController::class, 'update'])->middleware('ability:companies.edit');
             Route::delete('/{company}', [CompanyController::class, 'destroy'])->middleware('ability:companies.delete');
+            Route::patch('/{company}/deactivate', [CompanyController::class, 'deactivate'])->middleware('ability:companies.edit');
+            Route::patch('/{id}/activate', [CompanyController::class, 'activate'])->middleware('ability:companies.edit');
             Route::get('/{companyId}/professionals', [CompanyController::class, 'companyUsers'])->middleware('ability:companies.manage_professionals');
             Route::get('/{companyId}/bind-professional/export', [CompanyController::class, 'exportBindProfessional'])->middleware('ability:companies.manage_professionals');
             Route::post('/{companyId}/professionals/{userId}', [CompanyController::class, 'attachProfessional'])->middleware('ability:companies.attach_professional');
             Route::delete('/{companyId}/professionals/{userId}', [CompanyController::class, 'detachProfessional'])->middleware('ability:companies.detach_professional');
         });
-    });
 
-    // Rotas de combos/autoselects (sem permissão específica)
-    Route::prefix('combos')->group(function () {
-        Route::get('/profiles', [ProfileController::class, 'combo']);
-        Route::get('/companies', [CompanyController::class, 'combo']);
+        // Rotas para clientes (filtrados por empresa)
+        Route::prefix('clients')->group(function () {
+            Route::get('/', [ClientController::class, 'index'])->middleware('ability:clients.index');
+            Route::post('/', [ClientController::class, 'store'])->middleware('ability:clients.create');
+            Route::get('/{user}', [ClientController::class, 'show'])->middleware('ability:clients.show');
+            Route::put('/{user}', [ClientController::class, 'update'])->middleware('ability:clients.edit');
+            Route::delete('/{user}', [ClientController::class, 'destroy'])->middleware('ability:clients.delete');
+        });
     });
 });

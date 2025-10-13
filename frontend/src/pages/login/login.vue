@@ -247,9 +247,7 @@ const forgotPassword = () => {
 }
 
 const goToRegister = () => {
-  // Implementar navegação para registro
-  console.log('Ir para registro')
-  // router.push('/register')
+  router.push('/register')
 }
 
 const clearError = () => {

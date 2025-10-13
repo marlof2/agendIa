@@ -14,7 +14,12 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'ability' => \App\Http\Middleware\CheckAbility::class,
-            'company.role' => \App\Http\Middleware\CheckCompanyRole::class,
+            'tenant.scope' => \App\Http\Middleware\TenantScope::class,
+        ]);
+
+        // Adiciona TenantScope globalmente para rotas API autenticadas
+        $middleware->api(append: [
+            \App\Http\Middleware\TenantScope::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

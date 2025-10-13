@@ -23,10 +23,12 @@ class CompanyController extends Controller
     {
         $filters = [
             'search' => $request->get('search'),
-            'per_page' => $request->get('per_page', 12)
+            'per_page' => $request->get('per_page', 12),
+            'status' => $request->get('status', 'active') // active, inactive, all
         ];
 
-        $companies = $this->companyService->getAllCompanies($filters);
+        // Passa o usuário autenticado para filtrar por acesso
+        $companies = $this->companyService->getAllCompanies($filters, $request->user());
 
         return response()->json($companies);
     }
@@ -92,6 +94,48 @@ class CompanyController extends Controller
         }
     }
 
+    /**
+     * Inativar uma empresa (soft delete)
+     */
+    public function deactivate(Company $company): JsonResponse
+    {
+        try {
+            $company->delete(); // Soft delete
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Empresa inativada com sucesso'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao inativar empresa: ' . $e->getMessage()
+            ], 422);
+        }
+    }
+
+    /**
+     * Ativar uma empresa (restore)
+     */
+    public function activate(int $id): JsonResponse
+    {
+        try {
+            $company = Company::withTrashed()->findOrFail($id);
+            $company->restore();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Empresa ativada com sucesso',
+                'data' => $company
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao ativar empresa: ' . $e->getMessage()
+            ], 422);
+        }
+    }
+
 
     /**
      * Exportar empresas para Excel ou PDF
@@ -103,9 +147,9 @@ class CompanyController extends Controller
         ];
 
         if ($request->format === 'excel') {
-            return $this->companyService->exportToExcel($filters);
+            return $this->companyService->exportToExcel($filters, $request->user());
         } else {
-            return $this->companyService->exportToPDF($filters);
+            return $this->companyService->exportToPDF($filters, $request->user());
         }
     }
 
@@ -114,7 +158,8 @@ class CompanyController extends Controller
      */
     public function combo(Request $request): JsonResponse
     {
-        $companies = \App\Models\Company::select('id', 'name', 'email')
+
+        $companies = Company::query()
             ->when($request->search, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
@@ -202,6 +247,30 @@ class CompanyController extends Controller
         } else {
             return $this->companyService->exportProfessionalsToPDF((int)$companyId, $filters);
         }
+    }
+
+    /**
+     * Listar empresas públicas para registro (com paginação)
+     */
+    public function publicList(Request $request)
+    {
+        $search = $request->get('search');
+        $perPage = $request->get('per_page', 12);
+
+        $query = Company::select('id', 'name', 'person_type', 'responsible_name', 'phone_1')
+            ->orderBy('name');
+
+        // Busca
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('responsible_name', 'like', "%{$search}%");
+            });
+        }
+
+        $companies = $query->paginate($perPage);
+
+        return response()->json($companies);
     }
 
 }

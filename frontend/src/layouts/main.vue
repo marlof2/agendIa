@@ -116,12 +116,14 @@ const router = useRouter();
 const theme = useTheme();
 
 // Reactive state
-const drawer = ref(true);
-const rail = ref(false);
 const windowWidth = ref(window.innerWidth);
 
 // Mobile detection
 const isMobile = computed(() => windowWidth.value < 960);
+
+// Drawer começa fechado no mobile, aberto no desktop
+const drawer = ref(!isMobile.value);
+const rail = ref(false);
 
 // Theme management
 const isDark = computed(() => theme.global.current.value.dark);
@@ -263,9 +265,25 @@ watch(
   (newPath) => {
     // Update document title
     document.title = `${pageTitles[newPath] || "AgendIA"} - AgendIA`;
+
+    // Fecha o drawer no mobile ao navegar
+    if (isMobile.value) {
+      drawer.value = false;
+    }
   },
   { immediate: true }
 );
+
+// Watch para mudança de tamanho de tela
+watch(isMobile, (newIsMobile) => {
+  if (newIsMobile) {
+    // Fecha o drawer quando mudar para mobile
+    drawer.value = false;
+  } else {
+    // Abre o drawer quando mudar para desktop
+    drawer.value = true;
+  }
+});
 
 // Initialize theme from localStorage
 const savedTheme = localStorage.getItem("agendia-theme");
