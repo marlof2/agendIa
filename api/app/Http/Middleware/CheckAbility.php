@@ -26,7 +26,17 @@ class CheckAbility
 
 
 
-        if (!$auth->user()->hasPermission($ability)) {
+        $user = $auth->user();
+        $tenantId = $request->get('tenant_id') ?? app('tenant_id');
+
+        if (!$tenantId) {
+            return response()->json([
+                'message' => 'Tenant ID não fornecido.',
+                'error' => 'MISSING_TENANT_ID',
+            ], 400);
+        }
+
+        if (!$user->hasPermission($ability, $tenantId)) {
             return response()->json([
                 'message' => 'Sem permissão para acessar este recurso.',
                 'error' => 'INSUFFICIENT_ABILITIES',

@@ -47,7 +47,7 @@ class CompanyRequest extends FormRequest
             'has_whatsapp_1' => 'boolean',
             'phone_2' => 'nullable|string|max:20',
             'has_whatsapp_2' => 'boolean',
-            'timezone_id' => 'nullable|exists:timezones,id'
+            'timezone_id' => 'nullable|exists:timezones,id',
         ];
     }
 
@@ -80,7 +80,7 @@ class CompanyRequest extends FormRequest
             'has_whatsapp_1' => 'boolean',
             'phone_2' => 'nullable|string|max:20',
             'has_whatsapp_2' => 'boolean',
-            'timezone_id' => 'nullable|exists:timezones,id'
+            'timezone_id' => 'nullable|exists:timezones,id',
         ];
     }
 
@@ -117,6 +117,7 @@ class CompanyRequest extends FormRequest
         if ($this->has('timezone_id')) {
             $rules['timezone_id'] = 'nullable|exists:timezones,id';
         }
+
 
         return $rules;
     }

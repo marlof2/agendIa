@@ -126,24 +126,6 @@
           />
         </v-col>
 
-        <v-col cols="12" md="6">
-          <v-select
-            v-model="form.profile_id"
-            :items="profiles"
-            item-title="display_name"
-            item-value="id"
-            label="Perfil *"
-            variant="outlined"
-            density="compact"
-            rounded="lg"
-            :rules="profileRules"
-            prepend-inner-icon="mdi-account-tie"
-            required
-            hint="Perfil de acesso do usuário"
-            persistent-hint
-            :loading="loadingProfiles"
-          />
-        </v-col>
 
         <v-col cols="12" md="6">
           <v-switch
@@ -182,7 +164,6 @@
 import { ref, computed, watch, nextTick } from "vue";
 import { showSuccessToast, showErrorToast } from "@/utils/swal";
 import { useUsersApi } from "../api";
-import { useProfilesApi } from "@/pages/profiles/api";
 import { useMask } from "@/composables/useMask";
 import BaseDialog from "@/components/BaseDialog.vue";
 
@@ -204,14 +185,12 @@ const emit = defineEmits<Emits>();
 
 // Composables
 const { createItem, updateItem } = useUsersApi();
-const { getCombo: getProfilesCombo } = useProfilesApi();
 const { maskPhone, formatPhone, maskCPF, formatCPF } = useMask();
 
 // Reactive data
 const formRef = ref();
 const isValid = ref(false);
 const loading = ref(false);
-const loadingProfiles = ref(false);
 
 // Form data
 const form = ref({
@@ -222,15 +201,11 @@ const form = ref({
   phone: "",
   cpf: "",
   has_whatsapp: false,
-  profile_id: null as number | null,
 });
 
 // Password visibility
 const showPassword = ref(false);
 const showPasswordConfirmation = ref(false);
-
-// Profiles data
-const profiles = ref<any[]>([]);
 
 // Computed
 const isEditing = computed(() => !!props.user?.id);
@@ -256,12 +231,11 @@ const formattedCpf = computed({
 });
 
 const formProgress = computed(() => {
-  const totalFields = 4; // name, email, cpf, profile_id (campos obrigatórios)
+  const totalFields = 3; // name, email, cpf (campos obrigatórios)
   const filledFields = [
     form.value.name,
     form.value.email,
     form.value.cpf,
-    form.value.profile_id,
   ].filter((field) => field && field.toString().trim() !== "").length;
 
   if (!isEditing.value) {
@@ -270,10 +244,10 @@ const formProgress = computed(() => {
       form.value.password,
       form.value.password_confirmation,
     ].filter((field) => field && field.trim() !== "").length;
-    return ((filledFields + passwordFields) / 6) * 100;
+    return ((filledFields + passwordFields) / 5) * 100;
   }
 
-  return (filledFields / 4) * 100;
+  return (filledFields / 3) * 100;
 });
 
 // Validation rules
@@ -310,7 +284,6 @@ const passwordConfirmationRules = [
   },
 ];
 
-const profileRules = [(v: any) => !!v || "Perfil é obrigatório"];
 
 const cpfRules = [
   (v: string) => !!v || "CPF é obrigatório",
@@ -330,7 +303,6 @@ const resetForm = () => {
     phone: "",
     cpf: "",
     has_whatsapp: false,
-    profile_id: null,
   };
   showPassword.value = false;
   showPasswordConfirmation.value = false;
@@ -356,24 +328,12 @@ const loadUserData = () => {
       phone: props.user.phone || "",
       cpf: props.user.cpf || "",
       has_whatsapp: props.user.has_whatsapp || false,
-      profile_id: props.user.profile_id || null,
     };
   } else {
     resetForm();
   }
 };
 
-const loadProfilesData = async () => {
-  try {
-    loadingProfiles.value = true;
-    const profilesData = await getProfilesCombo();
-    profiles.value = profilesData;
-  } catch (error) {
-    console.error("Erro ao carregar perfis:", error);
-  } finally {
-    loadingProfiles.value = false;
-  }
-};
 
 const closeModal = () => {
   emit("update:modelValue", false);
@@ -392,7 +352,6 @@ const handleSubmit = async () => {
       phone: form.value.phone,
       cpf: form.value.cpf,
       has_whatsapp: form.value.has_whatsapp,
-      profile_id: form.value.profile_id,
     };
 
     // Adicionar senha apenas se estiver preenchida (para edição) ou se for criação
@@ -428,7 +387,6 @@ watch(
   (newValue) => {
     if (newValue) {
       loadUserData();
-      loadProfilesData();
       nextTick(() => {
         formRef.value?.resetValidation();
       });

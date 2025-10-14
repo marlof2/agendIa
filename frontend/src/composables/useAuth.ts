@@ -12,9 +12,15 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  profile_id: number;
-  company_id: string;
-  profile: object ;
+  company_ids: number[];
+  companies: Array<{
+    id: number;
+    name: string;
+    pivot: {
+      profile_id: number;
+      is_main_company: boolean;
+    };
+  }>;
 }
 
 export interface AuthState {
@@ -91,11 +97,17 @@ export function useAuth() {
         id: "2",
         name: "Maria Santos",
         email: "maria@example.com",
-        profile_id: 2,
-        company_id: "company_1",
-        profile: {
-          display_name: "Administrador",
-        },
+        company_ids: [1],
+        companies: [
+          {
+            id: 1,
+            name: "Marques Tech Ltda",
+            pivot: {
+              profile_id: 2,
+              is_main_company: true,
+            },
+          },
+        ],
       };
 
       const mockToken = "mock_google_token";

@@ -29,7 +29,6 @@ class User extends Authenticatable
         'phone',
         'cpf',
         'has_whatsapp',
-        'profile_id',
     ];
 
     /**
@@ -57,11 +56,20 @@ class User extends Authenticatable
     }
 
     /**
-     * Get the profile that owns the user.
+     * Get the profile for a specific company.
      */
-    public function profile(): BelongsTo
+    public function getProfileForCompany(int $companyId): ?Profile
     {
-        return $this->belongsTo(Profile::class);
+        $pivot = $this->companies()
+            ->wherePivot('company_id', $companyId)
+            ->withPivot('profile_id')
+            ->first();
+
+        if (!$pivot || !$pivot->pivot->profile_id) {
+            return null;
+        }
+
+        return Profile::find($pivot->pivot->profile_id);
     }
 
     /**
@@ -70,6 +78,7 @@ class User extends Authenticatable
     public function companies(): BelongsToMany
     {
         return $this->belongsToMany(Company::class, 'company_user')
+            ->withPivot('profile_id', 'is_main_company')
             ->withTimestamps();
     }
 
@@ -107,78 +116,83 @@ class User extends Authenticatable
 
 
     /**
-     * Check if user is owner.
+     * Check if user is owner for a specific company.
      */
-    public function isOwner(): bool
+    public function isOwner(int $companyId): bool
     {
-        return $this->profile && $this->profile->name === 'owner';
+        $profile = $this->getProfileForCompany($companyId);
+        return $profile && $profile->name === 'owner';
     }
 
     /**
-     * Check if user is supervisor.
+     * Check if user is supervisor for a specific company.
      */
-    public function isSupervisor(): bool
+    public function isSupervisor(int $companyId): bool
     {
-        return $this->profile && $this->profile->name === 'supervisor';
+        $profile = $this->getProfileForCompany($companyId);
+        return $profile && $profile->name === 'supervisor';
     }
 
     /**
-     * Check if user is professional.
+     * Check if user is professional for a specific company.
      */
-    public function isProfessional(): bool
+    public function isProfessional(int $companyId): bool
     {
-        return $this->profile && $this->profile->name === 'professional';
+        $profile = $this->getProfileForCompany($companyId);
+        return $profile && $profile->name === 'professional';
     }
 
     /**
-     * Check if user is client.
+     * Check if user is client for a specific company.
      */
-    public function isClient(): bool
+    public function isClient(int $companyId): bool
     {
-        return $this->profile && $this->profile->name === 'client';
+        $profile = $this->getProfileForCompany($companyId);
+        return $profile && $profile->name === 'client';
     }
 
     /**
-     * Get the user's abilities based on their profile.
+     * Get the user's abilities based on their profile for a specific company.
      */
-    public function getAbilities(): array
+    public function getAbilities(int $companyId): array
     {
-        if (!$this->profile) {
+        $profile = $this->getProfileForCompany($companyId);
+        if (!$profile) {
             return [];
         }
-        return $this->profile->abilities->pluck('full_name')->toArray();
+        return $profile->abilities->pluck('full_name')->toArray();
     }
 
     /**
-     * Get the user's abilities grouped by category.
+     * Get the user's abilities grouped by category for a specific company.
      */
-    public function getAbilitiesGrouped(): array
+    public function getAbilitiesGrouped(int $companyId): array
     {
-        if (!$this->profile) {
+        $profile = $this->getProfileForCompany($companyId);
+        if (!$profile) {
             return [];
         }
-        return $this->profile->getAbilitiesGrouped();
+        return $profile->getAbilitiesGrouped();
     }
 
     /**
-     * Check if user has a specific ability.
+     * Check if user has a specific ability for a specific company.
      */
-    public function hasPermission(string $ability): bool
+    public function hasPermission(string $ability, int $companyId): bool
     {
-        if (!$this->profile) {
+        $profile = $this->getProfileForCompany($companyId);
+        if (!$profile) {
             return false;
         }
-        return $this->profile->abilities->contains('name', $ability);
+        return $profile->abilities->contains('name', $ability);
     }
 
     /**
-     * Check if user is admin.
+     * Check if user is admin for a specific company.
      */
-    public function isAdmin(): bool
+    public function isAdmin(int $companyId): bool
     {
-        if (!$this->profile) {
-            return false;
-        }
-        return $this->profile->name === 'admin';
+        $profile = $this->getProfileForCompany($companyId);
+        return $profile && $profile->name === 'admin';
     }
 }

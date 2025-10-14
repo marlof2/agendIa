@@ -72,6 +72,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/', [UserController::class, 'index'])->middleware('ability:users.index');
             Route::post('/', [UserController::class, 'store'])->middleware('ability:users.create');
             Route::post('/associate-companies', [UserController::class, 'associateCompanies'])->middleware('ability:users.associate_companies');
+            Route::post('/update-main-company', [UserController::class, 'updateMainCompany']);
             Route::delete('/detach-company/{companyId}', [UserController::class, 'detachCompany'])->middleware('ability:users.detach_company');
             Route::get('/export', [UserController::class, 'export'])->middleware('ability:users.index');
             Route::get('/available-professionals', [UserController::class, 'availableProfessionals'])->middleware('ability:users.index');

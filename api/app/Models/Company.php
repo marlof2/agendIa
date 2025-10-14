@@ -46,7 +46,8 @@ class Company extends Model
     public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'company_user')
-                    ->withTimestamps();
+            ->withPivot('profile_id', 'is_main_company')
+            ->withTimestamps();
     }
 
     /**
@@ -105,4 +106,5 @@ class Company extends Model
     {
         return $this->restore();
     }
+
 }

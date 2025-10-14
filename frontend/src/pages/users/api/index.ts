@@ -8,10 +8,8 @@ export interface User {
   phone?: string
   cpf?: string
   has_whatsapp: boolean
-  profile_id?: number
   created_at: string
   updated_at: string
-  profile?: Profile
   companies?: Company[]
 }
 
@@ -68,7 +66,6 @@ export interface CreateUserData {
   password_confirmation?: string
   phone?: string
   has_whatsapp?: boolean
-  profile_id?: number
   company_ids?: number[]
 }
 
@@ -78,7 +75,6 @@ export interface UpdateUserData extends Partial<CreateUserData> {
 
 export interface UserFilters {
   search?: string
-  profile_id?: number
   page?: number
   per_page?: number
 }
@@ -247,14 +243,11 @@ export function useUsersApi() {
   }
 
   // Combo function for autoselects
-  const getCombo = async (search?: string, profileId?: number) => {
+  const getCombo = async (search?: string) => {
     try {
       const params = new URLSearchParams();
       if (search) {
         params.append('search', search);
-      }
-      if (profileId) {
-        params.append('profile_id', profileId.toString());
       }
 
       const url = params.toString()

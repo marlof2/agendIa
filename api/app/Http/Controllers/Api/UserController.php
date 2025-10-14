@@ -269,5 +269,80 @@ class UserController extends Controller
         }
     }
 
+    /**
+     * Update main company for user
+     */
+    public function updateMainCompany(Request $request): JsonResponse
+    {
+        $request->validate([
+            'company_id' => 'required|integer|exists:companies,id',
+            'is_main' => 'required|boolean'
+        ]);
+
+        try {
+            $user = $request->user();
+            $companyId = $request->company_id;
+            $isMain = $request->is_main;
+
+            // Verificar se o usuário está vinculado a essa empresa
+            $company = $user->companies()->where('companies.id', $companyId)->first();
+
+            if (!$company) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Usuário não está vinculado a esta empresa'
+                ], 422);
+            }
+
+            // Se está marcando como principal, desmarcar todas as outras
+            if ($isMain) {
+                $user->companies()->updateExistingPivot(
+                    $user->companies->pluck('id')->toArray(),
+                    ['is_main_company' => false]
+                );
+            }
+
+            // Atualizar a empresa específica
+            $user->companies()->updateExistingPivot($companyId, [
+                'is_main_company' => $isMain
+            ]);
+
+            // Recarregar dados do usuário
+            $user->load(['companies']);
+
+            // Formatar response
+            $userData = $user->toArray();
+            $userData['companies'] = $user->companies->map(function ($company) {
+                return [
+                    'id' => $company->id,
+                    'name' => $company->name,
+                    'pivot' => [
+                        'profile_id' => $company->pivot->profile_id,
+                        'is_main_company' => $company->pivot->is_main_company,
+                    ]
+                ];
+            })->toArray();
+
+            return response()->json([
+                'success' => true,
+                'message' => $isMain ? 'Empresa definida como principal' : 'Empresa removida como principal',
+                'data' => [
+                    'user' => $userData
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Erro ao atualizar empresa principal:', [
+                'user_id' => $request->user()->id,
+                'company_id' => $request->company_id,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao atualizar empresa principal'
+            ], 500);
+        }
+    }
 
 }

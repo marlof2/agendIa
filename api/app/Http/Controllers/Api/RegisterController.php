@@ -29,7 +29,6 @@ class RegisterController extends Controller
                 'phone' => $request->phone,
                 'cpf' => $request->cpf,
                 'has_whatsapp' => $request->has_whatsapp ?? false,
-                'profile_id' => $request->profile_id,
             ]);
 
             // Se for proprietário, criar empresa
@@ -47,8 +46,11 @@ class RegisterController extends Controller
                     'timezone_id' => $request->input('company.timezone_id'),
                 ]);
 
-                // Associar usuário à empresa criada
-                $user->companies()->attach($company->id);
+                // Associar usuário à empresa criada com o perfil de owner e marcar como empresa principal
+                $user->companies()->attach($company->id, [
+                    'profile_id' => $request->profile_id,
+                    'is_main_company' => true
+                ]);
             }
             // Para outros perfis, a associação será feita após o login
 

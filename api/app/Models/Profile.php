@@ -27,11 +27,12 @@ class Profile extends Model
     }
 
     /**
-     * Get the users for the profile.
+     * Get the users for the profile through company_user pivot table.
      */
-    public function users(): HasMany
+    public function users(): BelongsToMany
     {
-        return $this->hasMany(User::class);
+        return $this->belongsToMany(User::class, 'company_user', 'profile_id', 'user_id')
+            ->withTimestamps();
     }
 
 

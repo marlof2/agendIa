@@ -81,40 +81,6 @@
         </div>
       </div>
 
-      <!-- Profile Information -->
-      <div class="profile-info mb-6">
-        <h3 class="section-title mb-4">
-          <v-icon size="22" class="mr-3">mdi-account-tie</v-icon>
-          Perfil e Acesso
-        </h3>
-
-        <div class="info-grid">
-          <!-- Perfil -->
-          <div class="info-item">
-            <div class="info-label">
-              <v-icon size="20" color="primary" class="mr-3"
-                >mdi-shield-account</v-icon
-              >
-              Perfil de Acesso
-            </div>
-            <div class="info-value">
-              <div v-if="user?.profile" class="profile-display">
-                <v-chip
-                  :color="getProfileColor(user.profile.name)"
-                  variant="tonal"
-                  size="small"
-                >
-                  <v-icon start size="14">{{
-                    getProfileIcon(user.profile.name)
-                  }}</v-icon>
-                  {{ user.profile.display_name || user.profile.name }}
-                </v-chip>
-              </div>
-              <span v-else class="text-medium-emphasis">Não definido</span>
-            </div>
-          </div>
-        </div>
-      </div>
 
       <!-- Companies Information -->
       <div class="companies-info mb-6" v-if="user?.companies?.length">

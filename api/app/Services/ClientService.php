@@ -27,13 +27,19 @@ class ClientService
             throw new \Exception('Perfil de cliente não encontrado');
         }
 
-        $query = User::with(['profile', 'companies'])
-                     ->where('profile_id', $clientProfile->id);
+        $query = User::with(['companies']);
 
-        // Filtrar por empresa
+        // Filtrar por empresa e perfil
         if ($tenantId) {
-            $query->whereHas('companies', function ($q) use ($tenantId) {
-                $q->where('companies.id', $tenantId);
+            // Se tem tenant_id, buscar apenas clientes dessa empresa específica
+            $query->whereHas('companies', function ($q) use ($tenantId, $clientProfile) {
+                $q->where('companies.id', $tenantId)
+                  ->where('company_user.profile_id', $clientProfile->id);
+            });
+        } else {
+            // Se não tem tenant_id, buscar clientes de qualquer empresa
+            $query->whereHas('companies', function ($q) use ($clientProfile) {
+                $q->where('company_user.profile_id', $clientProfile->id);
             });
         }
 
@@ -59,16 +65,32 @@ class ClientService
      */
     public function getClientById(int $id, int $tenantId = null): User
     {
-        $client = User::with(['profile', 'companies'])->findOrFail($id);
+        $client = User::with(['companies'])->findOrFail($id);
 
-        // Verifica se é cliente
-        if ($client->profile->name !== 'client') {
-            throw new \Exception('Usuário não é um cliente');
+        // Buscar perfil de cliente
+        $clientProfile = Profile::where('name', 'client')->first();
+
+        if (!$clientProfile) {
+            throw new \Exception('Perfil de cliente não encontrado');
         }
 
-        // Verifica acesso à empresa
-        if ($tenantId && !$client->companies()->where('companies.id', $tenantId)->exists()) {
-            throw new \Exception('Cliente não pertence a esta empresa');
+        // Verifica se é cliente na empresa específica
+        if ($tenantId) {
+            $profile = $client->getProfileForCompany($tenantId);
+            if (!$profile || $profile->name !== 'client') {
+                throw new \Exception('Usuário não é um cliente nesta empresa');
+            }
+
+            // Verifica acesso à empresa
+            if (!$client->companies()->where('companies.id', $tenantId)->exists()) {
+                throw new \Exception('Cliente não pertence a esta empresa');
+            }
+        } else {
+            // Se não especificou empresa, verifica se é cliente em alguma empresa
+            $isClient = $client->companies()->wherePivot('profile_id', $clientProfile->id)->exists();
+            if (!$isClient) {
+                throw new \Exception('Usuário não é um cliente');
+            }
         }
 
         return $client;
@@ -96,16 +118,14 @@ class ClientService
             $cleanedData['password'] = Hash::make($cleanedData['password']);
         }
 
-        $cleanedData['profile_id'] = $clientProfile->id;
-
         $client = User::create($cleanedData);
 
-        // Vincular à empresa atual
+        // Vincular à empresa atual com o perfil de cliente
         if ($tenantId) {
-            $client->companies()->attach($tenantId);
+            $client->companies()->attach($tenantId, ['profile_id' => $clientProfile->id]);
         }
 
-        return $client->load(['profile', 'companies']);
+        return $client->load(['companies']);
     }
 
     /**
@@ -116,14 +136,17 @@ class ClientService
         $tenantId = $data['tenant_id'] ?? null;
         unset($data['tenant_id']);
 
-        // Verifica se é cliente
-        if ($client->profile->name !== 'client') {
-            throw new \Exception('Usuário não é um cliente');
-        }
+        // Verifica se é cliente na empresa específica
+        if ($tenantId) {
+            $profile = $client->getProfileForCompany($tenantId);
+            if (!$profile || $profile->name !== 'client') {
+                throw new \Exception('Usuário não é um cliente nesta empresa');
+            }
 
-        // Verifica acesso à empresa
-        if ($tenantId && !$client->companies()->where('companies.id', $tenantId)->exists()) {
-            throw new \Exception('Cliente não pertence a esta empresa');
+            // Verifica acesso à empresa
+            if (!$client->companies()->where('companies.id', $tenantId)->exists()) {
+                throw new \Exception('Cliente não pertence a esta empresa');
+            }
         }
 
         $cleanedData = $this->cleanClientData($data);
@@ -138,7 +161,7 @@ class ClientService
 
         $client->update($cleanedData);
 
-        return $client->load(['profile', 'companies']);
+        return $client->load(['companies']);
     }
 
     /**
@@ -146,17 +169,24 @@ class ClientService
      */
     public function deleteClient(User $client, int $tenantId = null): bool
     {
-        // Verifica se é cliente
-        if ($client->profile->name !== 'client') {
-            throw new \Exception('Usuário não é um cliente');
-        }
+        // Verifica se é cliente na empresa específica
+        if ($tenantId) {
+            $profile = $client->getProfileForCompany($tenantId);
+            if (!$profile || $profile->name !== 'client') {
+                throw new \Exception('Usuário não é um cliente nesta empresa');
+            }
 
-        // Verifica acesso à empresa
-        if ($tenantId && !$client->companies()->where('companies.id', $tenantId)->exists()) {
-            throw new \Exception('Cliente não pertence a esta empresa');
-        }
+            // Verifica acesso à empresa
+            if (!$client->companies()->where('companies.id', $tenantId)->exists()) {
+                throw new \Exception('Cliente não pertence a esta empresa');
+            }
 
-        $client->companies()->detach();
+            // Remove apenas da empresa específica
+            $client->companies()->detach($tenantId);
+        } else {
+            // Remove de todas as empresas
+            $client->companies()->detach();
+        }
 
         return $client->delete();
     }

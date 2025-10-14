@@ -19,7 +19,7 @@ class UserService
      */
     public function getAllUsers(array $filters = []): LengthAwarePaginator
     {
-        $query = User::with(['profile', 'companies']);
+        $query = User::with(['companies']);
 
         // Filter by search term
         if (!empty($filters['search'])) {
@@ -31,9 +31,11 @@ class UserService
             });
         }
 
-        // Filter by profile
+        // Filter by profile (now through company_user pivot)
         if (!empty($filters['profile_id'])) {
-            $query->where('profile_id', $filters['profile_id']);
+            $query->whereHas('companies', function ($q) use ($filters) {
+                $q->wherePivot('profile_id', $filters['profile_id']);
+            });
         }
 
         // Pagination
@@ -47,7 +49,7 @@ class UserService
      */
     public function getUserById(int $id): User
     {
-        return User::with(['profile', 'companies'])->findOrFail($id);
+        return User::with(['companies'])->findOrFail($id);
     }
 
     /**
@@ -95,7 +97,7 @@ class UserService
             $user->companies()->attach($cleanedData['company_ids']);
         }
 
-        return $user->load(['profile', 'companies']);
+        return $user->load(['companies']);
     }
 
     /**
@@ -114,7 +116,7 @@ class UserService
 
         $user->update($cleanedData);
 
-        return $user->load(['profile', 'companies']);
+        return $user->load(['companies']);
     }
 
     /**

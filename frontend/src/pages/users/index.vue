@@ -22,7 +22,6 @@
               endpoint="/users"
               :filters="{
                 search: searchQuery || undefined,
-                profile_id: filters.profile_id,
               }"
             />
           </div>
@@ -52,20 +51,6 @@
                 rounded="lg"
                 hide-details
                 @keyup.enter="performSearch"
-              />
-            </v-col>
-            <v-col cols="12" md="3">
-              <v-select
-                v-model="filters.profile_id"
-                :items="profiles"
-                item-title="display_name"
-                item-value="id"
-                label="Filtrar por perfil"
-                variant="outlined"
-                density="compact"
-                clearable
-                hide-details
-                @update:model-value="performSearch"
               />
             </v-col>
           </v-row>
@@ -271,7 +256,6 @@ import ActionsMenu from "@/components/ActionsMenu.vue";
 import UserViewModal from "./components/UserViewModal.vue";
 import DeleteConfirmModal from "./components/DeleteConfirmModal.vue";
 import { useUsersApi } from "./api";
-import { useProfilesApi } from "@/pages/profiles/api";
 import { useAbilities } from "@/composables/useAbilities";
 import { useMask } from "@/composables/useMask";
 import { useProfileUtils } from "@/composables/useProfileUtils";
@@ -281,7 +265,6 @@ import UserModal from "./components/UserModal.vue";
 const { hasPermission } = useAbilities();
 
 onMounted(async () => {
-  await loadProfiles();
   await loadUsers();
 });
 
@@ -320,15 +303,6 @@ const loadUsers = async () => {
   }
 };
 
-const loadProfiles = async () => {
-  try {
-    const { getAll } = useProfilesApi();
-    const response = await getAll();
-    profiles.value = response.data || [];
-  } catch (error) {
-    console.error("Erro ao carregar perfis:", error);
-  }
-};
 
 const create = () => {
   selectedUser.value = null;
@@ -361,9 +335,6 @@ const handleEditFromView = (user: any) => {
 
 // Reactive data
 const searchQuery = ref("");
-const filters = ref({
-  profile_id: undefined,
-});
 
 // Modal states
 const showUserModal = ref(false);
@@ -372,8 +343,6 @@ const showDeleteModal = ref(false);
 const selectedUser = ref<any>(null);
 const isEditing = ref(false);
 
-// Profiles for filter
-const profiles = ref<any[]>([]);
 
 // Methods
 const formatDate = (dateString: string) => {
@@ -399,10 +368,6 @@ const performSearch = async () => {
       searchFilters.search = searchQuery.value;
     }
 
-    if (filters.value.profile_id) {
-      searchFilters.profile_id = filters.value.profile_id;
-    }
-
     // Reset to first page when searching
     searchFilters.page = 1;
 
@@ -414,7 +379,6 @@ const performSearch = async () => {
 
 const clearFilters = async () => {
   searchQuery.value = "";
-  filters.value.profile_id = undefined;
 
   // Reset to first page and reload all users
   await getAll({ page: 1 });
@@ -427,10 +391,6 @@ const handlePageChange = async (page: number) => {
 
     if (searchQuery.value) {
       pageFilters.search = searchQuery.value;
-    }
-
-    if (filters.value.profile_id) {
-      pageFilters.profile_id = filters.value.profile_id;
     }
 
     await getAll(pageFilters);
@@ -448,10 +408,6 @@ const handlePerPageChange = async (perPage: number) => {
 
     if (searchQuery.value) {
       pageFilters.search = searchQuery.value;
-    }
-
-    if (filters.value.profile_id) {
-      pageFilters.profile_id = filters.value.profile_id;
     }
 
     await getAll(pageFilters);

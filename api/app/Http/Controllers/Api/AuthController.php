@@ -17,71 +17,71 @@ class AuthController extends Controller
     /**
      * Register a new user
      */
-    public function register(Request $request): JsonResponse
-    {
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|confirmed',
-            'phone' => 'nullable|string|max:20',
-            'company_name' => 'required|string|max:255',
-            'company_phone' => 'required|string|max:20',
-            'company_whatsapp' => 'required|string|max:20',
-        ]);
+    // public function register(Request $request): JsonResponse
+    // {
+    //     $validator = Validator::make($request->all(), [
+    //         'name' => 'required|string|max:255',
+    //         'email' => 'required|string|email|max:255|unique:users',
+    //         'password' => 'required|string|min:8|confirmed',
+    //         'phone' => 'nullable|string|max:20',
+    //         'company_name' => 'required|string|max:255',
+    //         'company_phone' => 'required|string|max:20',
+    //         'company_whatsapp' => 'required|string|max:20',
+    //     ]);
 
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Dados inválidos',
-                'errors' => $validator->errors()
-            ], 422);
-        }
+    //     if ($validator->fails()) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Dados inválidos',
+    //             'errors' => $validator->errors()
+    //         ], 422);
+    //     }
 
-        try {
-            // Create company
-            $company = Company::create([
-                'name' => $request->company_name,
-                'phone' => $request->company_phone,
-                'whatsapp_number' => $request->company_whatsapp,
-                'timezone' => 'America/Sao_Paulo',
-            ]);
+    //     try {
+    //         // Create company
+    //         $company = Company::create([
+    //             'name' => $request->company_name,
+    //             'phone_1' => $request->company_phone,
+    //             'has_whatsapp_1' => true,
+    //             'timezone_id' => 1, // Usar timezone padrão
+    //             'is_owner_company' => true, // Sempre true para proprietários no registro
+    //         ]);
 
-            // Buscar profile de admin
-            $adminProfile = \App\Models\Profile::where('name', 'admin')->first();
+    //         // Buscar profile de admin
+    //         $adminProfile = \App\Models\Profile::where('name', 'admin')->first();
 
-            // Create user
-            $user = User::create([
-                'name' => $request->name,
-                'email' => $request->email,
-                'password' => Hash::make($request->password),
-                'phone' => $request->phone,
-                'profile_id' => $adminProfile->id,
-            ]);
+    //         // Create user
+    //         $user = User::create([
+    //             'name' => $request->name,
+    //             'email' => $request->email,
+    //             'password' => Hash::make($request->password),
+    //             'phone' => $request->phone,
+    //         ]);
 
-            // Attach user to company
-            $user->companies()->attach($company->id);
+    //         // Attach user to company with admin profile
+    //         $user->companies()->attach($company->id, ['profile_id' => $adminProfile->id]);
 
-            // Create token
-            $token = $user->createToken('auth_token', $user->getAbilities())->plainTextToken;
+    //         // Create token
+    //         $token = $user->createToken('auth_token', $user->getAbilities())->plainTextToken;
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Usuário criado com sucesso',
-                'data' => [
-                    'user' => $user->load('companies'),
-                    'company' => $company,
-                    'token' => $token,
-                ]
-            ], 201);
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => 'Usuário criado com sucesso',
+    //             'data' => [
+    //                 'user' => $user->load('companies'),
+    //                 'company' => $company,
+    //                 'token' => $token,
+    //             ]
+    //         ], 201);
 
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao criar usuário',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
+    //     } catch (\Exception $e) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Erro ao criar usuário',
+    //             'error' => $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
 
     /**
      * Login user
@@ -110,21 +110,37 @@ class AuthController extends Controller
 
         /** @var User $user */
         $user = Auth::user();
-        $abilities = $user->getAbilities();
-        $token = $user->createToken('auth_token', $abilities)->plainTextToken;
 
         // Carregar relacionamentos do usuário
-        $user->load(['profile:id,name,display_name', 'companies']);
+        $user->load(['companies']);
+
+        // Como não temos company_id específico no login, vamos usar a primeira empresa
+        $firstCompany = $user->companies->first();
+        $abilities = $firstCompany ? $user->getAbilities($firstCompany->id) : [];
+        $token = $user->createToken('auth_token', $abilities)->plainTextToken;
 
         // Adicionar company_ids ao response
         $userData = $user->toArray();
         $userData['company_ids'] = $user->companies->pluck('id')->toArray();
+
+        // Garantir que as companies tenham a informação da pivot
+        $userData['companies'] = $user->companies->map(function ($company) {
+            return [
+                'id' => $company->id,
+                'name' => $company->name,
+                'pivot' => [
+                    'profile_id' => $company->pivot->profile_id,
+                    'is_main_company' => $company->pivot->is_main_company,
+                ]
+            ];
+        })->toArray();
 
         // Formatar empresas (tenants) para seleção (apenas empresas ativas)
         $tenants = $user->companies->map(function ($company) {
             return [
                 'id' => $company->id,
                 'name' => $company->name,
+                'is_main_company' => $company->pivot->is_main_company,
             ];
         });
 
@@ -182,18 +198,34 @@ class AuthController extends Controller
             $token = $user->createToken('auth_token')->plainTextToken;
 
             // Carregar abilities do usuário (todas as empresas)
-            $user->load(['profile:id,name,display_name', 'companies']);
-            $abilities = $user->getAbilities();
+            $user->load(['companies']);
+
+            // Como não temos company_id específico no login, vamos usar a primeira empresa
+            $firstCompany = $user->companies->first();
+            $abilities = $firstCompany ? $user->getAbilities($firstCompany->id) : [];
 
             // Adicionar company_ids ao response
             $userData = $user->toArray();
             $userData['company_ids'] = $user->companies->pluck('id')->toArray();
+
+            // Garantir que as companies tenham a informação da pivot
+            $userData['companies'] = $user->companies->map(function ($company) {
+                return [
+                    'id' => $company->id,
+                    'name' => $company->name,
+                    'pivot' => [
+                        'profile_id' => $company->pivot->profile_id,
+                        'is_main_company' => $company->pivot->is_main_company,
+                    ]
+                ];
+            })->toArray();
 
             // Formatar empresas (tenants) para seleção
             $tenants = $user->companies->map(function ($company) {
                 return [
                     'id' => $company->id,
                     'name' => $company->name,
+                    'is_main_company' => $company->pivot->is_main_company,
                 ];
             });
 
@@ -223,19 +255,34 @@ class AuthController extends Controller
     public function me(Request $request): JsonResponse
     {
         $user = $request->user();
-        $user->load(['profile:id,name,display_name', 'companies']);
+        $user->load(['companies']);
 
-        $abilities = $user->getAbilities();
+        // Como não temos company_id específico no me, vamos usar a primeira empresa
+        $firstCompany = $user->companies->first();
+        $abilities = $firstCompany ? $user->getAbilities($firstCompany->id) : [];
 
         // Adicionar company_ids ao response
         $userData = $user->toArray();
         $userData['company_ids'] = $user->companies->pluck('id')->toArray();
+
+        // Garantir que as companies tenham a informação da pivot
+        $userData['companies'] = $user->companies->map(function ($company) {
+            return [
+                'id' => $company->id,
+                'name' => $company->name,
+                'pivot' => [
+                    'profile_id' => $company->pivot->profile_id,
+                    'is_main_company' => $company->pivot->is_main_company,
+                ]
+            ];
+        })->toArray();
 
         // Formatar empresas (tenants) para seleção (apenas empresas ativas)
         $tenants = $user->companies->map(function ($company) {
             return [
                 'id' => $company->id,
                 'name' => $company->name,
+                'is_main_company' => $company->pivot->is_main_company,
             ];
         });
 

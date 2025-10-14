@@ -195,24 +195,38 @@
                     <div class="tenant-icon">
                       <v-avatar
                         size="64"
-                        color="primary"
+                        :color="tenant.is_main_company ? 'warning' : 'primary'"
                         rounded="lg"
                       >
-                        <v-icon size="32" color="white">mdi-domain</v-icon>
+                        <v-icon size="32" color="white">
+                          {{ tenant.is_main_company ? 'mdi-crown' : 'mdi-domain' }}
+                        </v-icon>
                       </v-avatar>
                     </div>
 
                     <div class="tenant-info">
                       <h3 class="tenant-name">{{ tenant.name }}</h3>
-                      <v-chip
-                        size="x-small"
-                        color="success"
-                        variant="flat"
-                        class="mt-2"
-                      >
-                        <v-icon size="12" class="mr-1">mdi-check-circle</v-icon>
-                        Ativa
-                      </v-chip>
+                      <div class="d-flex flex-column gap-1">
+                        <v-chip
+                          v-if="tenant.is_main_company"
+                          size="x-small"
+                          color="warning"
+                          variant="flat"
+                          class="mt-1"
+                        >
+                          <v-icon size="12" class="mr-1">mdi-crown</v-icon>
+                          Principal
+                        </v-chip>
+                        <v-chip
+                          size="x-small"
+                          color="success"
+                          variant="flat"
+                          class="mt-1"
+                        >
+                          <v-icon size="12" class="mr-1">mdi-check-circle</v-icon>
+                          Ativa
+                        </v-chip>
+                      </div>
                     </div>
 
                     <!-- Selected Indicator -->

@@ -34,7 +34,6 @@ class UserRequest extends FormRequest
             'password' => $userId ? 'nullable|string|min:8|confirmed' : 'required|string|min:8|confirmed',
             'phone' => 'nullable|string|max:20',
             'has_whatsapp' => 'boolean',
-            'profile_id' => 'required|exists:profiles,id',
             'company_ids' => 'nullable|array',
             'company_ids.*' => 'exists:companies,id',
             'cpf' => $userId
@@ -86,9 +85,6 @@ class UserRequest extends FormRequest
             'cpf.max' => 'O CPF não pode ter mais de 14 caracteres.',
             'cpf.unique' => 'Este CPF já está sendo usado por outro usuário.',
 
-            'profile_id.required' => 'O perfil é obrigatório.',
-            'profile_id.exists' => 'O perfil selecionado não existe.',
-
             'company_ids.array' => 'As empresas devem ser uma lista.',
             'company_ids.*.exists' => 'Uma ou mais empresas selecionadas não existem.',
         ];
@@ -105,7 +101,6 @@ class UserRequest extends FormRequest
             'password' => 'senha',
             'phone' => 'telefone',
             'has_whatsapp' => 'WhatsApp',
-            'profile_id' => 'perfil',
             'company_ids' => 'empresas',
         ];
     }

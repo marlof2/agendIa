@@ -238,52 +238,110 @@
                       :key="company.id"
                       cols="12"
                       sm="6"
+                      v-show="company && company.id"
                     >
                       <v-card class="company-item-card" elevation="2" hover>
                         <v-card-title class="d-flex align-center pa-4">
-                          <v-avatar color="primary" size="48" class="mr-3">
-                            <v-icon color="white">mdi-office-building</v-icon>
+                          <v-avatar
+                            :color="isMainCompany(company) ? 'warning' : 'primary'"
+                            size="48"
+                            class="mr-3"
+                          >
+                            <v-icon color="white">
+                              {{ isMainCompany(company) ? 'mdi-crown' : 'mdi-office-building' }}
+                            </v-icon>
                           </v-avatar>
                           <div class="flex-grow-1">
                             <div class="text-subtitle-1 font-weight-bold">{{ company.name }}</div>
+                            <div v-if="isMainCompany(company)" class="text-caption text-warning font-weight-bold">
+                              <v-icon size="12" class="mr-1">mdi-crown</v-icon>
+                              Empresa Principal
+                            </div>
                           </div>
 
-                          <!-- Badge Empresa Atual -->
-                          <v-chip
-                            v-if="currentTenant?.id === company.id"
-                            color="success"
-                            size="x-small"
-                            variant="flat"
-                          >
-                            Atual
-                          </v-chip>
+                          <!-- Badges -->
+                          <div class="d-flex flex-column gap-1">
+                            <!-- Badge Empresa Principal -->
+                            <v-chip
+                              v-if="isMainCompany(company)"
+                              color="warning"
+                              size="x-small"
+                              variant="flat"
+                            >
+                              <v-icon start size="12">mdi-crown</v-icon>
+                              Principal
+                            </v-chip>
+
+                            <!-- Badge Empresa Atual -->
+                            <v-chip
+                              v-if="currentTenant?.id === company.id"
+                              color="success"
+                              size="x-small"
+                              variant="flat"
+                            >
+                              Atual
+                            </v-chip>
+                          </div>
                         </v-card-title>
 
                         <v-card-actions class="pa-4 pt-0">
-                          <v-btn
-                            v-if="currentTenant?.id !== company.id"
-                            variant="tonal"
-                            color="primary"
-                            size="small"
-                            prepend-icon="mdi-swap-horizontal"
-                            @click="switchToCompany(company)"
-                          >
-                            Trocar
-                          </v-btn>
-                          <v-spacer />
-                          <v-btn
-                            variant="text"
-                            color="error"
-                            size="small"
-                            icon="mdi-link-off"
-                            @click="confirmUnlink(company)"
-                            :disabled="userCompanies.length === 1"
-                          >
-                            <v-icon>mdi-link-off</v-icon>
-                            <v-tooltip activator="parent" location="top">
-                              {{ userCompanies.length === 1 ? 'Você precisa estar vinculado a pelo menos uma empresa' : 'Desvincular' }}
-                            </v-tooltip>
-                          </v-btn>
+                          <div class="d-flex flex-column gap-2 w-100">
+                            <!-- Botões principais -->
+                            <div class="d-flex gap-2">
+                              <v-btn
+                                v-if="currentTenant?.id !== company.id"
+                                variant="tonal"
+                                color="primary"
+                                size="small"
+                                prepend-icon="mdi-swap-horizontal"
+                                @click="switchToCompany(company)"
+                              >
+                                Trocar
+                              </v-btn>
+
+                              <!-- Botão Empresa Principal -->
+                              <v-btn
+                                v-if="!isMainCompany(company)"
+                                variant="tonal"
+                                color="warning"
+                                size="small"
+                                prepend-icon="mdi-crown"
+                                :loading="updatingMainCompany === company.id"
+                                @click="setMainCompany(company)"
+                              >
+                                Definir como Principal
+                              </v-btn>
+
+                              <v-btn
+                                v-else
+                                variant="outlined"
+                                color="warning"
+                                size="small"
+                                prepend-icon="mdi-crown-off"
+                                :loading="updatingMainCompany === company.id"
+                                @click="removeMainCompany(company)"
+                              >
+                                Remover Principal
+                              </v-btn>
+                            </div>
+
+                            <!-- Botão de desvincular -->
+                            <div class="d-flex justify-end">
+                              <v-btn
+                                variant="text"
+                                color="error"
+                                size="small"
+                                icon="mdi-link-off"
+                                @click="confirmUnlink(company)"
+                                :disabled="userCompanies.length === 1"
+                              >
+                                <v-icon>mdi-link-off</v-icon>
+                                <v-tooltip activator="parent" location="top">
+                                  {{ userCompanies.length === 1 ? 'Você precisa estar vinculado a pelo menos uma empresa' : 'Desvincular' }}
+                                </v-tooltip>
+                              </v-btn>
+                            </div>
+                          </div>
                         </v-card-actions>
                       </v-card>
                     </v-col>
@@ -547,7 +605,7 @@ import BasePage from '@/components/BasePage.vue'
 
 const router = useRouter()
 const { user, updateUserData } = useAuth()
-const { currentTenant, availableTenants, switchTenant, setAvailableTenants } = useTenant()
+const { currentTenant, availableTenants, switchTenant, setAvailableTenants, setCurrentTenant } = useTenant()
 const http = useHttp()
 const { formatPhone, formatCPF, maskCPF } = useMask()
 
@@ -562,6 +620,7 @@ const searchCompanies = ref('')
 const selectedCompanyIds = ref<number[]>([])
 const associating = ref(false)
 const unlinking = ref(false)
+const updatingMainCompany = ref<number | null>(null)
 const companyToUnlink = ref<any>(null)
 const publicCompanies = ref<any[]>([])
 const companiesPagination = ref({
@@ -615,7 +674,7 @@ const rules = {
 const userCompanies = computed(() => {
   return userCompaniesDetailed.value.length > 0
     ? userCompaniesDetailed.value
-    : availableTenants.value || []
+    : user.value?.companies || []
 })
 
 const availableCompanies = computed(() => {
@@ -651,7 +710,12 @@ const getProfileColor = (profileName: string) => {
 }
 
 const isAlreadyLinked = (companyId: number) => {
-  return userCompanies.value.some(c => c.id === companyId)
+  return userCompanies.value.some((c: any) => c.id === companyId)
+}
+
+const isMainCompany = (company: any) => {
+  const isMain = company?.pivot?.is_main_company
+  return isMain === true || isMain === 1
 }
 
 const isSelected = (companyId: number) => {
@@ -718,8 +782,7 @@ const savePersonalInfo = async () => {
       email: personalData.value.email,
       phone: personalData.value.phone,
       cpf: personalData.value.cpf,
-      has_whatsapp: personalData.value.has_whatsapp,
-      profile_id: user.value.profile_id
+      has_whatsapp: personalData.value.has_whatsapp
     })
 
     if (response.success) {
@@ -827,7 +890,7 @@ const handleUnlink = async () => {
 
       // Se desvinculou da empresa atual, trocar para outra
       if (currentTenant.value?.id === companyToUnlink.value.id) {
-        const remainingCompanies = userCompanies.value.filter(c => c.id !== companyToUnlink.value.id)
+        const remainingCompanies = userCompanies.value.filter((c: any) => c.id !== companyToUnlink.value.id)
         if (remainingCompanies.length > 0) {
           switchTenant(remainingCompanies[0])
         }
@@ -842,6 +905,85 @@ const handleUnlink = async () => {
     showErrorToast(error.response?.data?.message || 'Erro ao desvincular empresa')
   } finally {
     unlinking.value = false
+  }
+}
+
+const setMainCompany = async (company: any) => {
+  updatingMainCompany.value = company.id
+  try {
+    const response = await http.post('/users/update-main-company', {
+      company_id: company.id,
+      is_main: true
+    })
+
+    if (response.success) {
+      // Atualizar estado local PRIMEIRO se necessário
+      if (response.data?.user?.companies) {
+        userCompaniesDetailed.value = response.data.user.companies
+      }
+
+      // Depois atualizar dados do usuário
+      await updateUserData()
+
+      // Atualizar o flag is_main_company do tenant atual
+      const { setCurrentTenant } = useTenant()
+      if (currentTenant.value?.id === company.id) {
+        // Se está definindo a empresa atual como principal
+        setCurrentTenant({
+          ...currentTenant.value,
+          is_main_company: 1
+        })
+      } else {
+        // Se está definindo outra empresa como principal, remover flag da atual
+        setCurrentTenant({
+          ...currentTenant.value,
+          is_main_company: 0
+        })
+      }
+
+      showSuccessToast(response.message || 'Empresa definida como principal!')
+    }
+  } catch (error: any) {
+    console.error('Erro ao definir empresa principal:', error)
+    showErrorToast(error.response?.data?.message || 'Erro ao definir empresa principal')
+  } finally {
+    updatingMainCompany.value = null
+  }
+}
+
+const removeMainCompany = async (company: any) => {
+  updatingMainCompany.value = company.id
+  try {
+    const response = await http.post('/users/update-main-company', {
+      company_id: company.id,
+      is_main: false
+    })
+
+    if (response.success) {
+      // Atualizar estado local PRIMEIRO se necessário
+      if (response.data?.user?.companies) {
+        userCompaniesDetailed.value = response.data.user.companies
+      }
+
+      // Depois atualizar dados do usuário
+      await updateUserData()
+
+      // Atualizar apenas o flag is_main_company do tenant atual se for a empresa atual
+      if (currentTenant.value?.id === company.id) {
+        const { setCurrentTenant } = useTenant()
+        setCurrentTenant({
+          ...currentTenant.value,
+          is_main_company: 0
+        })
+      }
+
+      showSuccessToast(response.message || 'Empresa removida como principal!')
+    }
+  } catch (error: any) {
+    console.error('Erro ao remover empresa principal:', error)
+    showErrorToast(error.response?.data?.message || 'Erro ao remover empresa principal')
+  } finally {
+    updatingMainCompany.value = null
   }
 }
 

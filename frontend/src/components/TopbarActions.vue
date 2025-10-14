@@ -88,10 +88,22 @@
           <!-- Empresa Atual -->
           <v-list-item v-if="currentTenant" class="current-tenant-item">
             <template v-slot:prepend>
-              <v-icon color="primary">mdi-office-building</v-icon>
+              <v-icon :color="currentTenant.is_main_company ? 'warning' : 'primary'">
+                {{ currentTenant.is_main_company ? 'mdi-crown' : 'mdi-office-building' }}
+              </v-icon>
             </template>
             <v-list-item-title class="tenant-name-display">
               {{ currentTenant.name }}
+              <v-chip
+                v-if="currentTenant.is_main_company"
+                color="warning"
+                size="x-small"
+                variant="flat"
+                class="ml-2"
+              >
+                <v-icon start size="10">mdi-crown</v-icon>
+                Principal
+              </v-chip>
             </v-list-item-title>
             <v-list-item-subtitle class="tenant-subtitle">
               Empresa atual

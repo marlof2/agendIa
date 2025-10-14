@@ -25,19 +25,29 @@ class AbilityController extends Controller
     }
 
     /**
-     * Get user abilities
+     * Get user abilities for a specific company
      */
-    public function userAbilities(User $user): JsonResponse
+    public function userAbilities(Request $request, User $user): JsonResponse
     {
-        $user->load('profile.abilities');
+        $companyId = $request->get('company_id');
+
+        if (!$companyId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'company_id é obrigatório'
+            ], 400);
+        }
+
+        $profile = $user->getProfileForCompany($companyId);
+        $user->load('companies');
 
         return response()->json([
             'success' => true,
             'data' => [
                 'user' => $user,
-                'profile' => $user->profile,
-                'abilities' => $user->getAbilities(),
-                'abilities_grouped' => $user->getAbilitiesGrouped()
+                'profile' => $profile,
+                'abilities' => $user->getAbilities($companyId),
+                'abilities_grouped' => $user->getAbilitiesGrouped($companyId)
             ]
         ]);
     }

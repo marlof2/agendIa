@@ -4,9 +4,8 @@ import type { Ref } from 'vue'
 export interface Tenant {
   id: number
   name: string
-  slug?: string
-  logo?: string
   created_at?: string
+  is_main_company?: boolean
 }
 
 // Estado global do tenant

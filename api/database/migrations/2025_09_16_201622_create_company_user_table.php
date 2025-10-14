@@ -15,10 +15,13 @@ return new class extends Migration
             $table->id();
             $table->foreignId('company_id')->constrained()->onDelete('cascade');
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreignId('profile_id')->constrained()->onDelete('cascade');
+            $table->boolean('is_main_company')->default(false)
+                ->comment('Indica se esta é a empresa principal do usuário');
             $table->timestamps();
 
             // Evitar duplicação de usuário na mesma empresa
-            $table->unique(['company_id', 'user_id']);
+            $table->unique(['company_id', 'user_id', 'profile_id']);
         });
     }
 
