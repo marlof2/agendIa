@@ -336,7 +336,7 @@
                           <v-text-field
                             v-if="form.company.person_type === 'legal'"
                             v-model="form.company.cnpj"
-                            label="CNPJ"
+                            label="CNPJ *"
                             variant="outlined"
                             density="comfortable"
                             rounded="lg"
@@ -351,7 +351,7 @@
                           <v-text-field
                             v-else
                             v-model="form.company.cpf"
-                            label="CPF"
+                            label="CPF *"
                             variant="outlined"
                             density="comfortable"
                             rounded="lg"
@@ -489,7 +489,7 @@
                     v-else
                     color="success"
                     :loading="loading"
-                    :disabled="!isValid"
+                    :disabled="!canProceed"
                     @click="handleSubmit"
                   >
                     <v-icon start>mdi-check</v-icon>
@@ -531,7 +531,7 @@ const { loading, register } = registerApi;
 const { getCombo: getProfilesCombo } = useProfilesApi();
 
 // Validation
-const { getCPFValidationRules, getCNPJValidationRules } = useValidation();
+const { getCPFValidationRules, getCNPJValidationRules, isValidCPF, isValidCNPJ } = useValidation();
 
 // Estado local para combos
 const availableProfiles = ref<any[]>([]);
@@ -582,21 +582,33 @@ const canProceed = computed(() => {
   if (currentStep.value === 2) {
     // Validação para dados pessoais
     return (
-      form.value.name &&
-      form.value.email &&
-      form.value.cpf &&
-      form.value.password &&
-      form.value.password_confirmation
+      form.value.name && form.value.name.length >= 3 &&
+      form.value.email && form.value.email.includes('@') &&
+      form.value.cpf && form.value.cpf.length >= 11 &&
+      form.value.password && form.value.password.length >= 6 &&
+      form.value.password_confirmation && form.value.password_confirmation === form.value.password
     );
   }
   if (currentStep.value === 3 && form.value.account_type === 'owner') {
     // Validação para dados da empresa (apenas proprietários)
-    return (
-      form.value.company?.name &&
+    const basicCompanyData = (
+      form.value.company?.name && form.value.company.name.length >= 3 &&
       form.value.company?.person_type &&
-      form.value.company?.responsible_name &&
-      form.value.company?.phone_1
+      form.value.company?.responsible_name && form.value.company.responsible_name.length >= 3 &&
+      form.value.company?.phone_1 && form.value.company.phone_1.length >= 10
     );
+
+    // Validação do CNPJ ou CPF baseado no tipo de pessoa
+    let documentValid = false;
+    if (form.value.company?.person_type === 'legal') {
+      // Para pessoa jurídica, CNPJ é obrigatório
+      documentValid = !!(form.value.company?.cnpj && isValidCNPJ(form.value.company.cnpj));
+    } else if (form.value.company?.person_type === 'physical') {
+      // Para pessoa física, CPF é obrigatório
+      documentValid = !!(form.value.company?.cpf && isValidCPF(form.value.company.cpf));
+    }
+
+    return basicCompanyData && documentValid;
   }
   return true;
 });
@@ -635,6 +647,7 @@ const companyPhone1Rules = [
 ];
 
 const companyCpfRules = [
+  (v: string) => !!v || "CPF é obrigatório",
   ...getCPFValidationRules(),
 ];
 
@@ -649,8 +662,9 @@ const phoneRules = [
 
 // Validação para CNPJ da empresa
 const companyCnpjRules = [
+  (v: string) => !!v || "CNPJ é obrigatório",
   (v: string) => {
-    if (!v) return true; // CNPJ é opcional quando pessoa física
+    if (!v) return true; // Já validado acima
     const cnpjRules = getCNPJValidationRules();
     return cnpjRules[0] ? cnpjRules[0](v) : true; // Usa a validação completa do composable
   },

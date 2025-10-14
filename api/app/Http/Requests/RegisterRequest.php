@@ -42,8 +42,8 @@ class RegisterRequest extends FormRequest
             $rules = array_merge($rules, [
                 'company.name' => 'required|string|max:255',
                 'company.person_type' => 'required|in:physical,legal',
-                'company.cnpj' => ['nullable', 'string', 'max:18', new CnpjCpf('cnpj'), 'unique:companies,cnpj'],
-                'company.cpf' => ['nullable', 'string', 'max:14', new CnpjCpf('cpf'), 'unique:companies,cpf'],
+                'company.cnpj' => ['required_if:company.person_type,legal', 'string', 'max:18', new CnpjCpf('cnpj'), 'unique:companies,cnpj'],
+                'company.cpf' => ['required_if:company.person_type,physical', 'string', 'max:14', new CnpjCpf('cpf'), 'unique:companies,cpf'],
                 'company.responsible_name' => 'required|string|max:255',
                 'company.phone_1' => 'required|string|max:20',
                 'company.has_whatsapp_1' => 'boolean',
@@ -107,6 +107,8 @@ class RegisterRequest extends FormRequest
             'cpf.unique' => 'Este CPF já está sendo usado por outro usuário.',
             'company.name.required' => 'O nome da empresa é obrigatório',
             'company.person_type.required' => 'O tipo de pessoa é obrigatório',
+            'company.cnpj.required_if' => 'O CNPJ é obrigatório para pessoa jurídica',
+            'company.cpf.required_if' => 'O CPF é obrigatório para pessoa física',
             'company.responsible_name.required' => 'O nome do responsável é obrigatório',
             'company.phone_1.required' => 'O telefone da empresa é obrigatório',
         ];

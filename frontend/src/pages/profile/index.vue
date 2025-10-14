@@ -766,7 +766,7 @@ const loadPublicCompanies = async (page: number = 1) => {
       params.append('search', searchCompanies.value)
     }
 
-    const response = await http.get(`/companies/public?${params.toString()}`)
+    const response = await http.get(`/companies/available?${params.toString()}`)
     publicCompanies.value = response.data || []
     companiesPagination.value = {
       current_page: response.current_page || 1,
@@ -789,18 +789,6 @@ const handleSearchCompanies = async () => {
 
 const handlePageChange = async (page: number) => {
   await loadPublicCompanies(page)
-}
-
-const refreshUserData = async () => {
-  try {
-    const response = await http.get('/auth/me')
-    if (response.data?.tenants) {
-      setAvailableTenants(response.data.tenants)
-      userCompaniesDetailed.value = response.data.tenants
-    }
-  } catch (error) {
-    console.error('Erro ao atualizar dados do usuário:', error)
-  }
 }
 
 const handleAssociate = async () => {
