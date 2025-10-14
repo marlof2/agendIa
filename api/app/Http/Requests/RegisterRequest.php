@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\CnpjCpf;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class RegisterRequest extends FormRequest
 {
@@ -27,6 +29,7 @@ class RegisterRequest extends FormRequest
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:6|confirmed',
             'phone' => 'nullable|string|max:20',
+            'cpf' => ['required', 'string', 'max:14', new CnpjCpf('cpf'), 'unique:users,cpf'],
             'has_whatsapp' => 'boolean',
 
             // Tipo de conta
@@ -39,8 +42,8 @@ class RegisterRequest extends FormRequest
             $rules = array_merge($rules, [
                 'company.name' => 'required|string|max:255',
                 'company.person_type' => 'required|in:physical,legal',
-                'company.cnpj' => 'nullable|string|max:18',
-                'company.cpf' => 'nullable|string|max:14',
+                'company.cnpj' => ['nullable', 'string', 'max:18', new CnpjCpf('cnpj'), 'unique:companies,cnpj'],
+                'company.cpf' => ['nullable', 'string', 'max:14', new CnpjCpf('cpf'), 'unique:companies,cpf'],
                 'company.responsible_name' => 'required|string|max:255',
                 'company.phone_1' => 'required|string|max:20',
                 'company.has_whatsapp_1' => 'boolean',
@@ -48,13 +51,37 @@ class RegisterRequest extends FormRequest
                 'company.has_whatsapp_2' => 'boolean',
                 'company.timezone_id' => 'nullable|exists:timezones,id',
             ]);
-        } else {
-            // Se não for proprietário, pode selecionar empresas para se associar
-            $rules['company_ids'] = 'nullable|array';
-            $rules['company_ids.*'] = 'exists:companies,id';
         }
+        // Para outros perfis, a associação será feita após o login
 
         return $rules;
+    }
+
+    /**
+     * Prepare the data for validation.
+     */
+    protected function prepareForValidation(): void
+    {
+        // Remove máscara do CPF antes da validação
+        if ($this->has('cpf')) {
+            $this->merge([
+                'cpf' => preg_replace('/[^0-9]/', '', $this->input('cpf'))
+            ]);
+        }
+
+        // Remove máscara do CNPJ da empresa antes da validação
+        if ($this->has('company.cnpj')) {
+            $this->merge([
+                'company.cnpj' => preg_replace('/[^0-9]/', '', $this->input('company.cnpj'))
+            ]);
+        }
+
+        // Remove máscara do CPF da empresa antes da validação
+        if ($this->has('company.cpf')) {
+            $this->merge([
+                'company.cpf' => preg_replace('/[^0-9]/', '', $this->input('company.cpf'))
+            ]);
+        }
     }
 
     /**
@@ -74,7 +101,10 @@ class RegisterRequest extends FormRequest
             'password.confirmed' => 'As senhas não conferem',
             'account_type.required' => 'Selecione o tipo de conta',
             'account_type.in' => 'Tipo de conta inválido',
-
+            'cpf.required' => 'O CPF é obrigatório.',
+            'cpf.string' => 'O CPF deve ser um texto.',
+            'cpf.max' => 'O CPF não pode ter mais de 14 caracteres.',
+            'cpf.unique' => 'Este CPF já está sendo usado por outro usuário.',
             'company.name.required' => 'O nome da empresa é obrigatório',
             'company.person_type.required' => 'O tipo de pessoa é obrigatório',
             'company.responsible_name.required' => 'O nome do responsável é obrigatório',

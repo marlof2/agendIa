@@ -104,7 +104,7 @@
           <div class="menu-section">
             <v-list-item
               prepend-icon="mdi-account-edit"
-              title="Editar Perfil"
+              title="Gerenciar meu Perfil"
               subtitle="Atualize suas informações"
               @click="navigateToProfile"
               class="menu-item"

@@ -8,6 +8,7 @@ export interface RegisterData {
   password: string
   password_confirmation: string
   phone?: string
+  cpf?: string
   has_whatsapp?: boolean
 
   // Tipo de conta e perfil
@@ -28,21 +29,13 @@ export interface RegisterData {
     timezone_id?: number
   }
 
-  // IDs das empresas (para outros perfis)
-  company_ids?: number[]
+  // IDs das empresas (removido - associação será feita após login)
 }
 
 export const useRegisterApi = () => {
   const http = useHttp()
   const loading = ref(false)
   const error = ref<string | null>(null)
-  const companies = ref<any[]>([])
-  const pagination = ref({
-    current_page: 1,
-    last_page: 1,
-    per_page: 12,
-    total: 0
-  })
 
   /**
    * Registrar novo usuário
@@ -62,48 +55,10 @@ export const useRegisterApi = () => {
     }
   }
 
-  /**
-   * Listar empresas públicas com paginação
-   */
-  const getPublicCompanies = async (params: { search?: string; page?: number; per_page?: number } = {}) => {
-    loading.value = true
-    error.value = null
-
-    try {
-      const queryParams = new URLSearchParams()
-      if (params.search) queryParams.append('search', params.search)
-      if (params.page) queryParams.append('page', params.page.toString())
-      if (params.per_page) queryParams.append('per_page', params.per_page.toString())
-
-      const url = queryParams.toString()
-        ? `/companies/public?${queryParams.toString()}`
-        : '/companies/public'
-
-      const response = await http.get(url)
-
-      companies.value = response.data
-      pagination.value = {
-        current_page: response.current_page || 1,
-        last_page: response.last_page || 1,
-        per_page: response.per_page || 12,
-        total: response.total || 0
-      }
-      return response
-    } catch (err: any) {
-      error.value = err.response?.data?.message || 'Erro ao buscar empresas'
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
   return {
     loading,
     error,
-    companies,
-    pagination,
-    register,
-    getPublicCompanies
+    register
   }
 }
 

@@ -93,25 +93,29 @@
 
                   <v-form ref="personalForm" @submit.prevent="savePersonalInfo">
                     <v-row>
-                      <v-col cols="12">
+                      <v-col cols="12" md="6">
                         <v-text-field
                           v-model="personalData.name"
-                          label="Nome Completo"
+                          label="Nome Completo *"
                           prepend-inner-icon="mdi-account"
                           variant="outlined"
-                          density="comfortable"
+                          density="compact"
+                          rounded="lg"
                           :rules="[rules.required]"
                           required
+                          hint="Nome completo do usuário"
+                          persistent-hint
                         />
                       </v-col>
 
-                      <v-col cols="12">
+                      <v-col cols="12" md="6">
                         <v-text-field
                           v-model="personalData.email"
-                          label="E-mail"
+                          label="E-mail *"
                           prepend-inner-icon="mdi-email"
                           variant="outlined"
-                          density="comfortable"
+                          density="compact"
+                          rounded="lg"
                           type="email"
                           :rules="[rules.required, rules.email]"
                           required
@@ -121,14 +125,34 @@
                         />
                       </v-col>
 
-                      <v-col cols="12">
+                      <v-col cols="12" md="6">
+                        <v-text-field
+                          v-model="formattedCpf"
+                          label="CPF *"
+                          prepend-inner-icon="mdi-card-account-details"
+                          variant="outlined"
+                          density="compact"
+                          rounded="lg"
+                          :rules="[rules.required, rules.cpf]"
+                          required
+                          maxlength="14"
+                          hint="Seu CPF"
+                          persistent-hint
+                          @input="handleCpfInput"
+                        />
+                      </v-col>
+
+                      <v-col cols="12" md="6">
                         <v-text-field
                           v-model="formattedPhone"
                           label="Telefone"
                           prepend-inner-icon="mdi-phone"
                           variant="outlined"
-                          density="comfortable"
+                          density="compact"
+                          rounded="lg"
                           maxlength="15"
+                          hint="Telefone de contato (opcional)"
+                          persistent-hint
                           @input="handlePhoneInput"
                         />
                       </v-col>
@@ -152,19 +176,14 @@
 
                     <v-divider class="my-6" />
 
-                    <div class="d-flex justify-end gap-2">
-                      <v-btn
-                        variant="outlined"
-                        @click="resetPersonalData"
-                      >
-                        Cancelar
-                      </v-btn>
+                    <div class="d-flex justify-end">
                       <v-btn
                         color="primary"
                         type="submit"
                         :loading="savingPersonal"
+                        variant="flat"
+                        prepend-icon="mdi-content-save"
                       >
-                        <v-icon start>mdi-content-save</v-icon>
                         Salvar Alterações
                       </v-btn>
                     </div>
@@ -279,48 +298,57 @@
 
                   <v-form ref="securityForm" @submit.prevent="changePassword">
                     <v-row>
-                      <v-col cols="12">
+                      <v-col cols="12" md="6">
                         <v-text-field
                           v-model="securityData.current_password"
-                          label="Senha Atual"
+                          label="Senha Atual *"
                           prepend-inner-icon="mdi-lock"
                           variant="outlined"
-                          density="comfortable"
+                          density="compact"
+                          rounded="lg"
                           :type="showCurrentPassword ? 'text' : 'password'"
                           :append-inner-icon="showCurrentPassword ? 'mdi-eye-off' : 'mdi-eye'"
                           @click:append-inner="showCurrentPassword = !showCurrentPassword"
                           :rules="[rules.required]"
                           required
+                          hint="Digite sua senha atual"
+                          persistent-hint
                         />
                       </v-col>
 
-                      <v-col cols="12">
+                      <v-col cols="12" md="6">
                         <v-text-field
                           v-model="securityData.new_password"
-                          label="Nova Senha"
+                          label="Nova Senha *"
                           prepend-inner-icon="mdi-lock-plus"
                           variant="outlined"
-                          density="comfortable"
+                          density="compact"
+                          rounded="lg"
                           :type="showNewPassword ? 'text' : 'password'"
                           :append-inner-icon="showNewPassword ? 'mdi-eye-off' : 'mdi-eye'"
                           @click:append-inner="showNewPassword = !showNewPassword"
                           :rules="[rules.required, rules.minLength(6)]"
                           required
+                          hint="Mínimo de 6 caracteres"
+                          persistent-hint
                         />
                       </v-col>
 
-                      <v-col cols="12">
+                      <v-col cols="12" md="6">
                         <v-text-field
                           v-model="securityData.new_password_confirmation"
-                          label="Confirmar Nova Senha"
+                          label="Confirmar Nova Senha *"
                           prepend-inner-icon="mdi-lock-check"
                           variant="outlined"
-                          density="comfortable"
+                          density="compact"
+                          rounded="lg"
                           :type="showConfirmPassword ? 'text' : 'password'"
                           :append-inner-icon="showConfirmPassword ? 'mdi-eye-off' : 'mdi-eye'"
                           @click:append-inner="showConfirmPassword = !showConfirmPassword"
                           :rules="[rules.required, rules.passwordMatch]"
                           required
+                          hint="Confirme sua nova senha"
+                          persistent-hint
                         />
                       </v-col>
                     </v-row>
@@ -333,19 +361,14 @@
 
                     <v-divider class="my-6" />
 
-                    <div class="d-flex justify-end gap-2">
-                      <v-btn
-                        variant="outlined"
-                        @click="resetSecurityData"
-                      >
-                        Cancelar
-                      </v-btn>
+                    <div class="d-flex justify-end">
                       <v-btn
                         color="primary"
                         type="submit"
                         :loading="savingSecurity"
+                        variant="flat"
+                        prepend-icon="mdi-shield-check"
                       >
-                        <v-icon start>mdi-shield-check</v-icon>
                         Alterar Senha
                       </v-btn>
                     </div>
@@ -523,10 +546,10 @@ import { showSuccessToast, showErrorToast } from '@/utils/swal'
 import BasePage from '@/components/BasePage.vue'
 
 const router = useRouter()
-const { user } = useAuth()
+const { user, updateUserData } = useAuth()
 const { currentTenant, availableTenants, switchTenant, setAvailableTenants } = useTenant()
 const http = useHttp()
-const { formatPhone } = useMask()
+const { formatPhone, formatCPF, maskCPF } = useMask()
 
 // State
 const currentTab = ref('personal')
@@ -554,6 +577,7 @@ const personalData = ref({
   name: '',
   email: '',
   phone: '',
+  cpf: '',
   has_whatsapp: false
 })
 
@@ -580,6 +604,10 @@ const rules = {
   },
   passwordMatch: (value: string) => {
     return value === securityData.value.new_password || 'As senhas não coincidem'
+  },
+  cpf: (value: string) => {
+    const cleaned = value?.replace(/\D/g, '') || ''
+    return cleaned.length === 11 || 'CPF deve ter 11 dígitos'
   }
 }
 
@@ -600,6 +628,13 @@ const formattedPhone = computed({
   get: () => personalData.value.phone ? formatPhone(personalData.value.phone) : '',
   set: (value: string) => {
     personalData.value.phone = value.replace(/\D/g, '')
+  }
+})
+
+const formattedCpf = computed({
+  get: () => personalData.value.cpf ? formatCPF(personalData.value.cpf) : '',
+  set: (value: string) => {
+    personalData.value.cpf = value.replace(/\D/g, '')
   }
 })
 
@@ -650,12 +685,18 @@ const handlePhoneInput = (event: any) => {
   personalData.value.phone = value.replace(/\D/g, '')
 }
 
+const handleCpfInput = (event: any) => {
+  const maskedValue = maskCPF(event)
+  personalData.value.cpf = maskedValue
+}
+
 const resetPersonalData = () => {
   if (user.value) {
     personalData.value = {
       name: user.value.name || '',
       email: user.value.email || '',
       phone: user.value.phone || '',
+      cpf: user.value.cpf || '',
       has_whatsapp: user.value.has_whatsapp || false
     }
   }
@@ -674,18 +715,18 @@ const savePersonalInfo = async () => {
   try {
     const response = await http.put(`/users/${user.value.id}`, {
       name: personalData.value.name,
+      email: personalData.value.email,
       phone: personalData.value.phone,
-      has_whatsapp: personalData.value.has_whatsapp
+      cpf: personalData.value.cpf,
+      has_whatsapp: personalData.value.has_whatsapp,
+      profile_id: user.value.profile_id
     })
 
     if (response.success) {
       showSuccessToast('Dados pessoais atualizados com sucesso!')
-      await refreshUserData()
+      await updateUserData()
     }
-  } catch (error: any) {
-    console.error('Erro ao salvar dados pessoais:', error)
-    showErrorToast(error.response?.data?.message || 'Erro ao atualizar dados pessoais')
-  } finally {
+  }  finally {
     savingPersonal.value = false
   }
 }
@@ -698,6 +739,7 @@ const changePassword = async () => {
     if (response.success) {
       showSuccessToast('Senha alterada com sucesso!')
       resetSecurityData()
+      await updateUserData()
     }
   } catch (error: any) {
     console.error('Erro ao alterar senha:', error)
@@ -771,7 +813,7 @@ const handleAssociate = async () => {
     })
 
     if (response.success) {
-      await refreshUserData()
+      await updateUserData()
       showSuccessToast(response.message || 'Vinculação realizada com sucesso!')
       selectedCompanyIds.value = []
       showAssociateModal.value = false
@@ -793,7 +835,7 @@ const handleUnlink = async () => {
     const response = await http.del(`/users/detach-company/${companyToUnlink.value.id}`)
 
     if (response.success) {
-      await refreshUserData()
+      await updateUserData()
 
       // Se desvinculou da empresa atual, trocar para outra
       if (currentTenant.value?.id === companyToUnlink.value.id) {
@@ -822,6 +864,7 @@ watch(user, (newUser) => {
       name: newUser.name || '',
       email: newUser.email || '',
       phone: newUser.phone || '',
+      cpf: newUser.cpf || '',
       has_whatsapp: newUser.has_whatsapp || false
     }
   }
@@ -831,7 +874,7 @@ watch(user, (newUser) => {
 onMounted(async () => {
   loadingCompanies.value = true
   try {
-    await refreshUserData()
+    await updateUserData()
   } catch (error) {
     console.error('Erro ao carregar dados do usuário:', error)
   } finally {

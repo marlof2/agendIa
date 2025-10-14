@@ -27,6 +27,7 @@ class RegisterController extends Controller
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
                 'phone' => $request->phone,
+                'cpf' => $request->cpf,
                 'has_whatsapp' => $request->has_whatsapp ?? false,
                 'profile_id' => $request->profile_id,
             ]);
@@ -49,10 +50,7 @@ class RegisterController extends Controller
                 // Associar usuário à empresa criada
                 $user->companies()->attach($company->id);
             }
-            // Se não for proprietário, associar às empresas selecionadas
-            elseif ($request->has('company_ids') && is_array($request->company_ids)) {
-                $user->companies()->attach($request->company_ids);
-            }
+            // Para outros perfis, a associação será feita após o login
 
             DB::commit();
 

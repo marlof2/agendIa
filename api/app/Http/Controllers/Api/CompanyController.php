@@ -250,9 +250,9 @@ class CompanyController extends Controller
     }
 
     /**
-     * Listar empresas públicas para registro (com paginação)
+     * Listar empresas disponíveis para associação (usuário autenticado)
      */
-    public function publicList(Request $request)
+    public function availableForAssociation(Request $request)
     {
         $search = $request->get('search');
         $perPage = $request->get('per_page', 12);

@@ -67,6 +67,17 @@
               </div>
             </div>
           </div>
+
+          <!-- CPF -->
+          <div class="info-item" v-if="user?.cpf">
+            <div class="info-label">
+              <v-icon size="20" color="primary" class="mr-3">mdi-card-account-details</v-icon>
+              CPF
+            </div>
+            <div class="info-value">
+              <span class="value-text">{{ user.cpf }}</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -176,7 +187,7 @@
       <v-spacer />
       <div class="d-flex modal-actions-container">
         <BtnCancel @click="closeModal" />
-        <BtnEdit @click="handleEdit" size="default" variant="flat" v-if="hasPermission('users.edit')" />
+        <BtnEdit @click="handleEdit" size="default" variant="flat" v-if="hasPermission('users.edit') && !disableEdit" />
       </div>
     </template>
   </BaseDialog>
@@ -192,6 +203,7 @@ import { useAbilities } from "@/composables/useAbilities";
 interface Props {
   modelValue: boolean;
   user?: any;
+  disableEdit?: boolean;
 }
 
 interface Emits {

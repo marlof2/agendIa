@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\CnpjCpf;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -39,8 +40,8 @@ class CompanyRequest extends FormRequest
         return [
             'name' => 'required|string|max:255',
             'person_type' => 'required|in:physical,legal',
-            'cnpj' => 'nullable|string|max:18|unique:companies,cnpj',
-            'cpf' => 'nullable|string|max:14|unique:companies,cpf',
+            'cnpj' => ['nullable', 'string', 'max:18', new CnpjCpf('cnpj'), 'unique:companies,cnpj'],
+            'cpf' => ['nullable', 'string', 'max:14', new CnpjCpf('cpf'), 'unique:companies,cpf'],
             'responsible_name' => 'required|string|max:255',
             'phone_1' => 'required|string|max:20',
             'has_whatsapp_1' => 'boolean',
@@ -64,12 +65,14 @@ class CompanyRequest extends FormRequest
                 'nullable',
                 'string',
                 'max:18',
+                new CnpjCpf('cnpj'),
                 Rule::unique('companies', 'cnpj')->ignore($companyId)
             ],
             'cpf' => [
                 'nullable',
                 'string',
                 'max:14',
+                new CnpjCpf('cpf'),
                 Rule::unique('companies', 'cpf')->ignore($companyId)
             ],
             'responsible_name' => 'required|string|max:255',
@@ -98,6 +101,7 @@ class CompanyRequest extends FormRequest
                 'nullable',
                 'string',
                 'max:18',
+                new CnpjCpf('cnpj'),
                 Rule::unique('companies', 'cnpj')->ignore($companyId)
             ];
         }
@@ -123,6 +127,26 @@ class CompanyRequest extends FormRequest
     private function deleteRules(): array
     {
         return [];
+    }
+
+    /**
+     * Prepare the data for validation.
+     */
+    protected function prepareForValidation(): void
+    {
+        // Remove máscara do CNPJ antes da validação
+        if ($this->has('cnpj')) {
+            $this->merge([
+                'cnpj' => preg_replace('/[^0-9]/', '', $this->input('cnpj'))
+            ]);
+        }
+
+        // Remove máscara do CPF antes da validação
+        if ($this->has('cpf')) {
+            $this->merge([
+                'cpf' => preg_replace('/[^0-9]/', '', $this->input('cpf'))
+            ]);
+        }
     }
 
     /**

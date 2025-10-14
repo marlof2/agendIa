@@ -197,8 +197,7 @@
   <ClientModal
     v-model="showClientModal"
     :client="selectedClient"
-    @submit="handleSave"
-    @close="showClientModal = false"
+    @reload="loadClients"
   />
 
   <ClientViewModal
@@ -316,36 +315,14 @@ const create = () => {
   showClientModal.value = true;
 };
 
-const handleSave = async (data: any) => {
-  try {
-    loading.value = true;
-
-    if (selectedClient.value && selectedClient.value.id) {
-      // Update
-      await useClientsApi().updateItem(selectedClient.value.id, data);
-      showSuccessToast(
-        "Cliente atualizado com sucesso!",
-        "Sucesso!"
-      );
-    } else {
-      // Create
-      await useClientsApi().createItem(data);
-      showSuccessToast(
-        "Cliente criado com sucesso!",
-        "Sucesso!"
-      );
-    }
-
-    showClientModal.value = false;
+// Watcher para limpar selectedClient quando o modal fecha
+watch(showClientModal, (newValue) => {
+  if (!newValue) {
+    // Limpar selectedClient quando o modal fecha
     selectedClient.value = null;
-
-    // Reload the list
-    await loadClients();
-  } catch (error: any) {
-    const errorMessage = error.response?.data?.message || (selectedClient.value?.id ? "Erro ao atualizar cliente" : "Erro ao criar cliente");
-    showErrorToast(errorMessage, "Erro!");
   }
-};
+});
+
 
 const performSearch = async () => {
   try {

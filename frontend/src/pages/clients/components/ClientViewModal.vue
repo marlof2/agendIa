@@ -53,6 +53,17 @@
               <span class="phone-number">{{ formatPhone(client.phone) }}</span>
             </div>
           </div>
+
+          <!-- CPF -->
+          <div class="info-item" v-if="client?.cpf">
+            <div class="info-label">
+              <v-icon size="20" color="primary" class="mr-3">mdi-card-account-details</v-icon>
+              CPF
+            </div>
+            <div class="info-value">
+              <span class="value-text">{{ client.cpf }}</span>
+            </div>
+          </div>
         </div>
       </div>
 

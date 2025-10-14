@@ -3,57 +3,41 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Services\ClientService;
+use App\Http\Requests\ClientRequest;
 use App\Models\User;
-use App\Models\Profile;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Hash;
 
 class ClientController extends Controller
 {
+    protected ClientService $clientService;
+
+    public function __construct(ClientService $clientService)
+    {
+        $this->clientService = $clientService;
+    }
     /**
      * Listar clientes da empresa atual
      */
     public function index(Request $request): JsonResponse
     {
-        $tenantId = $request->tenant_id; // Vem do middleware TenantScope
-        $search = $request->get('search');
-        $perPage = $request->get('per_page', 12);
+        try {
+            $filters = [
+                'search' => $request->get('search'),
+                'tenant_id' => $request->tenant_id,
+                'per_page' => $request->get('per_page', 12),
+            ];
 
-        // Buscar perfil de cliente
-        $clientProfile = Profile::where('name', 'client')->first();
+            $clients = $this->clientService->getAllClients($filters);
 
-        if (!$clientProfile) {
+            return response()->json($clients);
+        } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Perfil de cliente não encontrado'
-            ], 404);
+                'message' => 'Erro ao listar clientes: ' . $e->getMessage()
+            ], 500);
         }
-
-        // Query base: usuários com perfil de cliente
-        $query = User::with(['profile', 'companies'])
-                     ->where('profile_id', $clientProfile->id);
-
-        // Filtrar por empresa
-        if ($tenantId) {
-            $query->whereHas('companies', function ($q) use ($tenantId) {
-                $q->where('companies.id', $tenantId);
-            });
-        }
-
-        // Busca
-        if ($search) {
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%")
-                  ->orWhere('phone', 'like', "%{$search}%");
-            });
-        }
-
-        $clients = $query->paginate($perPage);
-
-        return response()->json($clients);
     }
 
     /**
@@ -61,85 +45,41 @@ class ClientController extends Controller
      */
     public function show(Request $request, User $user): JsonResponse
     {
-        $tenantId = $request->tenant_id;
+        try {
+            $client = $this->clientService->getClientById($user->id, $request->tenant_id);
 
-        // Verifica se o usuário é cliente
-        if ($user->profile->name !== 'client') {
+            return response()->json([
+                'success' => true,
+                'data' => $client
+            ]);
+        } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Usuário não é um cliente'
+                'message' => $e->getMessage()
             ], 403);
         }
-
-        // Verifica se o cliente pertence à empresa atual
-        if ($tenantId && !$user->companies()->where('companies.id', $tenantId)->exists()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Cliente não pertence a esta empresa'
-            ], 403);
-        }
-
-        $user->load(['profile', 'companies']);
-
-        return response()->json([
-            'success' => true,
-            'data' => $user
-        ]);
     }
 
     /**
      * Criar novo cliente
      */
-    public function store(Request $request): JsonResponse
+    public function store(ClientRequest $request): JsonResponse
     {
-        $tenantId = $request->tenant_id;
-
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'phone' => 'nullable|string|max:20',
-            'password' => 'required|string|min:6',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Dados inválidos',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
         try {
-            // Buscar perfil de cliente
-            $clientProfile = Profile::where('name', 'client')->first();
+            $data = $request->validated();
+            $data['tenant_id'] = $request->tenant_id;
 
-            // Criar usuário
-            $client = User::create([
-                'name' => $request->name,
-                'email' => $request->email,
-                'phone' => $request->phone,
-                'password' => Hash::make($request->password),
-                'profile_id' => $clientProfile->id,
-            ]);
-
-            // Vincular à empresa atual
-            if ($tenantId) {
-                $client->companies()->attach($tenantId);
-            }
-
-            $client->load(['profile', 'companies']);
+            $client = $this->clientService->createClient($data);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Cliente criado com sucesso',
                 'data' => $client
             ], 201);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Erro ao criar cliente',
-                'error' => $e->getMessage()
+                'message' => 'Erro ao criar cliente: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -147,62 +87,23 @@ class ClientController extends Controller
     /**
      * Atualizar cliente
      */
-    public function update(Request $request, User $user): JsonResponse
+    public function update(ClientRequest $request, User $user): JsonResponse
     {
-        $tenantId = $request->tenant_id;
-
-        // Verifica se é cliente
-        if ($user->profile->name !== 'client') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Usuário não é um cliente'
-            ], 403);
-        }
-
-        // Verifica acesso
-        if ($tenantId && !$user->companies()->where('companies.id', $tenantId)->exists()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Cliente não pertence a esta empresa'
-            ], 403);
-        }
-
-        $validator = Validator::make($request->all(), [
-            'name' => 'sometimes|string|max:255',
-            'email' => 'sometimes|string|email|max:255|unique:users,email,' . $user->id,
-            'phone' => 'nullable|string|max:20',
-            'password' => 'sometimes|string|min:6',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Dados inválidos',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
         try {
-            $data = $request->only(['name', 'email', 'phone']);
+            $data = $request->validated();
+            $data['tenant_id'] = $request->tenant_id;
 
-            if ($request->filled('password')) {
-                $data['password'] = Hash::make($request->password);
-            }
-
-            $user->update($data);
-            $user->load(['profile', 'companies']);
+            $client = $this->clientService->updateClient($user, $data);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Cliente atualizado com sucesso',
-                'data' => $user
+                'data' => $client
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Erro ao atualizar cliente',
-                'error' => $e->getMessage()
+                'message' => 'Erro ao atualizar cliente: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -212,37 +113,44 @@ class ClientController extends Controller
      */
     public function destroy(Request $request, User $user): JsonResponse
     {
-        $tenantId = $request->tenant_id;
-
-        // Verifica se é cliente
-        if ($user->profile->name !== 'client') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Usuário não é um cliente'
-            ], 403);
-        }
-
-        // Verifica acesso
-        if ($tenantId && !$user->companies()->where('companies.id', $tenantId)->exists()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Cliente não pertence a esta empresa'
-            ], 403);
-        }
-
         try {
-            $user->delete();
+            $this->clientService->deleteClient($user, $request->tenant_id);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Cliente deletado com sucesso'
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Erro ao deletar cliente',
-                'error' => $e->getMessage()
+                'message' => 'Erro ao deletar cliente: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Export clients to Excel or PDF
+     */
+    public function export(Request $request)
+    {
+        try {
+            $filters = [
+                'search' => $request->get('search'),
+                'tenant_id' => $request->tenant_id,
+                'format' => $request->get('format', 'xlsx'),
+            ];
+
+            if ($filters['format'] === 'pdf') {
+                $file = $this->clientService->exportToPDF($filters);
+                return $file;
+            } else {
+                $file = $this->clientService->exportToExcel($filters);
+                return $file;
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao exportar clientes: ' . $e->getMessage()
             ], 500);
         }
     }

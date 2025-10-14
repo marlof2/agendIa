@@ -27,6 +27,7 @@ class User extends Authenticatable
         'password',
         'google_id',
         'phone',
+        'cpf',
         'has_whatsapp',
         'profile_id',
     ];

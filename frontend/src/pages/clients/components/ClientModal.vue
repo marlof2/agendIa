@@ -12,7 +12,7 @@
     :fullscreen="$vuetify.display.mobile"
     :show-progress="true"
     :progress="formProgress"
-    @close="closeModal"
+    @update:model-value="closeModal"
   >
     <v-form ref="formRef" v-model="isValid" @submit.prevent="handleSubmit">
       <v-row>
@@ -64,6 +64,24 @@
             prepend-inner-icon="mdi-phone"
             hint="Telefone de contato"
             persistent-hint
+            maxlength="15"
+          />
+        </v-col>
+
+        <v-col cols="12" md="6">
+          <v-text-field
+            v-model="formattedCpf"
+            label="CPF *"
+            variant="outlined"
+            density="compact"
+            rounded="lg"
+            prepend-inner-icon="mdi-card-account-details"
+            hint="Seu CPF"
+            persistent-hint
+            :rules="cpfRules"
+            required
+            maxlength="14"
+            @input="handleCpfInput"
           />
         </v-col>
 
@@ -106,6 +124,10 @@
 import { ref, watch, computed } from 'vue'
 import BaseDialog from '@/components/BaseDialog.vue'
 import { BtnCancel, BtnSave } from '@/components/buttons'
+import { useMask } from '@/composables/useMask'
+import { useValidation } from '@/composables/useValidation'
+import { useClientsApi } from '../api'
+import { showSuccessToast, showErrorToast } from '@/utils/swal'
 import type { Client, CreateClientData } from '../api'
 
 interface Props {
@@ -115,8 +137,7 @@ interface Props {
 
 interface Emits {
   (e: 'update:modelValue', value: boolean): void
-  (e: 'submit', data: CreateClientData): void
-  (e: 'close'): void
+  (e: 'reload'): void
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -125,6 +146,11 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<Emits>()
+
+// Composables
+const { formatCPF, maskCPF } = useMask()
+const { getCPFValidationRules } = useValidation()
+const { createItem, updateItem } = useClientsApi()
 
 // Form state
 const formRef = ref()
@@ -140,6 +166,7 @@ const form = ref<CreateClientData>({
   name: '',
   email: '',
   phone: '',
+  cpf: '',
   password: ''
 })
 
@@ -159,12 +186,23 @@ const formattedPhone = computed({
   }
 })
 
+const formattedCpf = computed({
+  get: () => {
+    if (!form.value.cpf) return ''
+    return formatCPF(form.value.cpf)
+  },
+  set: (value: string) => {
+    form.value.cpf = value.replace(/\D/g, '')
+  }
+})
+
 const formProgress = computed(() => {
   let progress = 0
-  let totalFields = isEditing.value ? 3 : 4
+  let totalFields = isEditing.value ? 4 : 5
 
   if (form.value.name) progress++
   if (form.value.email) progress++
+  if (form.value.cpf) progress++
   if (form.value.phone) progress++
   if (!isEditing.value && form.value.password) progress++
 
@@ -187,61 +225,84 @@ const passwordRules = [
   (v: string) => v.length >= 6 || 'Senha deve ter pelo menos 6 caracteres'
 ]
 
+const cpfRules = [
+  (v: string) => !!v || 'CPF é obrigatório',
+  ...getCPFValidationRules()
+]
+
 // Methods
 const resetForm = () => {
   form.value = {
     name: '',
     email: '',
     phone: '',
+    cpf: '',
     password: ''
   }
   formRef.value?.resetValidation()
 }
 
-const closeModal = () => {
-  emit('update:modelValue', false)
-  emit('close')
-  resetForm()
-}
 
 // Watchers
 watch(
-  () => props.client,
-  (newClient) => {
-    if (newClient && newClient.id) {
-      form.value = {
-        name: newClient.name || '',
-        email: newClient.email || '',
-        phone: newClient.phone || '',
-        password: ''
-      }
-    } else {
-      resetForm()
-    }
-  },
-  { immediate: true }
-)
-
-watch(
   () => props.modelValue,
   (newValue) => {
-    if (!newValue) {
-      resetForm()
+    if (newValue) {
+      // Quando o modal abre, carrega os dados do cliente
+      if (props.client && props.client.id) {
+        form.value = {
+          name: props.client.name || '',
+          email: props.client.email || '',
+          phone: props.client.phone || '',
+          cpf: props.client.cpf || '',
+          password: ''
+        }
+      } else {
+        resetForm()
+      }
     }
   }
 )
 
-const handleSubmit = async () => {
-  const { valid } = await formRef.value.validate()
+const handleCpfInput = (event: Event) => {
+  const maskedValue = maskCPF(event)
+  form.value.cpf = maskedValue
+}
 
-  if (!valid) {
-    return
-  }
+
+const closeModal = () => {
+  emit('update:modelValue', false)
+  // Não resetar aqui, será resetado quando o modal abrir novamente
+}
+
+const handleSubmit = async () => {
+  if (!isValid.value) return
 
   loading.value = true
 
   try {
-    emit('submit', form.value)
+    const clientData = {
+      name: form.value.name,
+      email: form.value.email,
+      password: form.value.password || '',
+      phone: form.value.phone || undefined,
+      cpf: form.value.cpf || undefined,
+    }
+
+    let result
+    if (isEditing.value) {
+      result = await updateItem(props.client!.id, clientData)
+      showSuccessToast('Cliente atualizado com sucesso!', 'Sucesso!')
+    } else {
+      result = await createItem(clientData)
+      showSuccessToast('Cliente criado com sucesso!', 'Sucesso!')
+    }
+
+    emit('reload')
+    closeModal()
+  } catch (err: any) {
+    const errorMessage = err?.response?.data?.message || err?.message || 'Erro ao salvar cliente'
+    showErrorToast(errorMessage, 'Erro!')
   } finally {
     loading.value = false
   }

@@ -69,6 +69,10 @@ class UserService
             $cleaned['phone'] = $this->cleanMask($cleaned['phone']);
         }
 
+        if (isset($cleaned['cpf']) && $cleaned['cpf']) {
+            $cleaned['cpf'] = $this->cleanMask($cleaned['cpf']);
+        }
+
         return $cleaned;
     }
 
@@ -100,19 +104,12 @@ class UserService
     public function updateUser(User $user, array $data): User
     {
         $cleanedData = $this->cleanUserData($data);
-
         // Hash password if provided
         if (isset($cleanedData['password']) && $cleanedData['password']) {
             $cleanedData['password'] = Hash::make($cleanedData['password']);
         } else {
             // Remove password from update if not provided
             unset($cleanedData['password']);
-        }
-
-        // Handle company attachments
-        if (isset($cleanedData['company_ids'])) {
-            $user->companies()->sync($cleanedData['company_ids']);
-            unset($cleanedData['company_ids']);
         }
 
         $user->update($cleanedData);

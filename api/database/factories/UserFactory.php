@@ -28,6 +28,9 @@ class UserFactory extends Factory
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
+            'phone' => fake()->optional()->phoneNumber(),
+            'cpf' => fake()->optional()->numerify('###########'), // 11 dígitos
+            'has_whatsapp' => fake()->boolean(30), // 30% de chance de ter WhatsApp
             'remember_token' => Str::random(10),
         ];
     }

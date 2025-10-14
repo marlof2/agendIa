@@ -285,7 +285,6 @@ export const hideLoading = (): void => {
 export const showValidationErrors = (errors: Record<string, string[]>): void => {
   // Converter erros para HTML formatado simples
   let errorsHtml = '<div style="text-align: left;">'
-
   Object.entries(errors).forEach(([field, fieldErrors]) => {
     fieldErrors.forEach(error => {
       errorsHtml += `<div style="margin-bottom: 10px; color: #ef4444; display: flex; align-items: center;">`

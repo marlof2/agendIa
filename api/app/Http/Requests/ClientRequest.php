@@ -6,7 +6,7 @@ use App\Rules\CnpjCpf;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class UserRequest extends FormRequest
+class ClientRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -31,29 +31,11 @@ class UserRequest extends FormRequest
                 'max:255',
                 Rule::unique('users', 'email')->ignore($userId)
             ],
-            'password' => $userId ? 'nullable|string|min:8|confirmed' : 'required|string|min:8|confirmed',
+            'password' => $userId ? 'nullable|string|min:6' : 'required|string|min:6',
             'phone' => 'nullable|string|max:20',
+            'cpf' => ['required', 'string', 'max:14', new CnpjCpf('cpf'), Rule::unique('users', 'cpf')->ignore($userId)],
             'has_whatsapp' => 'boolean',
-            'profile_id' => 'required|exists:profiles,id',
-            'company_ids' => 'nullable|array',
-            'company_ids.*' => 'exists:companies,id',
-            'cpf' => $userId
-                ? ['sometimes', 'string', 'max:14', new CnpjCpf('cpf'), Rule::unique('users', 'cpf')->ignore($userId)]
-                : ['required', 'string', 'max:14', new CnpjCpf('cpf'), 'unique:users,cpf'],
         ];
-    }
-
-    /**
-     * Prepare the data for validation.
-     */
-    protected function prepareForValidation(): void
-    {
-        // Remove máscara do CPF antes da validação
-        if ($this->has('cpf')) {
-            $this->merge([
-                'cpf' => preg_replace('/[^0-9]/', '', $this->input('cpf'))
-            ]);
-        }
     }
 
     /**
@@ -73,25 +55,31 @@ class UserRequest extends FormRequest
 
             'password.required' => 'A senha é obrigatória.',
             'password.string' => 'A senha deve ser um texto.',
-            'password.min' => 'A senha deve ter pelo menos 8 caracteres.',
-            'password.confirmed' => 'A confirmação da senha não confere.',
+            'password.min' => 'A senha deve ter pelo menos 6 caracteres.',
 
             'phone.string' => 'O telefone deve ser um texto.',
             'phone.max' => 'O telefone não pode ter mais de 20 caracteres.',
-
-            'has_whatsapp.boolean' => 'O campo WhatsApp deve ser verdadeiro ou falso.',
 
             'cpf.required' => 'O CPF é obrigatório.',
             'cpf.string' => 'O CPF deve ser um texto.',
             'cpf.max' => 'O CPF não pode ter mais de 14 caracteres.',
             'cpf.unique' => 'Este CPF já está sendo usado por outro usuário.',
 
-            'profile_id.required' => 'O perfil é obrigatório.',
-            'profile_id.exists' => 'O perfil selecionado não existe.',
-
-            'company_ids.array' => 'As empresas devem ser uma lista.',
-            'company_ids.*.exists' => 'Uma ou mais empresas selecionadas não existem.',
+            'has_whatsapp.boolean' => 'O campo WhatsApp deve ser verdadeiro ou falso.',
         ];
+    }
+
+    /**
+     * Prepare the data for validation.
+     */
+    protected function prepareForValidation(): void
+    {
+        // Remove máscara do CPF antes da validação
+        if ($this->has('cpf')) {
+            $this->merge([
+                'cpf' => preg_replace('/[^0-9]/', '', $this->input('cpf'))
+            ]);
+        }
     }
 
     /**
@@ -104,9 +92,8 @@ class UserRequest extends FormRequest
             'email' => 'email',
             'password' => 'senha',
             'phone' => 'telefone',
+            'cpf' => 'CPF',
             'has_whatsapp' => 'WhatsApp',
-            'profile_id' => 'perfil',
-            'company_ids' => 'empresas',
         ];
     }
 }

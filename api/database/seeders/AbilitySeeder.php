@@ -20,6 +20,9 @@ class AbilitySeeder extends Seeder
             ['name' => 'users.edit', 'category' => 'users', 'action' => 'edit', 'display_name' => 'Editar Usuários', 'description' => 'Permite editar usuários existentes'],
             ['name' => 'users.show', 'category' => 'users', 'action' => 'show', 'display_name' => 'Visualizar Usuários', 'description' => 'Permite visualizar usuários'],
             ['name' => 'users.delete', 'category' => 'users', 'action' => 'delete', 'display_name' => 'Deletar Usuários', 'description' => 'Permite deletar usuários'],
+            ['name' => 'users.associate_companies', 'category' => 'users', 'action' => 'associate_companies', 'display_name' => 'Associar Empresas aos Usuários', 'description' => 'Permite associar empresas aos usuários'],
+            ['name' => 'users.detach_company', 'category' => 'users', 'action' => 'detach_company', 'display_name' => 'Desassociar Empresa dos Usuários', 'description' => 'Permite desassociar empresa dos usuários'],
+
 
             // Empresas
             ['name' => 'companies.index', 'category' => 'companies', 'action' => 'index', 'display_name' => 'Listar Empresas', 'description' => 'Permite visualizar empresas'],

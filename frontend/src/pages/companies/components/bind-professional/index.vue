@@ -108,11 +108,10 @@
               <ActionsMenu
                 :item="item"
                 :show-delete="false"
+                :show-edit="false"
                 :custom-actions="professionalActions"
                 view-permission="companies.show"
-                edit-permission="companies.edit"
                 @view="view"
-                @edit="edit"
                 @action="handleProfessionalAction"
               />
             </div>
@@ -173,10 +172,6 @@
               v-if="hasPermission('companies.show')"
             />
             <v-spacer />
-            <BtnEdit
-              @click="edit(item)"
-              v-if="hasPermission('companies.edit')"
-            />
             <v-btn
               rounded="lg"
               color="error"
@@ -249,15 +244,10 @@
   <UserViewModal
     v-model="showViewModal"
     :user="selectedUser"
-    @edit="handleEditFromView"
     @reload="handleListReload"
+    disable-edit
   />
 
-  <UserModal
-    v-model="showUserModal"
-    :user="selectedUser"
-    @reload="handleListReload"
-  />
 
   <DetachProfessionalModal
     v-model="showDetachModal"
@@ -276,7 +266,6 @@ import ExportActions from "@/components/ExportActions.vue";
 import ActionsMenu, { type CustomAction } from "@/components/ActionsMenu.vue";
 import AddUserToCompanyModal from "./AddUserToCompanyModal.vue";
 import UserViewModal from "@/pages/users/components/UserViewModal.vue";
-import UserModal from "@/pages/users/components/UserModal.vue";
 import DetachProfessionalModal from "./DetachProfessionalModal.vue";
 import { useCompaniesApi } from "@/pages/companies/api";
 import { useAbilities } from "@/composables/useAbilities";
@@ -288,7 +277,6 @@ import {
   BtnSearch,
   BtnFilter,
   BtnView,
-  BtnEdit,
 } from "@/components/buttons";
 
 const route = useRoute();
@@ -336,10 +324,8 @@ const pagination = ref({
 // Modal states
 const showAddUserModal = ref(false);
 const showViewModal = ref(false);
-const showUserModal = ref(false);
 const showDetachModal = ref(false);
 const selectedUser = ref<any>(null);
-const isEditing = ref(false);
 
 // Profiles for filter
 
@@ -399,11 +385,6 @@ const view = (item: any) => {
   showViewModal.value = true;
 };
 
-const edit = (item: any) => {
-  selectedUser.value = item;
-  isEditing.value = true;
-  showUserModal.value = true;
-};
 
 const removeAssociation = (item: any) => {
   selectedUser.value = item;
@@ -449,11 +430,6 @@ const handleDetachConfirm = async (user: any) => {
   await handleDetachProfessional(user);
 };
 
-const handleEditFromView = (user: any) => {
-  selectedUser.value = user;
-  isEditing.value = true;
-  showUserModal.value = true;
-};
 
 // Utility methods
 const { formatPhone } = useMask();

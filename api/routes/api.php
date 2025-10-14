@@ -50,12 +50,12 @@ Route::prefix('combos')->group(function () {
     Route::get('/profiles', [ProfileController::class, 'combo']);
 });
 
-// Rotas públicas de empresas (para registro com paginação)
-Route::get('/companies/public', [CompanyController::class, 'publicList']);
-
 // Rotas protegidas por autenticação
 Route::middleware('auth:sanctum')->group(function () {
     // Rotas de autenticação (protegidas)
+    Route::get('/companies/available', [CompanyController::class, 'availableForAssociation']);
+
+    // Rotas do sistema
     Route::prefix('auth')->group(function () {
         Route::get('/me', [AuthController::class, 'me']);
         Route::post('/logout', [AuthController::class, 'logout']);
@@ -71,8 +71,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::prefix('users')->group(function () {
             Route::get('/', [UserController::class, 'index'])->middleware('ability:users.index');
             Route::post('/', [UserController::class, 'store'])->middleware('ability:users.create');
-            Route::post('/associate-companies', [UserController::class, 'associateCompanies']); // Sem ability check - usuário se associando
-            Route::delete('/detach-company/{companyId}', [UserController::class, 'detachCompany']); // Desvincular empresa - usuário desvinculando-se
+            Route::post('/associate-companies', [UserController::class, 'associateCompanies'])->middleware('ability:users.associate_companies');
+            Route::delete('/detach-company/{companyId}', [UserController::class, 'detachCompany'])->middleware('ability:users.detach_company');
             Route::get('/export', [UserController::class, 'export'])->middleware('ability:users.index');
             Route::get('/available-professionals', [UserController::class, 'availableProfessionals'])->middleware('ability:users.index');
             Route::get('/{user}', [UserController::class, 'show'])->middleware('ability:users.show');
@@ -124,6 +124,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::prefix('clients')->group(function () {
             Route::get('/', [ClientController::class, 'index'])->middleware('ability:clients.index');
             Route::post('/', [ClientController::class, 'store'])->middleware('ability:clients.create');
+            Route::get('/export', [ClientController::class, 'export'])->middleware('ability:clients.index');
             Route::get('/{user}', [ClientController::class, 'show'])->middleware('ability:clients.show');
             Route::put('/{user}', [ClientController::class, 'update'])->middleware('ability:clients.edit');
             Route::delete('/{user}', [ClientController::class, 'destroy'])->middleware('ability:clients.delete');

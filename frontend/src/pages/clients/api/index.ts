@@ -6,6 +6,7 @@ export interface Client {
   name: string
   email: string
   phone?: string
+  cpf?: string
   profile_id: number
   profile: {
     id: number
@@ -21,6 +22,7 @@ export interface CreateClientData {
   name: string
   email: string
   phone?: string
+  cpf?: string
   password: string
 }
 

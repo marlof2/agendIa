@@ -281,16 +281,7 @@ class CompanyService
      */
     public function getCompanyProfessionals(int $companyId, array $filters = []): \Illuminate\Pagination\LengthAwarePaginator
     {
-        $query = User::select([
-            'users.id',
-            'users.name',
-            'users.email',
-            'users.phone',
-            'users.has_whatsapp',
-            'users.profile_id',
-            'users.created_at'
-        ])
-        ->with('profile:id,name,display_name')
+        $query = User::with('profile:id,name,display_name')
         ->whereHas('companies', function ($query) use ($companyId) {
             $query->where('companies.id', $companyId);
         })

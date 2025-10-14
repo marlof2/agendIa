@@ -65,6 +65,7 @@
             variant="outlined"
             density="compact"
             rounded="lg"
+            :rules="cnpjRules"
             prepend-inner-icon="mdi-card-account-details"
             hint="CNPJ da empresa"
             persistent-hint
@@ -78,6 +79,7 @@
             variant="outlined"
             density="compact"
             rounded="lg"
+            :rules="cpfRules"
             prepend-inner-icon="mdi-card-account-details"
             hint="CPF do responsável"
             persistent-hint
@@ -217,6 +219,7 @@ import { ref, computed, watch, nextTick, onMounted } from "vue";
 import { showSuccessToast, showErrorToast } from "@/utils/swal";
 import { useCompaniesApi, type Timezone } from "../api";
 import { useMask } from "@/composables/useMask";
+import { useValidation } from "@/composables/useValidation";
 import BaseDialog from "@/components/BaseDialog.vue";
 
 interface Props {
@@ -237,6 +240,7 @@ const emit = defineEmits<Emits>();
 
 // Composables
 const { createItem, updateItem, getAllTimezones } = useCompaniesApi();
+const { getCPFValidationRules, getCNPJValidationRules } = useValidation();
 
 // Reactive data
 const formRef = ref();
@@ -295,6 +299,10 @@ const phone2Rules = [
     return v.length >= 10 || "Telefone deve ter pelo menos 10 caracteres";
   },
 ];
+
+// Validation rules for documents
+const cnpjRules = getCNPJValidationRules();
+const cpfRules = getCPFValidationRules();
 
 // Methods
 const loadTimezones = async () => {

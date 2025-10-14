@@ -51,7 +51,7 @@
         </v-col>
 
         <!-- Right Side - Register Form -->
-        <v-col cols="12" md="6" class="register-form-section">
+        <v-col cols="12" md="6" class="register-form-section" >
           <div class="form-container">
             <!-- Header -->
             <div class="form-header mb-8">
@@ -73,7 +73,7 @@
                 <v-stepper-item
                   :complete="currentStep > 1"
                   :value="1"
-                  title="Tipo"
+                  title="Perfil"
                   :subtitle="
                     $vuetify.display.mobile ? undefined : 'Escolha seu perfil'
                   "
@@ -82,23 +82,20 @@
                 <v-stepper-item
                   :complete="currentStep > 2"
                   :value="2"
-                  title="Dados"
+                  :title="
+                    form.account_type === 'owner' ? 'Dados Pessoais' : 'Dados Pessoais'
+                  "
                   :subtitle="
-                    $vuetify.display.mobile ? undefined : 'Informações pessoais'
+                    $vuetify.display.mobile ? undefined : 'Suas informações pessoais'
                   "
                 />
-                <v-divider />
+                <v-divider v-if="form.account_type === 'owner'" />
                 <v-stepper-item
+                  v-if="form.account_type === 'owner'"
                   :value="3"
-                  :title="
-                    form.account_type === 'owner' ? 'Empresa' : 'Associar'
-                  "
+                  title="Empresa"
                   :subtitle="
-                    $vuetify.display.mobile
-                      ? undefined
-                      : form.account_type === 'owner'
-                      ? 'Dados da empresa'
-                      : 'Selecionar empresas'
+                    $vuetify.display.mobile ? undefined : 'Dados da empresa'
                   "
                 />
               </v-stepper-header>
@@ -172,7 +169,7 @@
                   </v-form>
                 </v-stepper-window-item>
 
-                <!-- Step 2: Personal Data -->
+                <!-- Step 2: Personal Data + Company Data (if owner) -->
                 <v-stepper-window-item :value="2">
                   <v-card flat>
                     <v-card-text class="step-content">
@@ -215,8 +212,27 @@
                             placeholder="(00) 00000-0000"
                             hint="Telefone de contato"
                             persistent-hint
+                            :rules="phoneRules"
                             @input="handlePhoneInput"
                             maxlength="15"
+                          />
+                        </v-col>
+
+                        <v-col cols="12" md="6">
+                          <v-text-field
+                            v-model="formattedCpf"
+                            label="CPF *"
+                            variant="outlined"
+                            density="comfortable"
+                            rounded="lg"
+                            prepend-inner-icon="mdi-card-account-details"
+                            placeholder="000.000.000-00"
+                            hint="Seu CPF"
+                            persistent-hint
+                            :rules="cpfRules"
+                            required
+                            @input="handleCpfInput"
+                            maxlength="14"
                           />
                         </v-col>
 
@@ -279,312 +295,171 @@
                           />
                         </v-col>
                       </v-row>
+
                     </v-card-text>
                   </v-card>
                 </v-stepper-window-item>
 
-                <!-- Step 3: Company Data (Owner) or Company Selection (Others) -->
-                <v-stepper-window-item :value="3">
+                <!-- Step 3: Company Data (Only for Owner) -->
+                <v-stepper-window-item v-if="form.account_type === 'owner'" :value="3">
                   <v-card flat>
                     <v-card-text class="step-content">
-                      <!-- Owner: Create Company -->
-                      <div v-if="form.account_type === 'owner'">
-                        <h3 class="text-h6 mb-4">Dados da sua empresa</h3>
+                      <h3 class="text-h6 mb-4">Dados da sua empresa</h3>
 
-                        <v-row v-if="form.company">
-                          <v-col cols="12">
-                            <v-text-field
-                              v-model="form.company.name"
-                              label="Nome da empresa *"
-                              variant="outlined"
-                              density="comfortable"
-                              rounded="lg"
-                              prepend-inner-icon="mdi-office-building"
-                              :rules="companyNameRules"
-                            />
-                          </v-col>
-
-                          <v-col cols="12" md="6">
-                            <v-select
-                              v-model="form.company.person_type"
-                              :items="personTypes"
-                              label="Tipo de pessoa *"
-                              variant="outlined"
-                              density="comfortable"
-                              rounded="lg"
-                              prepend-inner-icon="mdi-account-box"
-                              :rules="personTypeRules"
-                            />
-                          </v-col>
-
-                          <v-col cols="12" md="6">
-                            <v-text-field
-                              v-if="form.company.person_type === 'legal'"
-                              v-model="form.company.cnpj"
-                              label="CNPJ"
-                              variant="outlined"
-                              density="comfortable"
-                              rounded="lg"
-                              prepend-inner-icon="mdi-card-account-details"
-                              placeholder="00.000.000/0000-00"
-                              hint="CNPJ da empresa"
-                              persistent-hint
-                              @input="handleMaskCNPJ"
-                              maxlength="18"
-                            />
-                            <v-text-field
-                              v-else
-                              v-model="form.company.cpf"
-                              label="CPF"
-                              variant="outlined"
-                              density="comfortable"
-                              rounded="lg"
-                              prepend-inner-icon="mdi-card-account-details"
-                              placeholder="000.000.000-00"
-                              hint="CPF do responsável"
-                              persistent-hint
-                              @input="handleMaskCPF"
-                              maxlength="14"
-                            />
-                          </v-col>
-
-                          <v-col cols="12">
-                            <v-text-field
-                              v-model="form.company.responsible_name"
-                              label="Nome do Responsável *"
-                              variant="outlined"
-                              density="comfortable"
-                              rounded="lg"
-                              prepend-inner-icon="mdi-account"
-                              hint="Nome do responsável pela empresa"
-                              persistent-hint
-                              :rules="responsibleNameRules"
-                            />
-                          </v-col>
-
-                          <v-col cols="12" md="6">
-                            <v-text-field
-                              v-model="form.company.phone_1"
-                              label="Telefone Principal *"
-                              variant="outlined"
-                              density="comfortable"
-                              rounded="lg"
-                              prepend-inner-icon="mdi-phone"
-                              placeholder="(00) 00000-0000"
-                              hint="Telefone principal de contato"
-                              persistent-hint
-                              :rules="companyPhone1Rules"
-                              @input="handleMaskCompanyPhone1"
-                              maxlength="15"
-                            />
-                          </v-col>
-
-                          <v-col cols="12" md="6">
-                            <v-switch
-                              v-model="form.company.has_whatsapp_1"
-                              label="Telefone é WhatsApp?"
-                              color="primary"
-                              density="comfortable"
-                              hide-details
-                            >
-                              <template #prepend>
-                                <v-icon
-                                  :color="
-                                    form.company?.has_whatsapp_1
-                                      ? 'success'
-                                      : 'grey'
-                                  "
-                                  >mdi-whatsapp</v-icon
-                                >
-                              </template>
-                            </v-switch>
-                          </v-col>
-
-                          <v-col cols="12" md="6">
-                            <v-text-field
-                              v-model="form.company.phone_2"
-                              label="Telefone Secundário"
-                              variant="outlined"
-                              density="comfortable"
-                              rounded="lg"
-                              prepend-inner-icon="mdi-phone-outgoing"
-                              placeholder="(00) 00000-0000"
-                              hint="Telefone secundário (opcional)"
-                              persistent-hint
-                              @input="handleMaskCompanyPhone2"
-                              maxlength="15"
-                            />
-                          </v-col>
-
-                          <v-col cols="12" md="6">
-                            <v-switch
-                              v-model="form.company.has_whatsapp_2"
-                              label="Telefone é WhatsApp?"
-                              color="primary"
-                              density="comfortable"
-                              hide-details
-                              :disabled="!form.company.phone_2"
-                            >
-                              <template #prepend>
-                                <v-icon
-                                  :color="
-                                    form.company?.has_whatsapp_2
-                                      ? 'success'
-                                      : 'grey'
-                                  "
-                                  >mdi-whatsapp</v-icon
-                                >
-                              </template>
-                            </v-switch>
-                          </v-col>
-                        </v-row>
-                      </div>
-
-                      <!-- Others: Select Companies -->
-                      <div v-else>
-                        <h3 class="text-h6 mb-4">Empresas disponíveis</h3>
-                        <p class="text-body-2 text-medium-emphasis mb-4">
-                          Selecione as empresas às quais deseja se associar
-                          (opcional)
-                        </p>
-
-                        <!-- Search -->
-                        <v-text-field
-                          v-model="searchCompanies"
-                          label="Buscar empresa"
-                          variant="outlined"
-                          density="compact"
-                          rounded="lg"
-                          prepend-inner-icon="mdi-magnify"
-                          clearable
-                          class="mb-4"
-                          @keyup.enter="loadPublicCompanies"
-                          @click:clear="loadPublicCompanies"
-                        />
-
-                        <!-- Loading -->
-                        <div v-if="loadingState" class="companies-loading">
-                          <v-skeleton-loader
-                            v-for="i in 3"
-                            :key="i"
-                            type="card"
-                            class="mb-3"
+                      <v-row v-if="form.company">
+                        <v-col cols="12">
+                          <v-text-field
+                            v-model="form.company.name"
+                            label="Nome da empresa *"
+                            variant="outlined"
+                            density="comfortable"
+                            rounded="lg"
+                            prepend-inner-icon="mdi-office-building"
+                            :rules="companyNameRules"
                           />
-                        </div>
+                        </v-col>
 
-                        <!-- Empty State -->
-                        <div
-                          v-else-if="companiesList.length === 0"
-                          class="text-center py-8"
-                        >
-                          <v-icon size="48" color="grey"
-                            >mdi-office-building-off</v-icon
-                          >
-                          <p class="text-body-2 text-medium-emphasis mt-2">
-                            Nenhuma empresa encontrada
-                          </p>
-                        </div>
+                        <v-col cols="12" md="6">
+                          <v-select
+                            v-model="form.company.person_type"
+                            :items="personTypes"
+                            label="Tipo de pessoa *"
+                            variant="outlined"
+                            density="comfortable"
+                            rounded="lg"
+                            prepend-inner-icon="mdi-account-box"
+                            :rules="personTypeRules"
+                          />
+                        </v-col>
 
-                        <!-- Companies List -->
-                        <div v-else class="companies-list">
-                          <v-card
-                            v-for="company in companiesList"
-                            :key="company.id"
-                            class="company-card mb-3"
-                            :class="{
-                              'company-selected': isCompanySelected(company.id),
-                            }"
-                            elevation="2"
-                            @click="toggleCompany(company.id)"
+                        <v-col cols="12" md="6">
+                          <v-text-field
+                            v-if="form.company.person_type === 'legal'"
+                            v-model="form.company.cnpj"
+                            label="CNPJ"
+                            variant="outlined"
+                            density="comfortable"
+                            rounded="lg"
+                            prepend-inner-icon="mdi-card-account-details"
+                            placeholder="00.000.000/0000-00"
+                            hint="CNPJ da empresa"
+                            persistent-hint
+                            :rules="companyCnpjRules"
+                            @input="handleMaskCNPJ"
+                            maxlength="18"
+                          />
+                          <v-text-field
+                            v-else
+                            v-model="form.company.cpf"
+                            label="CPF"
+                            variant="outlined"
+                            density="comfortable"
+                            rounded="lg"
+                            prepend-inner-icon="mdi-card-account-details"
+                            placeholder="000.000.000-00"
+                            hint="CPF do responsável"
+                            persistent-hint
+                            :rules="companyCpfRules"
+                            @input="handleMaskCPF"
+                            maxlength="14"
+                          />
+                        </v-col>
+
+                        <v-col cols="12">
+                          <v-text-field
+                            v-model="form.company.responsible_name"
+                            label="Nome do Responsável *"
+                            variant="outlined"
+                            density="comfortable"
+                            rounded="lg"
+                            prepend-inner-icon="mdi-account"
+                            hint="Nome do responsável pela empresa"
+                            persistent-hint
+                            :rules="responsibleNameRules"
+                          />
+                        </v-col>
+
+                        <v-col cols="12" md="6">
+                          <v-text-field
+                            v-model="form.company.phone_1"
+                            label="Telefone Principal *"
+                            variant="outlined"
+                            density="comfortable"
+                            rounded="lg"
+                            prepend-inner-icon="mdi-phone"
+                            placeholder="(00) 00000-0000"
+                            hint="Telefone principal de contato"
+                            persistent-hint
+                            :rules="companyPhone1Rules"
+                            @input="handleMaskCompanyPhone1"
+                            maxlength="15"
+                          />
+                        </v-col>
+
+                        <v-col cols="12" md="6">
+                          <v-switch
+                            v-model="form.company.has_whatsapp_1"
+                            label="Telefone é WhatsApp?"
+                            color="primary"
+                            density="comfortable"
+                            hide-details
                           >
-                            <v-card-text class="d-flex align-center">
-                              <v-checkbox
-                                :model-value="isCompanySelected(company.id)"
-                                color="primary"
-                                hide-details
-                                @click.stop="toggleCompany(company.id)"
-                              />
-                              <div class="flex-grow-1 ml-3">
-                                <div class="text-subtitle-1 font-weight-medium">
-                                  {{ company.name }}
-                                </div>
-                                <div class="text-body-2 text-medium-emphasis">
-                                  <v-icon size="14" class="mr-1"
-                                    >mdi-account</v-icon
-                                  >
-                                  {{ company.responsible_name }}
-                                </div>
-                                <div class="text-body-2 text-medium-emphasis">
-                                  <v-icon size="14" class="mr-1"
-                                    >mdi-phone</v-icon
-                                  >
-                                  {{ company.phone_1 }}
-                                </div>
-                              </div>
-                              <v-chip
-                                v-if="isCompanySelected(company.id)"
-                                color="success"
-                                size="small"
-                                class="ml-2"
+                            <template #prepend>
+                              <v-icon
+                                :color="
+                                  form.company?.has_whatsapp_1
+                                    ? 'success'
+                                    : 'grey'
+                                "
+                                >mdi-whatsapp</v-icon
                               >
-                                <v-icon start size="16">mdi-check</v-icon>
-                                Selecionada
-                              </v-chip>
-                            </v-card-text>
-                          </v-card>
-                        </div>
+                            </template>
+                          </v-switch>
+                        </v-col>
 
-                        <!-- Pagination -->
-                        <div
-                          v-if="companiesList.length > 0"
-                          class="companies-pagination mt-4"
-                        >
-                          <v-pagination
-                            v-if="pagination.last_page > 1"
-                            v-model="pagination.current_page"
-                            :length="pagination.last_page"
-                            :total-visible="5"
-                            @update:model-value="handlePageChange"
+                        <v-col cols="12" md="6">
+                          <v-text-field
+                            v-model="form.company.phone_2"
+                            label="Telefone Secundário"
+                            variant="outlined"
+                            density="comfortable"
+                            rounded="lg"
+                            prepend-inner-icon="mdi-phone-outgoing"
+                            placeholder="(00) 00000-0000"
+                            hint="Telefone secundário (opcional)"
+                            persistent-hint
+                            :rules="companyPhone2Rules"
+                            @input="handleMaskCompanyPhone2"
+                            maxlength="15"
                           />
+                        </v-col>
 
-                          <div class="text-center mt-2">
-                            <p class="text-body-2 text-medium-emphasis">
-                              Mostrando
-                              <strong>{{ companiesList.length }}</strong> de
-                              <strong>{{ pagination.total }}</strong> empresas
-                            </p>
-                          </div>
-                        </div>
-
-                        <!-- Selected Count -->
-                        <v-alert
-                          v-if="form.company_ids && form.company_ids.length > 0"
-                          type="success"
-                          variant="tonal"
-                          class="mt-4"
-                        >
-                          <template #prepend>
-                            <v-icon>mdi-check-circle</v-icon>
-                          </template>
-                          {{ form.company_ids.length }}
-                          {{
-                            form.company_ids.length === 1
-                              ? "empresa selecionada"
-                              : "empresas selecionadas"
-                          }}
-                        </v-alert>
-
-                        <v-alert type="info" variant="tonal" class="mt-4">
-                          <template #prepend>
-                            <v-icon>mdi-information</v-icon>
-                          </template>
-                          Você pode se associar a empresas agora ou fazer isso
-                          depois no painel administrativo.
-                        </v-alert>
-                      </div>
+                        <v-col cols="12" md="6">
+                          <v-switch
+                            v-model="form.company.has_whatsapp_2"
+                            label="Telefone é WhatsApp?"
+                            color="primary"
+                            density="comfortable"
+                            hide-details
+                            :disabled="!form.company.phone_2"
+                          >
+                            <template #prepend>
+                              <v-icon
+                                :color="
+                                  form.company?.has_whatsapp_2
+                                    ? 'success'
+                                    : 'grey'
+                                "
+                                >mdi-whatsapp</v-icon
+                              >
+                            </template>
+                          </v-switch>
+                        </v-col>
+                      </v-row>
                     </v-card-text>
                   </v-card>
                 </v-stepper-window-item>
+
               </v-stepper-window>
 
               <!-- Navigation Buttons -->
@@ -602,7 +477,7 @@
                 </template>
                 <template #next>
                   <v-btn
-                    v-if="currentStep < 3"
+                    v-if="currentStep < (form.account_type === 'owner' ? 3 : 2)"
                     color="blue"
                     :disabled="!canProceed"
                     @click="nextStep"
@@ -647,21 +522,19 @@ import { useRegisterApi, type RegisterData } from "./api";
 import { useCompaniesApi } from "@/pages/companies/api";
 import { useProfilesApi } from "@/pages/profiles/api";
 import { useMask } from "@/composables/useMask";
+import { useValidation } from "@/composables/useValidation";
 import { showSuccessToast, showErrorToast } from "@/utils/swal";
 
 const router = useRouter();
 const registerApi = useRegisterApi();
-const { loading, register, companies, pagination, getPublicCompanies } =
-  registerApi;
+const { loading, register } = registerApi;
 const { getCombo: getProfilesCombo } = useProfilesApi();
+
+// Validation
+const { getCPFValidationRules, getCNPJValidationRules } = useValidation();
 
 // Estado local para combos
 const availableProfiles = ref<any[]>([]);
-const searchCompanies = ref("");
-
-// Computed para garantir reatividade
-const companiesList = computed(() => companies.value);
-const loadingState = computed(() => loading.value);
 
 // Form state
 const formRef = ref();
@@ -677,6 +550,7 @@ const form = ref<RegisterData>({
   password: "",
   password_confirmation: "",
   phone: "",
+  cpf: "",
   has_whatsapp: false,
   account_type: "owner",
   profile_id: null as any,
@@ -692,7 +566,6 @@ const form = ref<RegisterData>({
     has_whatsapp_2: false,
     timezone_id: undefined,
   },
-  company_ids: [],
 });
 
 // Person types
@@ -707,11 +580,22 @@ const canProceed = computed(() => {
     return form.value.profile_id && form.value.profile_id > 0;
   }
   if (currentStep.value === 2) {
+    // Validação para dados pessoais
     return (
       form.value.name &&
       form.value.email &&
+      form.value.cpf &&
       form.value.password &&
       form.value.password_confirmation
+    );
+  }
+  if (currentStep.value === 3 && form.value.account_type === 'owner') {
+    // Validação para dados da empresa (apenas proprietários)
+    return (
+      form.value.company?.name &&
+      form.value.company?.person_type &&
+      form.value.company?.responsible_name &&
+      form.value.company?.phone_1
     );
   }
   return true;
@@ -735,6 +619,10 @@ const passwordConfirmationRules = [
   (v: string) => !!v || "Confirme a senha",
   (v: string) => v === form.value.password || "As senhas não conferem",
 ];
+const cpfRules = [
+  (v: string) => !!v || "CPF é obrigatório",
+  ...getCPFValidationRules(),
+];
 const companyNameRules = [
   (v: string) => !!v || "Nome da empresa é obrigatório",
 ];
@@ -746,8 +634,39 @@ const companyPhone1Rules = [
   (v: string) => !!v || "Telefone da empresa é obrigatório",
 ];
 
+const companyCpfRules = [
+  ...getCPFValidationRules(),
+];
+
+// Validação para telefone pessoal
+const phoneRules = [
+  (v: string) => {
+    if (!v) return true; // Telefone é opcional
+    const cleaned = v.replace(/\D/g, '');
+    return cleaned.length >= 10 || "Telefone deve ter pelo menos 10 dígitos";
+  },
+];
+
+// Validação para CNPJ da empresa
+const companyCnpjRules = [
+  (v: string) => {
+    if (!v) return true; // CNPJ é opcional quando pessoa física
+    const cnpjRules = getCNPJValidationRules();
+    return cnpjRules[0] ? cnpjRules[0](v) : true; // Usa a validação completa do composable
+  },
+];
+
+// Validação para telefone secundário da empresa
+const companyPhone2Rules = [
+  (v: string) => {
+    if (!v) return true; // Telefone secundário é opcional
+    const cleaned = v.replace(/\D/g, '');
+    return cleaned.length >= 10 || "Telefone deve ter pelo menos 10 dígitos";
+  },
+];
+
 // Phone formatting
-const { maskPhone, formatPhone, maskCNPJ, maskCPF } = useMask();
+const { maskPhone, formatPhone, maskCNPJ, maskCPF, formatCPF } = useMask();
 
 const formattedPhone = computed({
   get: () => {
@@ -759,10 +678,24 @@ const formattedPhone = computed({
   },
 });
 
+const formattedCpf = computed({
+  get: () => {
+    if (!form.value.cpf) return "";
+    return formatCPF(form.value.cpf);
+  },
+  set: (value) => {
+    form.value.cpf = value;
+  },
+});
+
 const handlePhoneInput = (event: Event) => {
-  const target = event.target as HTMLInputElement;
   const maskedValue = maskPhone(event);
   form.value.phone = maskedValue;
+};
+
+const handleCpfInput = (event: Event) => {
+  const maskedValue = maskCPF(event);
+  form.value.cpf = maskedValue;
 };
 
 const handleMaskCompanyPhone1 = (event: Event) => {
@@ -836,67 +769,23 @@ const previousStep = () => {
 const handleSubmit = async () => {
   if (!isValid.value) return;
 
-  try {
-    const response = await register(form.value);
-    // Verificar se foi criado com sucesso
-    if (response && response.success) {
-      showSuccessToast(
-        "Conta criada com sucesso! Faça login para acessar o sistema.",
-        "Cadastro realizado!"
-      );
-      await router.push("/login");
-    } else {
-      throw new Error("Erro ao processar resposta do servidor");
-    }
-  } catch (error: any) {
-    console.error("Erro no registro:", error);
-    const errorMessage =
-      error.response?.data?.message || error.message || "Erro ao criar conta";
-    showErrorToast(errorMessage, "Erro!");
-  }
-};
+  const response = await register(form.value);
 
-// Company selection methods
-const isCompanySelected = (companyId: number) => {
-  return form.value.company_ids?.includes(companyId) || false;
-};
+  // Se chegou aqui, o registro foi bem-sucedido
+  if (response && response.success) {
+    showSuccessToast(
+      "Conta criada com sucesso! Você será redirecionado para fazer login.",
+      "Cadastro realizado!"
+    );
 
-const toggleCompany = (companyId: number) => {
-  if (!form.value.company_ids) {
-    form.value.company_ids = [];
-  }
-
-  const index = form.value.company_ids.indexOf(companyId);
-  if (index > -1) {
-    form.value.company_ids.splice(index, 1);
-  } else {
-    form.value.company_ids.push(companyId);
-  }
-};
-
-const loadPublicCompanies = async () => {
-  try {
-    await getPublicCompanies({
-      search: searchCompanies.value,
-      page: pagination.value.current_page,
-      per_page: 10,
+    // Redirecionar para login com email preenchido
+    await router.push({
+      path: "/login",
+      query: { email: form.value.email }
     });
-  } catch (error) {
-    showErrorToast("Erro ao carregar empresas", "Erro!");
   }
 };
 
-const handlePageChange = async (page: number) => {
-  try {
-    await getPublicCompanies({
-      search: searchCompanies.value,
-      page: page,
-      per_page: 10,
-    });
-  } catch (error) {
-    showErrorToast("Erro ao carregar empresas", "Erro!");
-  }
-};
 
 // Lifecycle
 onMounted(async () => {
@@ -908,9 +797,6 @@ onMounted(async () => {
     availableProfiles.value = profiles
       .filter((profile: any) => profile.name !== "admin")
       .filter((profile: any) => profile.name !== "supervisor");
-
-    // Carregar empresas com paginação
-    await loadPublicCompanies();
   } catch (error) {
     showErrorToast("Erro ao carregar dados", "Erro!");
   }
@@ -996,58 +882,6 @@ onMounted(async () => {
   padding: 16px 0;
 }
 
-.companies-loading {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.companies-list {
-  max-height: 400px;
-  overflow-y: auto;
-  padding-right: 8px;
-}
-
-.companies-list::-webkit-scrollbar {
-  width: 6px;
-}
-
-.companies-list::-webkit-scrollbar-track {
-  background: rgba(var(--v-theme-surface-variant), 0.3);
-  border-radius: 3px;
-}
-
-.companies-list::-webkit-scrollbar-thumb {
-  background: rgba(var(--v-theme-primary), 0.3);
-  border-radius: 3px;
-}
-
-.companies-list::-webkit-scrollbar-thumb:hover {
-  background: rgba(var(--v-theme-primary), 0.5);
-}
-
-.company-card {
-  cursor: pointer;
-  transition: all 0.3s ease;
-  border: 2px solid transparent;
-}
-
-.company-card:hover {
-  transform: translateX(4px);
-  border-color: rgba(var(--v-theme-primary), 0.3);
-}
-
-.company-selected {
-  border-color: rgba(var(--v-theme-success), 0.5) !important;
-  background: rgba(var(--v-theme-success), 0.05);
-}
-
-.companies-pagination {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-}
 
 @media (max-width: 960px) {
   .register-page {
@@ -1079,16 +913,6 @@ onMounted(async () => {
     font-size: 1.75rem !important;
   }
 
-  .companies-list {
-    max-height: 300px;
-  }
-
-  .company-card {
-    margin-bottom: 8px !important;
-  }
-
-  .company-card:hover {
-    transform: none;
-  }
 }
 </style>
+

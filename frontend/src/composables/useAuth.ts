@@ -176,6 +176,30 @@ export function useAuth() {
     }
   };
 
+  // Atualizar dados do usuário
+  const updateUserData = async (): Promise<void> => {
+    try {
+      const { get } = useHttp();
+      const response = await get('/auth/me');
+
+      if (response.data && response.data.user) {
+        // Atualizar localStorage com dados do usuário
+        localStorage.setItem("user_data", JSON.stringify(response.data.user));
+
+        // Atualizar estado reativo com dados do usuário
+        authState.value.user = response.data.user;
+
+        // Atualizar tenants se disponíveis
+        if (response.data.tenants && Array.isArray(response.data.tenants)) {
+          const { setAvailableTenants } = useTenant();
+          setAvailableTenants(response.data.tenants);
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar dados do usuário:', error);
+    }
+  };
+
   // Inicializar verificação de auth
   checkAuth();
 
@@ -191,5 +215,6 @@ export function useAuth() {
     loginWithGoogle,
     logout,
     checkAuth,
+    updateUserData,
   };
 }

@@ -6,6 +6,7 @@ export interface User {
   name: string
   email: string
   phone?: string
+  cpf?: string
   has_whatsapp: boolean
   profile_id?: number
   created_at: string

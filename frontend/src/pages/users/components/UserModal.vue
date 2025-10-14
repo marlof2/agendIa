@@ -85,8 +85,12 @@
             required
             hint="Confirme a senha"
             persistent-hint
-            :append-inner-icon="showPasswordConfirmation ? 'mdi-eye' : 'mdi-eye-off'"
-            @click:append-inner="showPasswordConfirmation = !showPasswordConfirmation"
+            :append-inner-icon="
+              showPasswordConfirmation ? 'mdi-eye' : 'mdi-eye-off'
+            "
+            @click:append-inner="
+              showPasswordConfirmation = !showPasswordConfirmation
+            "
           />
         </v-col>
 
@@ -98,9 +102,27 @@
             density="compact"
             rounded="lg"
             prepend-inner-icon="mdi-phone"
-            hint="Telefone de contato (opcional)"
+            hint="Telefone de contato"
             persistent-hint
             @input="handlePhoneInput"
+            maxlength="15"
+          />
+        </v-col>
+
+        <v-col cols="12" md="6">
+          <v-text-field
+            v-model="formattedCpf"
+            label="CPF *"
+            variant="outlined"
+            density="compact"
+            rounded="lg"
+            prepend-inner-icon="mdi-card-account-details"
+            hint="Seu CPF"
+            persistent-hint
+            :rules="cpfRules"
+            required
+            maxlength="14"
+            @input="handleCpfInput"
           />
         </v-col>
 
@@ -132,12 +154,12 @@
             :disabled="!form.phone"
           >
             <template #prepend>
-              <v-icon :color="form.has_whatsapp ? 'success' : 'grey'">mdi-whatsapp</v-icon>
+              <v-icon :color="form.has_whatsapp ? 'success' : 'grey'"
+                >mdi-whatsapp</v-icon
+              >
             </template>
           </v-switch>
         </v-col>
-
-
       </v-row>
     </v-form>
 
@@ -183,7 +205,7 @@ const emit = defineEmits<Emits>();
 // Composables
 const { createItem, updateItem } = useUsersApi();
 const { getCombo: getProfilesCombo } = useProfilesApi();
-const { maskPhone, formatPhone } = useMask();
+const { maskPhone, formatPhone, maskCPF, formatCPF } = useMask();
 
 // Reactive data
 const formRef = ref();
@@ -198,6 +220,7 @@ const form = ref({
   password: "",
   password_confirmation: "",
   phone: "",
+  cpf: "",
   has_whatsapp: false,
   profile_id: null as number | null,
 });
@@ -214,31 +237,43 @@ const isEditing = computed(() => !!props.user?.id);
 
 const formattedPhone = computed({
   get: () => {
-    if (!form.value.phone) return '';
+    if (!form.value.phone) return "";
     return formatPhone(form.value.phone);
   },
   set: (value) => {
     form.value.phone = value;
-  }
+  },
+});
+
+const formattedCpf = computed({
+  get: () => {
+    if (!form.value.cpf) return "";
+    return formatCPF(form.value.cpf);
+  },
+  set: (value) => {
+    form.value.cpf = value;
+  },
 });
 
 const formProgress = computed(() => {
-  const totalFields = 3; // name, email, profile_id (campos obrigatórios)
+  const totalFields = 4; // name, email, cpf, profile_id (campos obrigatórios)
   const filledFields = [
     form.value.name,
     form.value.email,
-    form.value.profile_id
+    form.value.cpf,
+    form.value.profile_id,
   ].filter((field) => field && field.toString().trim() !== "").length;
 
   if (!isEditing.value) {
     // Para criação, adicionar senha e confirmação
-    const passwordFields = [form.value.password, form.value.password_confirmation].filter(
-      (field) => field && field.trim() !== ""
-    ).length;
-    return ((filledFields + passwordFields) / 5) * 100;
+    const passwordFields = [
+      form.value.password,
+      form.value.password_confirmation,
+    ].filter((field) => field && field.trim() !== "").length;
+    return ((filledFields + passwordFields) / 6) * 100;
   }
 
-  return (filledFields / 3) * 100;
+  return (filledFields / 4) * 100;
 });
 
 // Validation rules
@@ -275,8 +310,14 @@ const passwordConfirmationRules = [
   },
 ];
 
-const profileRules = [
-  (v: any) => !!v || "Perfil é obrigatório",
+const profileRules = [(v: any) => !!v || "Perfil é obrigatório"];
+
+const cpfRules = [
+  (v: string) => !!v || "CPF é obrigatório",
+  (v: string) => {
+    const cleaned = v.replace(/\D/g, "");
+    return cleaned.length === 11 || "CPF deve ter 11 dígitos";
+  },
 ];
 
 // Methods
@@ -287,6 +328,7 @@ const resetForm = () => {
     password: "",
     password_confirmation: "",
     phone: "",
+    cpf: "",
     has_whatsapp: false,
     profile_id: null,
   };
@@ -295,11 +337,14 @@ const resetForm = () => {
 };
 
 const handlePhoneInput = (event: Event) => {
-  const target = event.target as HTMLInputElement;
   const maskedValue = maskPhone(event);
   form.value.phone = maskedValue;
 };
 
+const handleCpfInput = (event: Event) => {
+  const maskedValue = maskCPF(event);
+  form.value.cpf = maskedValue;
+};
 
 const loadUserData = () => {
   if (props.user) {
@@ -309,6 +354,7 @@ const loadUserData = () => {
       password: "",
       password_confirmation: "",
       phone: props.user.phone || "",
+      cpf: props.user.cpf || "",
       has_whatsapp: props.user.has_whatsapp || false,
       profile_id: props.user.profile_id || null,
     };
@@ -329,8 +375,6 @@ const loadProfilesData = async () => {
   }
 };
 
-
-
 const closeModal = () => {
   emit("update:modelValue", false);
   resetForm();
@@ -341,14 +385,15 @@ const handleSubmit = async () => {
 
   loading.value = true;
 
-        try {
-          const userData: any = {
-            name: form.value.name,
-            email: form.value.email,
-            phone: form.value.phone,
-            has_whatsapp: form.value.has_whatsapp,
-            profile_id: form.value.profile_id,
-          };
+  try {
+    const userData: any = {
+      name: form.value.name,
+      email: form.value.email,
+      phone: form.value.phone,
+      cpf: form.value.cpf,
+      has_whatsapp: form.value.has_whatsapp,
+      profile_id: form.value.profile_id,
+    };
 
     // Adicionar senha apenas se estiver preenchida (para edição) ou se for criação
     if (!isEditing.value || form.value.password) {
@@ -489,5 +534,4 @@ watch(
 .modal-actions-container {
   gap: 16px;
 }
-
 </style>
