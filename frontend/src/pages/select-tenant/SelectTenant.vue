@@ -51,8 +51,425 @@
                 </span>
               </v-alert>
 
-              <!-- Tenants List -->
-              <div v-if="loading" class="text-center py-8">
+              <!-- Step 1: Profile Selection -->
+              <div v-if="currentStep === 1" class="profile-selection-section">
+                <h3 class="text-h6 mb-4 text-center">Escolha seu perfil</h3>
+                <p class="text-body-2 text-center mb-6 text-medium-emphasis">
+                  Selecione o tipo de perfil que melhor descreve você
+                </p>
+
+                <v-row>
+                  <v-col cols="12" md="4" v-for="profile in availableProfiles" :key="profile.id">
+                    <v-card
+                      class="profile-card"
+                      :class="{ 'profile-card--selected': selectedProfileId === profile.id }"
+                      elevation="2"
+                      hover
+                      @click="selectProfile(profile)"
+                    >
+                      <v-card-text class="text-center pa-6">
+                        <v-avatar
+                          size="64"
+                          :color="getProfileColor(profile.name)"
+                          class="mb-4"
+                        >
+                          <v-icon size="32" color="white">{{ getProfileIcon(profile.name) }}</v-icon>
+                        </v-avatar>
+                        <h4 class="text-h6 mb-2">{{ profile.display_name }}</h4>
+                        <p class="text-body-2 text-medium-emphasis mb-4">{{ profile.description }}</p>
+
+                        <!-- Profile specific info -->
+                        <v-alert
+                          v-if="profile.name === 'owner'"
+                          type="info"
+                          variant="tonal"
+                          density="compact"
+                          class="mt-2"
+                        >
+                          <template #prepend>
+                            <v-icon size="16">mdi-information</v-icon>
+                          </template>
+                          <span class="text-caption">Você criará sua própria empresa</span>
+                        </v-alert>
+
+                        <v-alert
+                          v-else
+                          type="success"
+                          variant="tonal"
+                          density="compact"
+                          class="mt-2"
+                        >
+                          <template #prepend>
+                            <v-icon size="16">mdi-check-circle</v-icon>
+                          </template>
+                          <span class="text-caption">Você se associará a empresas existentes</span>
+                        </v-alert>
+                      </v-card-text>
+                    </v-card>
+                  </v-col>
+                </v-row>
+
+                <!-- Next Button -->
+                <div class="text-center mt-6">
+                  <v-btn
+                    color="primary"
+                    variant="flat"
+                    size="large"
+                    :disabled="!selectedProfileId"
+                    @click="goToNextStep"
+                  >
+                    Continuar
+                    <v-icon right>mdi-arrow-right</v-icon>
+                  </v-btn>
+                </div>
+              </div>
+
+              <!-- Step 2A: Company Registration (for owners) -->
+              <div v-else-if="currentStep === 2 && isOwner" class="company-registration-section">
+                <v-card class="pa-6">
+                  <v-card-title class="text-h5 mb-4 d-flex align-center">
+                    <v-icon size="24" class="mr-3" color="purple">mdi-domain-plus</v-icon>
+                    Cadastrar Nova Empresa
+                  </v-card-title>
+
+                  <v-card-subtitle class="text-body-1 mb-6">
+                    Como proprietário, você precisa criar sua empresa para começar a usar o sistema.
+                  </v-card-subtitle>
+
+                  <v-form ref="companyFormRef" v-model="companyFormValid" @submit.prevent="handleCompanySubmit">
+                    <v-row>
+                      <!-- Informações da Empresa -->
+                      <v-col cols="12">
+                        <h3 class="text-h6 mb-4 d-flex align-center">
+                          <v-icon size="20" class="mr-2">mdi-domain</v-icon>
+                          Informações da Empresa
+                        </h3>
+                      </v-col>
+
+                      <v-col cols="12" md="6">
+                        <v-text-field
+                          v-model="companyForm.name"
+                          label="Nome da empresa *"
+                          variant="outlined"
+                          density="compact"
+                          rounded="lg"
+                          :rules="companyNameRules"
+                          prepend-inner-icon="mdi-domain"
+                          required
+                          hint="Nome da empresa"
+                          persistent-hint
+                          maxlength="255"
+                        />
+                      </v-col>
+
+                      <v-col cols="12" md="6">
+                        <v-select
+                          v-model="companyForm.person_type"
+                          :items="[
+                            { title: 'Pessoa Jurídica', value: 'legal' },
+                            { title: 'Pessoa Física', value: 'physical' }
+                          ]"
+                          label="Tipo de Pessoa *"
+                          variant="outlined"
+                          density="compact"
+                          rounded="lg"
+                          prepend-inner-icon="mdi-account-group"
+                          required
+                          hint="Selecione o tipo de pessoa"
+                          persistent-hint
+                        />
+                      </v-col>
+
+                      <v-col cols="12" md="6">
+                        <v-text-field
+                          v-if="companyForm.person_type === 'legal'"
+                          v-model="companyForm.cnpj"
+                          label="CNPJ"
+                          variant="outlined"
+                          density="compact"
+                          rounded="lg"
+                          :rules="companyCnpjRules"
+                          prepend-inner-icon="mdi-card-account-details"
+                          hint="CNPJ da empresa"
+                          persistent-hint
+                          @input="handleCompanyMaskCNPJ"
+                          maxlength="18"
+                        />
+                        <v-text-field
+                          v-else
+                          v-model="companyForm.cpf"
+                          label="CPF"
+                          variant="outlined"
+                          density="compact"
+                          rounded="lg"
+                          :rules="companyCpfRules"
+                          prepend-inner-icon="mdi-card-account-details"
+                          hint="CPF do responsável"
+                          persistent-hint
+                          @input="handleCompanyMaskCPF"
+                          maxlength="14"
+                        />
+                      </v-col>
+
+                      <v-col cols="12" md="6">
+                        <v-text-field
+                          v-model="companyForm.responsible_name"
+                          label="Nome do Responsável *"
+                          variant="outlined"
+                          density="compact"
+                          rounded="lg"
+                          :rules="companyResponsibleNameRules"
+                          prepend-inner-icon="mdi-account"
+                          required
+                          hint="Nome do responsável pela empresa"
+                          persistent-hint
+                          maxlength="255"
+                        />
+                      </v-col>
+
+                      <v-col cols="12">
+                        <v-divider class="my-4"></v-divider>
+                        <h4 class="text-subtitle-1 mb-3">Telefones de Contato</h4>
+                      </v-col>
+
+                      <v-col cols="12" md="6">
+                        <v-text-field
+                          v-model="companyForm.phone_1"
+                          label="Telefone Principal *"
+                          variant="outlined"
+                          density="compact"
+                          rounded="lg"
+                          :rules="companyPhone1Rules"
+                          prepend-inner-icon="mdi-phone"
+                          required
+                          hint="Telefone principal de contato"
+                          persistent-hint
+                          @input="handleCompanyMaskPhone1"
+                          maxlength="15"
+                        />
+                      </v-col>
+
+                      <v-col cols="12" md="6">
+                        <div class="d-flex align-center h-100">
+                          <v-switch
+                            v-model="companyForm.has_whatsapp_1"
+                            color="success"
+                            :disabled="!companyForm.phone_1"
+                            hide-details
+                          >
+                            <template #label>
+                              <div class="d-flex align-center">
+                                <v-icon
+                                  :color="companyForm.has_whatsapp_1 ? 'success' : 'grey'"
+                                  class="mr-2"
+                                  size="20"
+                                >
+                                  {{ companyForm.has_whatsapp_1 ? 'mdi-whatsapp' : 'mdi-phone' }}
+                                </v-icon>
+                                <span class="text-body-2">É WhatsApp</span>
+                              </div>
+                            </template>
+                          </v-switch>
+                        </div>
+                      </v-col>
+
+                      <v-col cols="12" md="6">
+                        <v-text-field
+                          v-model="companyForm.phone_2"
+                          label="Telefone Secundário"
+                          variant="outlined"
+                          density="compact"
+                          rounded="lg"
+                          :rules="companyPhone2Rules"
+                          prepend-inner-icon="mdi-phone"
+                          hint="Telefone secundário (opcional)"
+                          persistent-hint
+                          @input="handleCompanyMaskPhone2"
+                          maxlength="15"
+                        />
+                      </v-col>
+
+                      <v-col cols="12" md="6">
+                        <div class="d-flex align-center h-100">
+                          <v-switch
+                            v-model="companyForm.has_whatsapp_2"
+                            color="success"
+                            :disabled="!companyForm.phone_2"
+                            hide-details
+                          >
+                            <template #label>
+                              <div class="d-flex align-center">
+                                <v-icon
+                                  :color="companyForm.has_whatsapp_2 ? 'success' : 'grey'"
+                                  class="mr-2"
+                                  size="20"
+                                >
+                                  {{ companyForm.has_whatsapp_2 ? 'mdi-whatsapp' : 'mdi-phone' }}
+                                </v-icon>
+                                <span class="text-body-2">É WhatsApp</span>
+                              </div>
+                            </template>
+                          </v-switch>
+                        </div>
+                      </v-col>
+
+                      <v-col cols="12" md="6">
+                        <v-select
+                          v-model="companyForm.timezone_id"
+                          :items="availableTimezones"
+                          item-title="name"
+                          item-value="id"
+                          label="Fuso Horário *"
+                          variant="outlined"
+                          density="compact"
+                          rounded="lg"
+                          prepend-inner-icon="mdi-clock-outline"
+                          required
+                          hint="Selecione o fuso horário da empresa"
+                          persistent-hint
+                        />
+                      </v-col>
+                    </v-row>
+
+                    <!-- Botões de navegação -->
+                    <div class="d-flex justify-space-between mt-6">
+                      <v-btn
+                        color="grey"
+                        variant="outlined"
+                        prepend-icon="mdi-arrow-left"
+                        @click="goToPreviousStep"
+                      >
+                        Voltar
+                      </v-btn>
+
+                      <v-btn
+                        color="primary"
+                        variant="flat"
+                        prepend-icon="mdi-check"
+                        type="submit"
+                        :loading="registeringCompany"
+                        :disabled="!companyFormValid"
+                      >
+                        Cadastrar Empresa
+                      </v-btn>
+                    </div>
+                  </v-form>
+                </v-card>
+              </div>
+
+              <!-- Step 2B: Company Selection (for professionals/clients) -->
+              <div v-else-if="currentStep === 2 && !isOwner" class="company-selection-section">
+                <h3 class="text-h6 mb-4 text-center">Selecione a empresa</h3>
+                <p class="text-body-2 text-center mb-6 text-medium-emphasis">
+                  Escolha a empresa que você trabalha ou é cliente
+                </p>
+
+                <!-- Search -->
+                <v-text-field
+                  v-model="searchCompanies"
+                  label="Buscar empresa"
+                  variant="outlined"
+                  density="compact"
+                  rounded="lg"
+                  prepend-inner-icon="mdi-magnify"
+                  clearable
+                  class="mb-4"
+                  @keyup.enter="handleCompanySearch"
+                  @click:clear="handleCompanySearch"
+                />
+
+                <!-- Loading Companies -->
+                <div v-if="loadingCompanies" class="companies-loading">
+                  <v-skeleton-loader v-for="i in 3" :key="i" type="card" class="mb-3" />
+                </div>
+
+                <!-- Empty Companies -->
+                <div v-else-if="publicCompanies.length === 0" class="text-center py-4">
+                  <v-icon size="48" color="grey">mdi-office-building-off</v-icon>
+                  <p class="text-body-2 text-medium-emphasis mt-2">Nenhuma empresa encontrada</p>
+                </div>
+
+                <!-- Companies List -->
+                <div v-else class="companies-list-container">
+                  <v-card
+                    v-for="company in publicCompanies"
+                    :key="company.id"
+                    class="company-select-card mb-3"
+                    :class="{ 'company-selected': selectedCompanyIds[0] === company.id }"
+                    elevation="1"
+                    @click="selectCompany(company.id)"
+                  >
+                    <v-card-text class="d-flex align-center pa-3">
+                      <v-radio
+                        :model-value="selectedCompanyIds[0]"
+                        :value="company.id"
+                        color="primary"
+                        hide-details
+                        @click.stop="selectCompany(company.id)"
+                      />
+                      <div class="flex-grow-1 ml-3">
+                        <div class="text-subtitle-2 font-weight-bold">{{ company.name }}</div>
+                        <div class="text-caption text-medium-emphasis d-flex align-center mb-1">
+                          <v-icon size="12" class="mr-1">mdi-account-tie</v-icon>
+                          <span class="font-weight-medium">Responsável:</span>
+                          <span class="ml-1">{{ company.responsible_name }}</span>
+                        </div>
+                        <div class="text-caption text-medium-emphasis d-flex align-center">
+                          <v-icon size="12" class="mr-1">mdi-phone</v-icon>
+                          <span class="font-weight-medium">Telefone:</span>
+                          <span class="ml-1">{{ formatPhone(company.phone_1) }}</span>
+                        </div>
+                      </div>
+                      <v-chip
+                        v-if="selectedCompanyIds[0] === company.id"
+                        color="success"
+                        size="x-small"
+                      >
+                        <v-icon start size="12">mdi-check</v-icon>
+                        Selecionada
+                      </v-chip>
+                    </v-card-text>
+                  </v-card>
+                </div>
+
+                <!-- Pagination -->
+                <div v-if="publicCompanies.length > 0 && companiesPagination.last_page > 1" class="text-center mt-4">
+                  <v-pagination
+                    v-model="companiesPagination.current_page"
+                    :length="companiesPagination.last_page"
+                    :total-visible="5"
+                    size="small"
+                    @update:model-value="handleCompanyPageChange"
+                  />
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="d-flex justify-center mt-3">
+                  <v-btn
+                    variant="outlined"
+                    color="grey"
+                    class="mr-4"
+                    @click="goToPreviousStep"
+                  >
+                    <v-icon left>mdi-arrow-left</v-icon>
+                    Voltar
+                  </v-btn>
+
+                  <v-btn
+                    color="primary"
+                    variant="flat"
+                    :disabled="selectedCompanyIds.length === 0"
+                    :loading="associating"
+                    @click="associateToCompanies"
+                  >
+                    <v-icon left>mdi-check-circle</v-icon>
+                    Associar Empresa
+                  </v-btn>
+                </div>
+              </div>
+
+              <!-- Tenants List (existing flow) -->
+              <div v-else-if="loading" class="text-center py-8">
                 <v-progress-circular
                   color="primary"
                   indeterminate
@@ -92,8 +509,8 @@
                   prepend-inner-icon="mdi-magnify"
                   clearable
                   class="mb-4"
-                  @keyup.enter="loadAvailableCompanies"
-                  @click:clear="loadAvailableCompanies"
+                  @keyup.enter="handleCompanySearch"
+                  @click:clear="handleCompanySearch"
                 />
 
                 <!-- Loading Companies -->
@@ -113,26 +530,33 @@
                     v-for="company in publicCompanies"
                     :key="company.id"
                     class="company-select-card mb-3"
-                    :class="{ 'company-selected': isCompanySelected(company.id) }"
+                    :class="{ 'company-selected': selectedCompanyIds[0] === company.id }"
                     elevation="1"
-                    @click="toggleCompanySelection(company.id)"
+                    @click="selectCompany(company.id)"
                   >
                     <v-card-text class="d-flex align-center pa-3">
-                      <v-checkbox
-                        :model-value="isCompanySelected(company.id)"
+                      <v-radio
+                        :model-value="selectedCompanyIds[0]"
+                        :value="company.id"
                         color="primary"
                         hide-details
-                        @click.stop="toggleCompanySelection(company.id)"
+                        @click.stop="selectCompany(company.id)"
                       />
                       <div class="flex-grow-1 ml-3">
                         <div class="text-subtitle-2 font-weight-bold">{{ company.name }}</div>
-                        <div class="text-caption text-medium-emphasis">
-                          <v-icon size="12" class="mr-1">mdi-account</v-icon>
-                          {{ company.responsible_name }}
+                        <div class="text-caption text-medium-emphasis d-flex align-center mb-1">
+                          <v-icon size="12" class="mr-1">mdi-account-tie</v-icon>
+                          <span class="font-weight-medium">Responsável:</span>
+                          <span class="ml-1">{{ company.responsible_name }}</span>
+                        </div>
+                        <div class="text-caption text-medium-emphasis d-flex align-center">
+                          <v-icon size="12" class="mr-1">mdi-phone</v-icon>
+                          <span class="font-weight-medium">Telefone:</span>
+                          <span class="ml-1">{{ formatPhone(company.phone_1) }}</span>
                         </div>
                       </div>
                       <v-chip
-                        v-if="isCompanySelected(company.id)"
+                        v-if="selectedCompanyIds[0] === company.id"
                         color="success"
                         size="x-small"
                       >
@@ -157,7 +581,8 @@
                 <!-- Association Button -->
                 <v-btn
                   v-if="selectedCompanyIds.length > 0"
-                  color="success"
+                  color="primary"
+                  variant="flat"
                   size="large"
                   block
                   rounded="lg"
@@ -171,7 +596,7 @@
 
                 <v-btn
                   color="grey"
-                  variant="text"
+                  variant="outlined"
                   size="small"
                   class="mt-3"
                   block
@@ -217,15 +642,15 @@
                           <v-icon size="12" class="mr-1">mdi-crown</v-icon>
                           Principal
                         </v-chip>
-                        <v-chip
-                          size="x-small"
-                          color="success"
-                          variant="flat"
+                      <v-chip
+                        size="x-small"
+                        color="success"
+                        variant="flat"
                           class="mt-1"
-                        >
-                          <v-icon size="12" class="mr-1">mdi-check-circle</v-icon>
-                          Ativa
-                        </v-chip>
+                      >
+                        <v-icon size="12" class="mr-1">mdi-check-circle</v-icon>
+                        Ativa
+                      </v-chip>
                       </div>
                     </div>
 
@@ -241,6 +666,7 @@
               <v-btn
                 v-if="!loading && availableTenants.length > 0"
                 color="primary"
+                variant="flat"
                 size="large"
                 block
                 rounded="lg"
@@ -257,7 +683,7 @@
             <!-- Footer -->
             <v-card-actions class="select-footer">
               <v-btn
-                variant="text"
+                variant="outlined"
                 color="grey"
                 prepend-icon="mdi-logout"
                 @click="handleLogout"
@@ -278,11 +704,17 @@ import { useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import { useTenant, type Tenant } from '@/composables/useTenant'
 import { useHttp } from '@/composables/useHttp'
+import { useRegisterApi } from '@/pages/register/api'
+import { useMask } from '@/composables/useMask'
+import { useValidation } from '@/composables/useValidation'
 import { showSuccessToast, showErrorToast } from '@/utils/swal'
 
 const router = useRouter()
 const { user, logout } = useAuth()
 const http = useHttp()
+const { registerCompany } = useRegisterApi()
+const { maskCNPJ, maskCPF, maskPhone, formatPhone } = useMask()
+const { getCPFValidationRules, getCNPJValidationRules } = useValidation()
 const {
   availableTenants,
   setCurrentTenant,
@@ -295,6 +727,15 @@ const {
 const loading = ref(true)
 const selecting = ref(false)
 const selectedTenantId = ref<number | null>(null)
+
+// Novo fluxo de seleção
+const currentStep = ref(1)
+const selectedProfileId = ref<number | null>(null)
+const availableProfiles = ref<any[]>([])
+const isOwner = computed(() => {
+  const profile = availableProfiles.value.find(p => p.id === selectedProfileId.value)
+  return profile?.name === 'owner'
+})
 
 // Estado para associação de empresas
 const loadingCompanies = ref(false)
@@ -309,9 +750,102 @@ const companiesPagination = ref({
   total: 0
 })
 
+// Estado para cadastro de empresa (proprietários)
+const companyFormRef = ref()
+const companyFormValid = ref(false)
+const registeringCompany = ref(false)
+const availableTimezones = ref<any[]>([])
+const companyForm = ref({
+  name: '',
+  person_type: 'legal' as 'physical' | 'legal',
+  cnpj: '',
+  cpf: '',
+  responsible_name: '',
+  phone_1: '',
+  has_whatsapp_1: false,
+  phone_2: '',
+  has_whatsapp_2: false,
+  timezone_id: null as number | null
+})
+
 // Computed
 const userName = computed(() => user.value?.name || 'Usuário')
 const userEmail = computed(() => user.value?.email || '')
+
+// Validation rules for company form
+const companyNameRules = [
+  (v: string) => !!v || "Nome da empresa é obrigatório",
+  (v: string) => (v && v.length >= 2) || "Nome deve ter pelo menos 2 caracteres",
+]
+
+const companyResponsibleNameRules = [
+  (v: string) => !!v || "Nome do responsável é obrigatório",
+  (v: string) => (v && v.length >= 2) || "Nome deve ter pelo menos 2 caracteres",
+]
+
+const companyPhone1Rules = [
+  (v: string) => !!v || "Telefone principal é obrigatório",
+  (v: string) => (v && v.length >= 10) || "Telefone deve ter pelo menos 10 caracteres",
+]
+
+const companyPhone2Rules = [
+  (v: string) => {
+    if (!v) return true // Campo opcional
+    return v.length >= 10 || "Telefone deve ter pelo menos 10 caracteres"
+  },
+]
+
+// Validation rules for documents
+const companyCnpjRules = getCNPJValidationRules()
+const companyCpfRules = getCPFValidationRules()
+
+// Profile selection functions
+const selectProfile = (profile: any) => {
+  selectedProfileId.value = profile.id
+}
+
+const goToNextStep = () => {
+  if (currentStep.value === 1 && selectedProfileId.value) {
+    currentStep.value = 2
+  }
+}
+
+const goToPreviousStep = () => {
+  if (currentStep.value === 2) {
+    currentStep.value = 1
+  }
+}
+
+const getProfileColor = (profileName: string) => {
+  const colors: Record<string, string> = {
+    owner: "purple",
+    professional: "primary",
+    client: "success",
+  }
+  return colors[profileName] || "grey"
+}
+
+const getProfileIcon = (profileName: string) => {
+  const icons: Record<string, string> = {
+    owner: "mdi-crown",
+    professional: "mdi-briefcase",
+    client: "mdi-account",
+  }
+  return icons[profileName] || "mdi-account"
+}
+
+const loadAvailableProfiles = async () => {
+  try {
+    const response = await http.get('/combos/profiles')
+    // Filtrar apenas perfis que podem ser selecionados no registro
+    availableProfiles.value = response.data.filter((profile: any) =>
+      ['owner', 'professional', 'client'].includes(profile.name)
+    )
+  } catch (error) {
+    console.error('Erro ao carregar perfis:', error)
+    showErrorToast('Erro ao carregar perfis', 'Erro!')
+  }
+}
 
 // Métodos
 const selectTenant = (tenant: Tenant) => {
@@ -327,7 +861,7 @@ const confirmSelection = async () => {
     const tenant = availableTenants.value.find(t => t.id === selectedTenantId.value)
 
     if (tenant) {
-      await switchTenant(tenant)
+      await switchTenant(tenant, user.value?.companies)
 
       // Redireciona para o dashboard
       router.push('/dashboard')
@@ -336,6 +870,102 @@ const confirmSelection = async () => {
     console.error('Erro ao selecionar empresa:', error)
   } finally {
     selecting.value = false
+  }
+}
+
+// Company registration methods
+const loadTimezones = async () => {
+  try {
+    const response = await http.get('/timezones')
+    availableTimezones.value = response.data || []
+  } catch (error) {
+    console.error('Erro ao carregar fusos horários:', error)
+  }
+}
+
+const handleCompanyMaskCNPJ = (event: Event) => {
+  const maskedValue = maskCNPJ(event)
+  companyForm.value.cnpj = maskedValue
+}
+
+const handleCompanyMaskCPF = (event: Event) => {
+  const maskedValue = maskCPF(event)
+  companyForm.value.cpf = maskedValue
+}
+
+const handleCompanyMaskPhone1 = (event: Event) => {
+  const maskedValue = maskPhone(event)
+  companyForm.value.phone_1 = maskedValue
+}
+
+const handleCompanyMaskPhone2 = (event: Event) => {
+  const maskedValue = maskPhone(event)
+  companyForm.value.phone_2 = maskedValue
+}
+
+const handleCompanySubmit = async () => {
+  if (!companyFormValid.value || !user.value?.id) return
+
+  registeringCompany.value = true
+
+  try {
+    const companyData = {
+      user_id: user.value.id,
+      company: {
+        name: companyForm.value.name,
+        person_type: companyForm.value.person_type,
+        cnpj: companyForm.value.cnpj || undefined,
+        cpf: companyForm.value.cpf || undefined,
+        responsible_name: companyForm.value.responsible_name,
+        phone_1: companyForm.value.phone_1,
+        has_whatsapp_1: companyForm.value.has_whatsapp_1,
+        phone_2: companyForm.value.phone_2 || undefined,
+        has_whatsapp_2: companyForm.value.has_whatsapp_2,
+        timezone_id: companyForm.value.timezone_id || 1 // Default timezone if none selected
+      }
+    }
+
+    const result = await registerCompany(companyData)
+    showSuccessToast("Empresa cadastrada com sucesso!", "Sucesso!")
+
+    // Pegar os dados da empresa criada
+    const createdCompany = result.data.company
+    if (createdCompany) {
+      // Criar objeto tenant com os dados da empresa criada
+      const newTenant = {
+        id: createdCompany.id,
+        name: createdCompany.name,
+        is_main_company: true, // Empresa recém-criada é sempre a principal
+        profile_id: result.data.profile_id, // ID do perfil owner
+        profile_name: result.data.profile_name || 'Proprietário'
+      }
+
+      // Associar automaticamente à empresa criada
+      await switchTenant(newTenant, user.value?.companies)
+
+      // Redirecionar para o dashboard
+      showSuccessToast('Bem-vindo ao sistema!', 'Sucesso!')
+      await router.push('/dashboard')
+    } else {
+      // Fallback: recarregar tenants se não conseguir pegar os dados
+      await loadAvailableTenants()
+
+      if (availableTenants.value.length === 1) {
+        const tenant = availableTenants.value[0]
+        if (tenant) {
+          await switchTenant(tenant, user.value?.companies)
+          showSuccessToast('Bem-vindo ao sistema!', 'Sucesso!')
+          await router.push('/dashboard')
+        }
+      } else {
+        currentStep.value = 1
+      }
+    }
+  } catch (error: any) {
+    const errorMessage = error?.response?.data?.message || error?.message || "Erro ao cadastrar empresa"
+    showErrorToast(errorMessage, "Erro!")
+  } finally {
+    registeringCompany.value = false
   }
 }
 
@@ -349,13 +979,9 @@ const isCompanySelected = (companyId: number) => {
   return selectedCompanyIds.value.includes(companyId)
 }
 
-const toggleCompanySelection = (companyId: number) => {
-  const index = selectedCompanyIds.value.indexOf(companyId)
-  if (index > -1) {
-    selectedCompanyIds.value.splice(index, 1)
-  } else {
-    selectedCompanyIds.value.push(companyId)
-  }
+const selectCompany = (companyId: number) => {
+  // Seleção única - substitui a empresa selecionada
+  selectedCompanyIds.value = [companyId]
 }
 
 const loadAvailableCompanies = async () => {
@@ -366,7 +992,7 @@ const loadAvailableCompanies = async () => {
     queryParams.append('page', companiesPagination.value.current_page.toString())
     queryParams.append('per_page', companiesPagination.value.per_page.toString())
 
-    const url = `/companies/public?${queryParams.toString()}`
+    const url = `/companies/available?${queryParams.toString()}`
     const response = await http.get(url)
 
     publicCompanies.value = response.data || []
@@ -383,48 +1009,55 @@ const loadAvailableCompanies = async () => {
   }
 }
 
+const handleCompanySearch = async () => {
+  // Reset para página 1 quando pesquisar
+  companiesPagination.value.current_page = 1
+  await loadAvailableCompanies()
+}
+
 const handleCompanyPageChange = async (page: number) => {
   companiesPagination.value.current_page = page
   await loadAvailableCompanies()
 }
 
 const associateToCompanies = async () => {
-  if (selectedCompanyIds.value.length === 0) {
-    showErrorToast('Selecione pelo menos uma empresa', 'Atenção!')
+  if (selectedCompanyIds.value.length === 0 || !selectedProfileId.value || !user.value?.id) {
+    showErrorToast('Selecione uma empresa e um perfil', 'Atenção!')
     return
   }
 
   associating.value = true
   try {
-    const response = await http.post('/users/associate-companies', {
-      company_ids: selectedCompanyIds.value
+    // Fazer a associação com a empresa selecionada
+    const companyId = selectedCompanyIds.value[0]
+    const response = await http.post('/register/associate', {
+      user_id: user.value!.id,
+      company_id: companyId,
+      profile_id: selectedProfileId.value
     })
 
     showSuccessToast('Associação realizada com sucesso!', 'Sucesso!')
 
     // Atualizar tenants disponíveis com os dados retornados
-    const companies = response.data.companies || []
-    const tenants = companies.map((company: any) => ({
+    const company = response.data.company
+    const tenant = {
       id: company.id,
-      name: company.name
-    }))
+      name: company.name,
+      profile_id: selectedProfileId.value || undefined,
+      profile_name: availableProfiles.value.find(p => p.id === selectedProfileId.value)?.display_name || undefined
+    }
 
     // Usar setAvailableTenants do useTenant (salva no localStorage automaticamente)
-    setAvailableTenants(tenants)
+    setAvailableTenants([tenant])
 
-    // Selecionar a primeira empresa
-    if (tenants.length > 0) {
-      const firstTenant = tenants[0]
-
-      // Usar switchTenant do useTenant (salva no localStorage automaticamente)
-      await switchTenant(firstTenant)
+    // Selecionar a empresa associada
+    await switchTenant(tenant, user.value?.companies)
 
       // Redirecionar para o dashboard
       showSuccessToast('Bem-vindo ao sistema!', 'Sucesso!')
       await router.push('/dashboard')
-    }
   } catch (error: any) {
-    const errorMessage = error.response?.data?.message || 'Erro ao associar empresas'
+    const errorMessage = error.response?.data?.message || 'Erro ao associar empresa'
     showErrorToast(errorMessage, 'Erro!')
   } finally {
     associating.value = false
@@ -434,12 +1067,22 @@ const associateToCompanies = async () => {
 // Lifecycle
 onMounted(async () => {
   // Carrega os tenants disponíveis
-  loadAvailableTenants()
+  await loadAvailableTenants()
+  loadAvailableCompanies()
 
-  // Se não tiver empresas, carregar lista pública
+  // Carrega fusos horários para o formulário de empresa
+  await loadTimezones()
+
+  // Se não tiver empresas associadas, iniciar novo fluxo de seleção de perfil
   if (availableTenants.value.length === 0) {
-    await loadAvailableCompanies()
+    await loadAvailableProfiles()
+    currentStep.value = 1 // Forçar para seleção de perfil
+    loading.value = false
+    return
   }
+
+  // Se já tem empresas associadas, vai direto para seleção de empresa
+  currentStep.value = 0 // Voltar para seleção de empresa
 
   // Se só houver uma empresa, seleciona automaticamente
   if (availableTenants.value.length === 1) {
@@ -737,6 +1380,28 @@ onMounted(async () => {
 .v-theme--dark .select-footer {
   background: rgba(51, 65, 85, 0.3);
   border-top-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Profile Selection Styles */
+.profile-selection-section {
+  max-width: 100%;
+}
+
+.profile-card {
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.profile-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.profile-card--selected {
+  border-color: rgba(var(--v-theme-primary), 0.5);
+  background: rgba(var(--v-theme-primary), 0.05);
+  box-shadow: 0 8px 24px rgba(var(--v-theme-primary), 0.2);
 }
 
 /* Company Association Styles */

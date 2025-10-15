@@ -114,10 +114,9 @@ class AuthController extends Controller
         // Carregar relacionamentos do usuário
         $user->load(['companies']);
 
-        // Como não temos company_id específico no login, vamos usar a primeira empresa
-        $firstCompany = $user->companies->first();
-        $abilities = $firstCompany ? $user->getAbilities($firstCompany->id) : [];
-        $token = $user->createToken('auth_token', $abilities)->plainTextToken;
+        // No login, não retornamos abilities pois o usuário ainda não selecionou uma empresa
+        // As abilities serão carregadas após a seleção da empresa
+        $token = $user->createToken('auth_token')->plainTextToken;
 
         // Adicionar company_ids ao response
         $userData = $user->toArray();
@@ -150,7 +149,6 @@ class AuthController extends Controller
             'data' => [
                 'token' => $token,
                 'user' => $userData,
-                'abilities' => $abilities,
                 'tenants' => $tenants,
             ]
         ]);

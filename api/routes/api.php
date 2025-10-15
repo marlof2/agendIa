@@ -42,6 +42,8 @@ Route::prefix('auth')->group(function () {
 // Rotas de registro (públicas)
 Route::prefix('register')->group(function () {
     Route::post('/', [RegisterController::class, 'register']);
+    Route::post('/company', [RegisterController::class, 'registerCompany']);
+    Route::post('/associate', [RegisterController::class, 'associateWithCompany']);
 });
 
 // Rotas de combos públicas (para registro e uso geral)

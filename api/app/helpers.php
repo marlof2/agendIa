@@ -6,7 +6,11 @@ if (!function_exists('tenant_id')) {
      */
     function tenant_id(): ?int
     {
-        return app('tenant_id', null);
+        try {
+            return app()->bound('tenant_id') ? app('tenant_id') : null;
+        } catch (\Exception $e) {
+            return null;
+        }
     }
 }
 
@@ -27,7 +31,13 @@ if (!function_exists('bypass_tenant_scope')) {
      */
     function bypass_tenant_scope(callable $callback)
     {
-        $originalTenantId = app('tenant_id', null);
+        $originalTenantId = null;
+
+        try {
+            $originalTenantId = app()->bound('tenant_id') ? app('tenant_id') : null;
+        } catch (\Exception $e) {
+            $originalTenantId = null;
+        }
 
         // Temporariamente remove o tenant_id
         app()->instance('tenant_id', null);

@@ -36,11 +36,6 @@ class ClientService
                 $q->where('companies.id', $tenantId)
                   ->where('company_user.profile_id', $clientProfile->id);
             });
-        } else {
-            // Se não tem tenant_id, buscar clientes de qualquer empresa
-            $query->whereHas('companies', function ($q) use ($clientProfile) {
-                $q->where('company_user.profile_id', $clientProfile->id);
-            });
         }
 
         // Filter by search term

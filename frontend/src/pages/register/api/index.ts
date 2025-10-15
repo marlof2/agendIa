@@ -2,7 +2,7 @@ import { ref } from 'vue'
 import { useHttp } from '@/composables/useHttp'
 
 export interface RegisterData {
-  // Dados pessoais
+  // Dados pessoais básicos
   name: string
   email: string
   password: string
@@ -10,13 +10,11 @@ export interface RegisterData {
   phone?: string
   cpf?: string
   has_whatsapp?: boolean
+}
 
-  // Tipo de conta e perfil
-  account_type: 'owner' | 'professional' | 'supervisor' | 'client'
-  profile_id: number | null
-
-  // Dados da empresa (apenas para proprietários)
-  company?: {
+export interface RegisterCompanyData {
+  user_id: number
+  company: {
     name: string
     person_type: 'physical' | 'legal'
     cnpj?: string
@@ -26,10 +24,8 @@ export interface RegisterData {
     has_whatsapp_1?: boolean
     phone_2?: string
     has_whatsapp_2?: boolean
-    timezone_id?: number
+    timezone_id: number
   }
-
-  // IDs das empresas (removido - associação será feita após login)
 }
 
 export const useRegisterApi = () => {
@@ -38,7 +34,7 @@ export const useRegisterApi = () => {
   const error = ref<string | null>(null)
 
   /**
-   * Registrar novo usuário
+   * Registrar novo usuário (dados básicos)
    */
   const register = async (data: RegisterData) => {
     loading.value = true
@@ -55,10 +51,29 @@ export const useRegisterApi = () => {
     }
   }
 
+  /**
+   * Registrar empresa para proprietário
+   */
+  const registerCompany = async (data: RegisterCompanyData) => {
+    loading.value = true
+    error.value = null
+
+    try {
+      const response = await http.post('/register/company', data)
+      return response
+    } catch (err: any) {
+      error.value = err.response?.data?.message || 'Erro ao cadastrar empresa'
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     loading,
     error,
-    register
+    register,
+    registerCompany
   }
 }
 

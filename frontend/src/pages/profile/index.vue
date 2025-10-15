@@ -21,13 +21,14 @@
 
               <!-- Badge do Perfil -->
               <v-chip
-                :color="getProfileColor(user?.profile?.name)"
+                v-if="currentProfileName"
+                :color="getProfileColor(currentProfileName)"
                 variant="tonal"
                 class="mt-3"
                 size="small"
               >
                 <v-icon start size="16">mdi-shield-account</v-icon>
-                {{ user?.profile?.display_name }}
+                {{ currentProfileName }}
               </v-chip>
 
               <!-- Informações Adicionais -->
@@ -257,6 +258,19 @@
                               <v-icon size="12" class="mr-1">mdi-crown</v-icon>
                               Empresa Principal
                             </div>
+                            <!-- Perfil do usuário nesta empresa -->
+                            <div v-if="getCurrentProfile(company)" class="text-caption mt-1">
+                              <v-chip
+                                :color="getProfileColor(getCurrentProfile(company))"
+                                size="x-small"
+                                variant="tonal"
+                              >
+                                {{ getProfileName(getCurrentProfile(company)) }}
+                              </v-chip>
+                            </div>
+                            <div v-else class="text-caption text-medium-emphasis mt-1">
+                              Perfil não definido
+                            </div>
                           </div>
 
                           <!-- Badges -->
@@ -464,6 +478,41 @@
           @update:model-value="handleSearchCompanies"
         />
 
+        <!-- Seleção de Perfil -->
+        <v-select
+          v-model="selectedProfileForAssociation"
+          :items="availableProfilesForAssociation"
+          item-title="display_name"
+          item-value="id"
+          label="Perfil para associação *"
+          variant="outlined"
+          density="comfortable"
+          prepend-inner-icon="mdi-account-cog"
+          required
+          hint="Selecione o perfil que você terá nas empresas selecionadas"
+          persistent-hint
+          class="mb-4"
+        >
+          <template v-slot:item="{ props, item }">
+            <v-list-item v-bind="props">
+              <template v-slot:prepend>
+                <v-icon :color="getProfileColor(item.raw.name)" size="20">
+                  {{ getProfileIcon(item.raw.name) }}
+                </v-icon>
+              </template>
+            </v-list-item>
+          </template>
+
+          <template v-slot:selection="{ item }">
+            <div class="d-flex align-center">
+              <v-icon :color="getProfileColor(item.raw.name)" size="20" class="mr-2">
+                {{ getProfileIcon(item.raw.name) }}
+              </v-icon>
+              <span>{{ item.title }}</span>
+            </div>
+          </template>
+        </v-select>
+
         <!-- Loading -->
         <div v-if="loadingPublicCompanies" class="text-center py-8">
           <v-progress-circular indeterminate color="primary" />
@@ -473,7 +522,7 @@
         <!-- Lista de Empresas Disponíveis -->
         <div v-else-if="availableCompanies.length > 0">
           <p class="text-body-2 text-medium-emphasis mb-3">
-            Selecione as empresas que deseja se vincular
+            Selecione a empresa que deseja se vincular
           </p>
 
           <v-list class="pa-0">
@@ -482,12 +531,14 @@
               :key="company.id"
               class="company-list-item mb-2"
               :class="{ 'selected': isSelected(company.id) }"
-              @click="toggleSelection(company.id)"
+              @click="selectCompany(company.id)"
             >
               <template v-slot:prepend>
-                <v-checkbox-btn
-                  :model-value="isSelected(company.id)"
+                <v-radio
+                  :model-value="selectedCompanyIds[0]"
+                  :value="company.id"
                   color="primary"
+                  @click.stop="selectCompany(company.id)"
                 />
               </template>
 
@@ -495,8 +546,22 @@
                 {{ company.name }}
               </v-list-item-title>
 
-              <v-list-item-subtitle v-if="company.person_type">
-                {{ company.person_type === 'legal' ? 'Pessoa Jurídica' : 'Pessoa Física' }}
+              <v-list-item-subtitle class="d-flex align-center mb-1">
+                <v-icon size="12" class="mr-1">mdi-account-tie</v-icon>
+                <span class="font-weight-medium">Responsável:</span>
+                <span class="ml-1">{{ company.responsible_name || 'Não informado' }}</span>
+              </v-list-item-subtitle>
+
+              <v-list-item-subtitle class="d-flex align-center mb-1">
+                <v-icon size="12" class="mr-1">mdi-phone</v-icon>
+                <span class="font-weight-medium">Telefone:</span>
+                <span class="ml-1">{{ formatPhone(company.phone_1) || 'Não informado' }}</span>
+              </v-list-item-subtitle>
+
+              <v-list-item-subtitle v-if="company.person_type" class="d-flex align-center">
+                <v-icon size="12" class="mr-1">mdi-domain</v-icon>
+                <span class="font-weight-medium">Tipo:</span>
+                <span class="ml-1">{{ company.person_type === 'legal' ? 'Pessoa Jurídica' : 'Pessoa Física' }}</span>
               </v-list-item-subtitle>
 
               <template v-slot:append>
@@ -546,11 +611,11 @@
         <v-btn
           color="primary"
           variant="flat"
-          :disabled="selectedCompanyIds.length === 0"
+          :disabled="selectedCompanyIds.length === 0 || !selectedProfileForAssociation"
           :loading="associating"
           @click="handleAssociate"
         >
-          Vincular ({{ selectedCompanyIds.length }})
+          Vincular
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -605,7 +670,7 @@ import BasePage from '@/components/BasePage.vue'
 
 const router = useRouter()
 const { user, updateUserData } = useAuth()
-const { currentTenant, availableTenants, switchTenant, setAvailableTenants, setCurrentTenant } = useTenant()
+const { currentTenant, switchTenant, setCurrentTenant, getCurrentProfileName } = useTenant()
 const http = useHttp()
 const { formatPhone, formatCPF, maskCPF } = useMask()
 
@@ -618,6 +683,8 @@ const showAssociateModal = ref(false)
 const showUnlinkModal = ref(false)
 const searchCompanies = ref('')
 const selectedCompanyIds = ref<number[]>([])
+const selectedProfileForAssociation = ref<number | null>(null)
+const availableProfilesForAssociation = ref<any[]>([])
 const associating = ref(false)
 const unlinking = ref(false)
 const updatingMainCompany = ref<number | null>(null)
@@ -626,7 +693,7 @@ const publicCompanies = ref<any[]>([])
 const companiesPagination = ref({
   current_page: 1,
   last_page: 1,
-  per_page: 10,
+  per_page: 5, // Reduzido para testar paginação
   total: 0
 })
 
@@ -697,6 +764,11 @@ const formattedCpf = computed({
   }
 })
 
+// Perfil atual do usuário na empresa selecionada
+const currentProfileName = computed(() => {
+  return getCurrentProfileName()
+})
+
 // Methods
 const getProfileColor = (profileName: string) => {
   const colors: Record<string, string> = {
@@ -718,25 +790,38 @@ const isMainCompany = (company: any) => {
   return isMain === true || isMain === 1
 }
 
+// Função para obter perfil atual de uma empresa
+const getCurrentProfile = (company: any) => {
+  return company?.pivot?.profile_id || null
+}
+
+// Função para obter nome do perfil por ID
+const getProfileName = (profileId: number) => {
+  const profileMap: Record<number, string> = {
+    1: 'Administrador',
+    2: 'Propietário',
+    3: 'Supervisor',
+    4: 'Profissional',
+    5: 'Cliente'
+  }
+  return profileMap[profileId] || 'Perfil'
+}
+
 const isSelected = (companyId: number) => {
   return selectedCompanyIds.value.includes(companyId)
 }
 
-const toggleSelection = (companyId: number) => {
+const selectCompany = (companyId: number) => {
   if (isAlreadyLinked(companyId)) return
 
-  const index = selectedCompanyIds.value.indexOf(companyId)
-  if (index > -1) {
-    selectedCompanyIds.value.splice(index, 1)
-  } else {
-    selectedCompanyIds.value.push(companyId)
-  }
+  // Seleção única - substitui a empresa selecionada
+  selectedCompanyIds.value = [companyId]
 }
 
 const switchToCompany = (company: any) => {
-  switchTenant(company)
+  switchTenant(company, user.value?.companies)
   showSuccessToast(`Agora você está em: ${company.name}`, 'Empresa Alterada')
-  router.push('/dashboard')
+  // window.location.reload()
 }
 
 const confirmUnlink = (company: any) => {
@@ -814,6 +899,9 @@ const changePassword = async () => {
 
 const openAssociateModal = async () => {
   showAssociateModal.value = true
+  selectedCompanyIds.value = []
+  selectedProfileForAssociation.value = null
+  await loadAvailableProfilesForAssociation()
   if (publicCompanies.value.length === 0) {
     await loadPublicCompanies()
   }
@@ -830,15 +918,15 @@ const loadPublicCompanies = async (page: number = 1) => {
     }
 
     const response = await http.get(`/companies/available?${params.toString()}`)
+
     publicCompanies.value = response.data || []
     companiesPagination.value = {
       current_page: response.current_page || 1,
       last_page: response.last_page || 1,
-      per_page: response.per_page || 10,
+      per_page: response.per_page || 5,
       total: response.total || 0
     }
   } catch (error) {
-    console.error('Erro ao carregar empresas:', error)
     showErrorToast('Erro ao carregar empresas disponíveis')
   } finally {
     loadingPublicCompanies.value = false
@@ -854,25 +942,66 @@ const handlePageChange = async (page: number) => {
   await loadPublicCompanies(page)
 }
 
+const loadAvailableProfilesForAssociation = async () => {
+  try {
+    const response = await http.get('/combos/profiles')
+    // Filtrar apenas perfis que podem ser usados para associação (exceto owner)
+    availableProfilesForAssociation.value = response.data.filter((profile: any) =>
+      ['professional', 'client'].includes(profile.name)
+    )
+  } catch (error) {
+    console.error('Erro ao carregar perfis:', error)
+    showErrorToast('Erro ao carregar perfis disponíveis')
+  }
+}
+
+const getProfileIcon = (profileName: string) => {
+  const icons: Record<string, string> = {
+    owner: "mdi-crown",
+    professional: "mdi-account-tie",
+    client: "mdi-account",
+  }
+  return icons[profileName] || "mdi-account"
+}
+
+// Função para obter o perfil atual do usuário
+const getCurrentUserProfileId = (companyId?: number) => {
+  const targetCompanyId = companyId || currentTenant.value?.id
+  if (!targetCompanyId || !user.value?.companies) return null
+
+  const company = user.value.companies.find((c: any) => c.id === targetCompanyId)
+  return company?.pivot?.profile_id || null
+}
+
 const handleAssociate = async () => {
-  if (selectedCompanyIds.value.length === 0) return
+  if (selectedCompanyIds.value.length === 0) {
+    showErrorToast('Selecione uma empresa')
+    return
+  }
+
+  if (!selectedProfileForAssociation.value) {
+    showErrorToast('Selecione um perfil para associação')
+    return
+  }
 
   associating.value = true
   try {
     const response = await http.post('/users/associate-companies', {
-      company_ids: selectedCompanyIds.value
+      company_ids: selectedCompanyIds.value,
+      profile_id: selectedProfileForAssociation.value
     })
 
     if (response.success) {
       await updateUserData()
       showSuccessToast(response.message || 'Vinculação realizada com sucesso!')
       selectedCompanyIds.value = []
+      selectedProfileForAssociation.value = null
       showAssociateModal.value = false
       await loadPublicCompanies()
     }
   } catch (error: any) {
-    console.error('Erro ao associar empresas:', error)
-    showErrorToast(error.response?.data?.message || 'Erro ao vincular empresas')
+    console.error('Erro ao associar empresa:', error)
+    showErrorToast(error.response?.data?.message || 'Erro ao vincular empresa')
   } finally {
     associating.value = false
   }
@@ -892,7 +1021,7 @@ const handleUnlink = async () => {
       if (currentTenant.value?.id === companyToUnlink.value.id) {
         const remainingCompanies = userCompanies.value.filter((c: any) => c.id !== companyToUnlink.value.id)
         if (remainingCompanies.length > 0) {
-          switchTenant(remainingCompanies[0])
+          switchTenant(remainingCompanies[0], user.value?.companies)
         }
       }
 
@@ -926,18 +1055,23 @@ const setMainCompany = async (company: any) => {
       await updateUserData()
 
       // Atualizar o flag is_main_company do tenant atual
-      const { setCurrentTenant } = useTenant()
       if (currentTenant.value?.id === company.id) {
         // Se está definindo a empresa atual como principal
         setCurrentTenant({
-          ...currentTenant.value,
-          is_main_company: 1
+          id: currentTenant.value!.id,
+          name: currentTenant.value!.name,
+          is_main_company: true,
+          profile_id: currentTenant.value!.profile_id,
+          profile_name: currentTenant.value!.profile_name
         })
       } else {
         // Se está definindo outra empresa como principal, remover flag da atual
         setCurrentTenant({
-          ...currentTenant.value,
-          is_main_company: 0
+          id: currentTenant.value!.id,
+          name: currentTenant.value!.name,
+          is_main_company: false,
+          profile_id: currentTenant.value!.profile_id,
+          profile_name: currentTenant.value!.profile_name
         })
       }
 
@@ -970,10 +1104,12 @@ const removeMainCompany = async (company: any) => {
 
       // Atualizar apenas o flag is_main_company do tenant atual se for a empresa atual
       if (currentTenant.value?.id === company.id) {
-        const { setCurrentTenant } = useTenant()
         setCurrentTenant({
-          ...currentTenant.value,
-          is_main_company: 0
+          id: currentTenant.value!.id,
+          name: currentTenant.value!.name,
+          is_main_company: false,
+          profile_id: currentTenant.value!.profile_id,
+          profile_name: currentTenant.value!.profile_name
         })
       }
 

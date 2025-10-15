@@ -51,7 +51,6 @@
                 <v-img v-if="userAvatar" :src="userAvatar" :alt="userName" />
                 <v-icon v-else color="white" size="20">mdi-account</v-icon>
               </v-avatar>
-              <div class="user-status-dot" :class="statusClass"></div>
             </div>
           </v-btn>
         </template>
@@ -69,19 +68,8 @@
                 {{ userName }}
               </v-list-item-title>
               <v-list-item-subtitle class="user-role-large">
-                {{ userRole }}
+                {{ currentProfileName || userRole }}
               </v-list-item-subtitle>
-              <div class="user-status-container">
-                <v-chip
-                  size="small"
-                  :color="getStatusColor(userStatus)"
-                  variant="flat"
-                  class="status-chip"
-                >
-                  <v-icon size="12" class="mr-1">{{ getStatusIcon(userStatus) }}</v-icon>
-                  {{ getStatusText(userStatus) }}
-                </v-chip>
-              </div>
             </div>
           </v-list-item>
 
@@ -196,14 +184,30 @@ import { useTenant } from "@/composables/useTenant";
 const theme = useTheme();
 const router = useRouter();
 const { logout, user } = useAuth();
-const { hasMultipleTenants, currentTenant } = useTenant();
+const { hasMultipleTenants, currentTenant, getCurrentProfileName } = useTenant();
 
 // User data (em produção, isso viria de um store/API)
 const userName = ref(user.value?.name || "Usuário");
 const userRole = ref(user.value?.profile?.display_name || "Perfil");
 const userAvatar = ref("");
-const userStatus = ref("online"); // online, away, busy, offline
 const notificationCount = ref(1);
+
+// Perfil atual do usuário
+const currentProfileName = computed(() => {
+  return getCurrentProfileName()
+});
+
+// Função para obter cor do perfil
+const getProfileColor = (profileName: string) => {
+  const colors: Record<string, string> = {
+    admin: 'error',
+    owner: 'primary',
+    professional: 'info',
+    supervisor: 'warning',
+    client: 'success'
+  };
+  return colors[profileName?.toLowerCase()] || 'default';
+};
 
 // Theme management
 const isDark = computed(() => theme.global.current.value.dark);
@@ -221,47 +225,7 @@ const toggleNotifications = () => {
   notificationCount.value = 0; // Simular leitura das notificações
 };
 
-// User status
-const statusClass = computed(() => {
-  return {
-    'status-online': userStatus.value === 'online',
-    'status-away': userStatus.value === 'away',
-    'status-busy': userStatus.value === 'busy',
-    'status-offline': userStatus.value === 'offline'
-  };
-});
 
-
-// Status helper methods
-const getStatusColor = (status: string) => {
-  const colors = {
-    online: 'success',
-    away: 'warning',
-    busy: 'error',
-    offline: 'grey'
-  };
-  return colors[status as keyof typeof colors] || 'grey';
-};
-
-const getStatusIcon = (status: string) => {
-  const icons = {
-    online: 'mdi-circle',
-    away: 'mdi-circle-half-full',
-    busy: 'mdi-minus-circle',
-    offline: 'mdi-circle-outline'
-  };
-  return icons[status as keyof typeof icons] || 'mdi-circle-outline';
-};
-
-const getStatusText = (status: string) => {
-  const texts = {
-    online: 'Online',
-    away: 'Ausente',
-    busy: 'Ocupado',
-    offline: 'Offline'
-  };
-  return texts[status as keyof typeof texts] || 'Desconhecido';
-};
 
 // Navigation methods
 const navigateToProfile = () => {

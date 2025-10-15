@@ -8,6 +8,7 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    AbilitiesDebugger: typeof import('./components/AbilitiesDebugger.vue')['default']
     ActionBar: typeof import('./components/ActionBar.vue')['default']
     ActionsMenu: typeof import('./components/ActionsMenu.vue')['default']
     AppBreadcrumb: typeof import('./components/AppBreadcrumb.vue')['default']

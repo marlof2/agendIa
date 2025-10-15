@@ -163,7 +163,7 @@ class CompanyController extends Controller
             ->when($request->search, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
-                      ->orWhere('email', 'like', "%{$search}%");
+                        ->orWhere('email', 'like', "%{$search}%");
                 });
             })
             ->orderBy('name')
@@ -258,19 +258,17 @@ class CompanyController extends Controller
         $perPage = $request->get('per_page', 12);
 
         $query = Company::select('id', 'name', 'person_type', 'responsible_name', 'phone_1')
-            ->orderBy('name');
-
-        // Busca
-        if ($search) {
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('responsible_name', 'like', "%{$search}%");
+            ->orderBy('name')
+            ->when($search, function ($query, $search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('responsible_name', 'like', "%{$search}%");
+                });
             });
-        }
+        // Busca
 
         $companies = $query->paginate($perPage);
 
         return response()->json($companies);
     }
-
 }

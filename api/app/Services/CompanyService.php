@@ -27,27 +27,17 @@ class CompanyService
         } elseif ($status === 'all') {
             $query->withTrashed();
         }
-        // Por padrão, sem chamada adicional, já mostra apenas ativas
 
-        // Filtrar por acesso do usuário (se não for admin)
-        if ($user) {
-            $user->load('profile');
-
-            // Se não for admin, mostra apenas empresas que o usuário tem acesso
-            if (!$user->isAdmin()) {
-                $companyIds = $user->companies()->pluck('companies.id')->toArray();
-                $query->whereIn('id', $companyIds);
-            }
-            // Se for admin, mostra todas (não adiciona filtro)
-        }
+        $companyIds = $user->companies()->pluck('companies.id')->toArray();
+        $query->whereIn('id', $companyIds);
 
         // Filter by search term
         if (!empty($filters['search'])) {
             $search = $filters['search'];
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('cnpj', 'like', "%{$search}%")
-                  ->orWhere('phone_1', 'like', "%{$search}%");
+                    ->orWhere('cnpj', 'like', "%{$search}%")
+                    ->orWhere('phone_1', 'like', "%{$search}%");
             });
         }
 
@@ -55,6 +45,26 @@ class CompanyService
         $perPage = $filters['per_page'] ?? 12;
 
         return $query->paginate($perPage);
+    }
+
+    /**
+     * Get user profile name for a specific company
+     */
+    private function getUserProfileForCompany(int $userId, int $companyId): ?string
+    {
+        $user = User::with(['companies' => function ($query) use ($companyId) {
+            $query->where('companies.id', $companyId);
+        }])->find($userId);
+
+        if (!$user || !$user->companies->count()) {
+            return null;
+        }
+
+        $pivot = $user->companies->first()->pivot;
+        $profileId = $pivot->profile_id;
+
+        $profile = \App\Models\Profile::find($profileId);
+        return $profile ? $profile->display_name : null;
     }
 
     /**
@@ -281,20 +291,22 @@ class CompanyService
      */
     public function getCompanyProfessionals(int $companyId, array $filters = []): \Illuminate\Pagination\LengthAwarePaginator
     {
-        $query = User::with('profile:id,name,display_name')
-        ->whereHas('companies', function ($query) use ($companyId) {
-            $query->where('companies.id', $companyId);
-        })
-        ->whereHas('profile', function ($query) {
-            $query->where('name', 'professional');
-        });
+        $query = User::with('companies')
+            ->whereHas('companies', function ($query) use ($companyId) {
+                $query->where('companies.id', $companyId)
+                    ->where('company_user.profile_id', function ($subQuery) {
+                        $subQuery->select('id')
+                            ->from('profiles')
+                            ->where('name', 'professional');
+                    });
+            });
 
         // Busca por nome ou email
         if (!empty($filters['search'])) {
             $search = $filters['search'];
             $query->where(function ($q) use ($search) {
                 $q->where('users.name', 'like', "%{$search}%")
-                  ->orWhere('users.email', 'like', "%{$search}%");
+                    ->orWhere('users.email', 'like', "%{$search}%");
             });
         }
 
@@ -312,8 +324,16 @@ class CompanyService
         $company = Company::findOrFail($companyId);
         $user = \App\Models\User::findOrFail($userId);
 
-        // Verificar se o usuário é um profissional
-        if (!$user->profile || $user->profile->name !== 'professional') {
+        // Verificar se o usuário tem perfil profissional em alguma empresa
+        $hasProfessionalProfile = $user->companies()
+            ->wherePivot('profile_id', function ($query) {
+                $query->select('id')
+                    ->from('profiles')
+                    ->where('name', 'professional');
+            })
+            ->exists();
+
+        if (!$hasProfessionalProfile) {
             throw new \Exception('Apenas usuários com perfil profissional podem ser associados a empresas.');
         }
 
@@ -393,23 +413,24 @@ class CompanyService
             'users.email',
             'users.phone',
             'users.has_whatsapp',
-            'users.profile_id',
             'users.created_at'
         ])
-        ->with('profile:id,name,display_name')
-        ->whereHas('companies', function ($query) use ($companyId) {
-            $query->where('companies.id', $companyId);
-        })
-        ->whereHas('profile', function ($query) {
-            $query->where('name', 'professional');
-        });
+            ->with('companies')
+            ->whereHas('companies', function ($query) use ($companyId) {
+                $query->where('companies.id', $companyId)
+                    ->where('company_user.profile_id', function ($subQuery) {
+                        $subQuery->select('id')
+                            ->from('profiles')
+                            ->where('name', 'professional');
+                    });
+            });
 
         // Busca por nome ou email
         if (!empty($filters['search'])) {
             $search = $filters['search'];
             $query->where(function ($q) use ($search) {
                 $q->where('users.name', 'like', "%{$search}%")
-                  ->orWhere('users.email', 'like', "%{$search}%");
+                    ->orWhere('users.email', 'like', "%{$search}%");
             });
         }
 
@@ -426,7 +447,7 @@ class CompanyService
             ['key' => 'created_at', 'label' => 'Data de Cadastro'],
         ];
 
-        $data = $professionals->map(function ($professional) {
+        $data = $professionals->map(function ($professional) use ($companyId) {
             // Formatar telefone
             $phone = $professional->phone ? $this->formatPhone($professional->phone) : 'Não informado';
             if ($phone !== 'Não informado' && $professional->has_whatsapp) {
@@ -437,7 +458,7 @@ class CompanyService
                 'name' => $professional->name,
                 'email' => $professional->email,
                 'phone' => $phone,
-                'profile' => $professional->profile?->display_name ?? 'Não informado',
+                'profile' => $this->getUserProfileForCompany($professional->id, $companyId) ?? 'Não informado',
                 'created_at' => $professional->created_at->format('d/m/Y H:i:s'),
             ];
         });
@@ -460,23 +481,24 @@ class CompanyService
             'users.email',
             'users.phone',
             'users.has_whatsapp',
-            'users.profile_id',
             'users.created_at'
         ])
-        ->with('profile:id,name,display_name')
-        ->whereHas('companies', function ($query) use ($companyId) {
-            $query->where('companies.id', $companyId);
-        })
-        ->whereHas('profile', function ($query) {
-            $query->where('name', 'professional');
-        });
+            ->with('companies')
+            ->whereHas('companies', function ($query) use ($companyId) {
+                $query->where('companies.id', $companyId)
+                    ->where('company_user.profile_id', function ($subQuery) {
+                        $subQuery->select('id')
+                            ->from('profiles')
+                            ->where('name', 'professional');
+                    });
+            });
 
         // Busca por nome ou email
         if (!empty($filters['search'])) {
             $search = $filters['search'];
             $query->where(function ($q) use ($search) {
                 $q->where('users.name', 'like', "%{$search}%")
-                  ->orWhere('users.email', 'like', "%{$search}%");
+                    ->orWhere('users.email', 'like', "%{$search}%");
             });
         }
 
@@ -493,7 +515,7 @@ class CompanyService
             ['key' => 'created_at', 'label' => 'Data de Cadastro'],
         ];
 
-        $data = $professionals->map(function ($professional) {
+        $data = $professionals->map(function ($professional) use ($companyId) {
             // Formatar telefone
             $phone = $professional->phone ? $this->formatPhone($professional->phone) : 'Não informado';
             if ($phone !== 'Não informado' && $professional->has_whatsapp) {
@@ -504,7 +526,7 @@ class CompanyService
                 'name' => $professional->name,
                 'email' => $professional->email,
                 'phone' => $phone,
-                'profile' => $professional->profile?->display_name ?? 'Não informado',
+                'profile' => $this->getUserProfileForCompany($professional->id, $companyId) ?? 'Não informado',
                 'created_at' => $professional->created_at->format('d/m/Y H:i:s'),
             ];
         });

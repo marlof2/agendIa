@@ -135,6 +135,7 @@ class UserController extends Controller
         try {
             $user = $request->user();
             $companyIds = $request->input('company_ids', []);
+            $profileId = $request->input('profile_id');
 
             if (empty($companyIds)) {
                 return response()->json([
@@ -143,24 +144,69 @@ class UserController extends Controller
                 ], 422);
             }
 
-            // Sincronizar empresas (adiciona as novas sem remover as existentes)
-            $user->companies()->syncWithoutDetaching($companyIds);
+            // Se profile_id foi fornecido, usar attach com dados da pivot
+            if ($profileId) {
+                // Verificar se o perfil existe
+                $profile = \App\Models\Profile::find($profileId);
+                if (!$profile) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Perfil não encontrado'
+                    ], 422);
+                }
 
-            // Recarregar relacionamentos
-            $user->load('companies');
+                // Associar usuário às empresas com o perfil especificado
+                foreach ($companyIds as $companyId) {
+                    // Verificar se já está associado
+                    if (!$user->companies()->where('companies.id', $companyId)->exists()) {
+                        $user->companies()->attach($companyId, [
+                            'profile_id' => $profileId,
+                            'is_main_company' => false // Não é principal quando associado via perfil
+                        ]);
+                    }
+                }
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Associação realizada com sucesso!',
-                'data' => [
-                    'companies' => $user->companies->map(function ($company) {
-                        return [
-                            'id' => $company->id,
-                            'name' => $company->name,
-                        ];
-                    })
-                ]
-            ]);
+                // Recarregar relacionamentos com pivot
+                $user->load(['companies' => function ($query) {
+                    $query->withPivot('profile_id', 'is_main_company');
+                }]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Associação realizada com sucesso!',
+                    'data' => [
+                        'companies' => $user->companies->map(function ($company) {
+                            return [
+                                'id' => $company->id,
+                                'name' => $company->name,
+                                'pivot' => [
+                                    'profile_id' => $company->pivot->profile_id,
+                                    'is_main_company' => $company->pivot->is_main_company
+                                ]
+                            ];
+                        })
+                    ]
+                ]);
+            } else {
+                // Comportamento original: sincronizar sem dados da pivot
+                $user->companies()->syncWithoutDetaching($companyIds);
+
+                // Recarregar relacionamentos
+                $user->load('companies');
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Associação realizada com sucesso!',
+                    'data' => [
+                        'companies' => $user->companies->map(function ($company) {
+                            return [
+                                'id' => $company->id,
+                                'name' => $company->name,
+                            ];
+                        })
+                    ]
+                ]);
+            }
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,

@@ -57,17 +57,8 @@ export function useAuth() {
         isAuthenticated: true,
       };
 
-      // Carregar abilities automaticamente se disponíveis
-      if (response.data.abilities) {
-        const { saveWithEncrypted } = await import('@/utils/storage');
-
-        const abilitiesData = {
-          abilities: response.data.abilities,
-        };
-
-        // Salvar abilities criptografadas no localStorage
-        await saveWithEncrypted('agendia_user_abilities', abilitiesData);
-      }
+      // As abilities serão carregadas apenas após a seleção de uma empresa
+      // Não carregamos abilities no login pois o usuário ainda não selecionou uma empresa
 
       // Salvar empresas (tenants) disponíveis se retornadas
       if (response.data.tenants && Array.isArray(response.data.tenants)) {

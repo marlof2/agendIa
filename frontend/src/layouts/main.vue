@@ -29,7 +29,7 @@
       <div class="sidebar__menu">
         <v-list density="compact" nav class="sidebar__list">
           <v-list-item
-            v-for="item in menuItems"
+            v-for="item in filteredMenuItems"
             :key="item.title"
             :value="item.value"
             :to="item.to"
@@ -107,13 +107,26 @@
 
 <script lang="ts" setup>
 import { ref, computed, watch, onUnmounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { useTheme } from 'vuetify'
+import { useRoute } from 'vue-router'
+import { useAbilities } from '@/composables/useAbilities'
+import { useTheme } from 'vuetify';
 
+interface MenuItem {
+  title: string
+  icon: string
+  value: string
+  to: string
+  permission: string
+}
 // Composables
 const route = useRoute();
-const router = useRouter();
-const theme = useTheme();
+
+const { hasPermission, reloadAbilities } = useAbilities()
+
+// Menu items filtrados baseado nas permissões
+const filteredMenuItems = computed(() => {
+  return menuItems.filter(item => hasPermission.value(item.permission))
+})
 
 // Reactive state
 const windowWidth = ref(window.innerWidth);
@@ -125,70 +138,78 @@ const isMobile = computed(() => windowWidth.value < 960);
 const drawer = ref(!isMobile.value);
 const rail = ref(false);
 
-// Theme management
-const isDark = computed(() => theme.global.current.value.dark);
 
 // Menu items configuration
-const menuItems = [
+const menuItems: MenuItem[] = [
   {
     title: "Dashboard",
     icon: "mdi-view-dashboard",
     value: "dashboard",
     to: "/dashboard",
+    permission: "dashboard.index",
   },
   {
     title: "Agendamentos",
     icon: "mdi-calendar-clock",
     value: "appointments",
     to: "/appointments",
+    permission: "appointments.index",
   },
   {
     title: "Clientes",
     icon: "mdi-account-group",
     value: "clients",
     to: "/clients",
+    permission: "clients.index",
   },
   {
     title: "Profissionais",
     icon: "mdi-account-tie",
     value: "professionals",
     to: "/professionals",
+    permission: "professionals.index",
   },
   {
     title: "Serviços",
     icon: "mdi-briefcase",
     value: "services",
     to: "/services",
+    permission: "services.index",
   },
   {
     title: "Perfis",
     icon: "mdi-account-group",
     value: "profiles",
     to: "/profiles",
+    permission: "profiles.index",
   },
   {
     title: "Empresas",
     icon: "mdi-domain",
     value: "companies",
     to: "/companies",
+    permission: "companies.index",
   },
   {
     title: "Usuários",
     icon: "mdi-account-multiple",
     value: "users",
     to: "/users",
+    permission: "users.index",
   },
   {
     title: "Relatórios",
     icon: "mdi-chart-line",
     value: "reports",
     to: "/reports",
+    permission: "reports.index",
   },
   {
     title: "Integrações",
     icon: "mdi-connection",
     value: "integrations",
     to: "/integrations",
+    permission: "integrations.index",
   },
 ];
 
@@ -259,6 +280,39 @@ const handleResize = () => {
 // Add resize listener
 window.addEventListener('resize', handleResize);
 
+// Observer para mudanças no localStorage das abilities
+const observeAbilitiesStorage = () => {
+  // Listener para mudanças no localStorage
+  const handleStorageChange = (event: StorageEvent) => {
+    if (event.key === 'agendia_user_abilities') {
+      reloadAbilities();
+    }
+  };
+
+  // Listener para mudanças no localStorage (mesma aba)
+  const originalSetItem = localStorage.setItem;
+  localStorage.setItem = function(key: string, value: string) {
+    if (key === 'agendia_user_abilities') {
+      // Usar setTimeout para garantir que o valor foi salvo
+      setTimeout(() => {
+        reloadAbilities();
+      }, 100);
+    }
+    return originalSetItem.apply(this, [key, value]);
+  };
+
+  window.addEventListener('storage', handleStorageChange);
+
+  // Retornar função de cleanup
+  return () => {
+    window.removeEventListener('storage', handleStorageChange);
+    localStorage.setItem = originalSetItem;
+  };
+};
+
+// Inicializar observer
+const cleanupStorageObserver = observeAbilitiesStorage();
+
 // Watch for route changes to update page title
 watch(
   () => route.path,
@@ -285,15 +339,20 @@ watch(isMobile, (newIsMobile) => {
   }
 });
 
+
 // Initialize theme from localStorage
 const savedTheme = localStorage.getItem("agendia-theme");
 if (savedTheme) {
-  theme.global.name.value = savedTheme;
+  useTheme().global.name.value = savedTheme;
 }
 
 // Cleanup on unmount
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize);
+  // Limpar observer do localStorage
+  if (cleanupStorageObserver) {
+    cleanupStorageObserver();
+  }
 });
 </script>
 
