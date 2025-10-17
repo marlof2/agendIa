@@ -11,6 +11,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Response;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 
 class UserService
 {
@@ -216,41 +217,137 @@ class UserService
     }
 
     /**
-     * Buscar profissionais disponíveis para associação a uma empresa
+     * Associar usuário autenticado a empresas
      */
-    public function getAvailableProfessionals(array $filters = []): \Illuminate\Pagination\LengthAwarePaginator
+    public function associateUserToCompanies(User $user, array $companyIds, ?int $profileId = null): User
     {
-        $query = User::select([
-            'users.id',
-            'users.name',
-            'users.email',
-            'users.phone',
-            'users.has_whatsapp',
-            'users.profile_id',
-            'users.created_at'
-        ])
-        ->join('profiles', 'users.profile_id', '=', 'profiles.id')
-        ->where('profiles.name', 'professional');
-
-        // Filtrar usuários que NÃO estão associados à empresa
-        if (!empty($filters['company_id'])) {
-            $query->whereDoesntHave('companies', function ($q) use ($filters) {
-                $q->where('companies.id', $filters['company_id']);
-            });
+        // Validar se pelo menos uma empresa foi fornecida
+        if (empty($companyIds)) {
+            throw new \InvalidArgumentException('Selecione pelo menos uma empresa');
         }
 
-        // Busca por nome, email ou telefone
-        if (!empty($filters['search'])) {
-            $search = $filters['search'];
-            $query->where(function ($q) use ($search) {
-                $q->where('users.name', 'like', "%{$search}%")
-                  ->orWhere('users.email', 'like', "%{$search}%")
-                  ->orWhere('users.phone', 'like', "%{$search}%");
-            });
+        // Se profile_id foi fornecido, usar attach com dados da pivot
+        if ($profileId) {
+            // Verificar se o perfil existe
+            $profile = Profile::find($profileId);
+            if (!$profile) {
+                throw new \InvalidArgumentException('Perfil não encontrado');
+            }
+
+            // Preparar dados para inserção em lote
+            $companiesToAttach = [];
+
+            foreach ($companyIds as $companyId) {
+                // Verificar se já está associado
+                if (!$user->companies()->where('companies.id', $companyId)->exists()) {
+                    $companiesToAttach[$companyId] = [
+                        'profile_id' => $profileId,
+                        'is_main_company' => false, // Não é principal quando associado via perfil
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ];
+                }
+            }
+
+            // Inserir em lote se houver empresas para associar
+            if (!empty($companiesToAttach)) {
+                $user->companies()->attach($companiesToAttach);
+            }
+        } else {
+            // Comportamento original: sincronizar sem dados da pivot
+            $user->companies()->syncWithoutDetaching($companyIds);
         }
 
-        // Paginação
-        return $query->orderBy('users.name', 'asc')->paginate($filters['per_page']);
+        // Recarregar relacionamentos com pivot
+        return $user->load(['companies' => function ($query) {
+            $query->withPivot('profile_id', 'is_main_company');
+        }]);
     }
 
+    /**
+     * Desassociar usuário de uma empresa
+     */
+    public function disassociateUserFromCompany(User $user, int $companyId): User
+    {
+        // Verificar se o usuário está associado à empresa
+        if (!$user->companies()->where('companies.id', $companyId)->exists()) {
+            throw new \InvalidArgumentException('Usuário não está associado a esta empresa');
+        }
+
+        // Verificar se não é a única empresa do usuário
+        if ($user->companies()->count() <= 1) {
+            throw new \InvalidArgumentException('Você precisa estar vinculado a pelo menos uma empresa');
+        }
+
+        $user->companies()->detach($companyId);
+
+        // Recarregar relacionamentos
+        return $user->load(['companies' => function ($query) {
+            $query->withPivot('profile_id', 'is_main_company');
+        }]);
+    }
+
+    /**
+     * Definir empresa principal do usuário
+     */
+    public function setMainCompany(User $user, int $companyId): User
+    {
+        // Verificar se o usuário está associado à empresa
+        if (!$user->companies()->where('companies.id', $companyId)->exists()) {
+            throw new \InvalidArgumentException('Usuário não está associado a esta empresa');
+        }
+
+        // Remover empresa principal de todas as empresas
+        $user->companies()->updateExistingPivot($user->companies->pluck('id')->toArray(), [
+            'is_main_company' => false
+        ]);
+
+        // Definir a nova empresa principal
+        $user->companies()->updateExistingPivot($companyId, [
+            'is_main_company' => true
+        ]);
+
+        // Recarregar relacionamentos
+        return $user->load(['companies' => function ($query) {
+            $query->withPivot('profile_id', 'is_main_company');
+        }]);
+    }
+
+    /**
+     * Remover empresa principal do usuário
+     */
+    public function removeMainCompany(User $user, int $companyId): User
+    {
+        // Verificar se o usuário está associado à empresa
+        if (!$user->companies()->where('companies.id', $companyId)->exists()) {
+            throw new \InvalidArgumentException('Usuário não está associado a esta empresa');
+        }
+
+        // Remover empresa principal
+        $user->companies()->updateExistingPivot($companyId, [
+            'is_main_company' => false
+        ]);
+
+        // Recarregar relacionamentos
+        return $user->load(['companies' => function ($query) {
+            $query->withPivot('profile_id', 'is_main_company');
+        }]);
+    }
+
+    /**
+     * Formatar dados das empresas do usuário para resposta
+     */
+    public function formatUserCompanies(User $user): array
+    {
+        return $user->companies->map(function ($company) {
+            return [
+                'id' => $company->id,
+                'name' => $company->name,
+                'pivot' => [
+                    'profile_id' => $company->pivot->profile_id ?? null,
+                    'is_main_company' => $company->pivot->is_main_company ?? false
+                ]
+            ];
+        })->toArray();
+    }
 }

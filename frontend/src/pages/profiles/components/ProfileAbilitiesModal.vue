@@ -293,22 +293,16 @@ const getCategoryIcon = (category: string) => {
     services: 'mdi-briefcase',
     profiles: 'mdi-account-group',
     reports: 'mdi-chart-line',
-    companies: 'mdi-office-building'
+    companies: 'mdi-office-building',
+    'my-companies': 'mdi-office-building'
   }
   return icons[category] || 'mdi-shield'
 }
 
 const getCategoryTitle = (category: string) => {
-  const titles: Record<string, string> = {
-    appointments: 'Agendamentos',
-    clients: 'Clientes',
-    professionals: 'Profissionais',
-    services: 'Serviços',
-    profiles: 'Perfis',
-    reports: 'Relatórios',
-    companies: 'Empresas'
-  }
-  return titles[category] || category.charAt(0).toUpperCase() + category.slice(1)
+  // Busca o display_name da ability correspondente
+  const ability = allAbilities.value.find(a => a.name === category)
+  return ability?.display_name || category.charAt(0).toUpperCase() + category.slice(1)
 }
 
 const isAbilitySelected = (abilityId: number) => {

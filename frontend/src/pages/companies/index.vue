@@ -220,8 +220,8 @@
               v-if="hasPermission('companies.show')"
             />
             <Btn
-              v-if="hasPermission('companies.attach_professional')"
-              text="GERENCIAR PROFISSIONAIS"
+              v-if="hasPermission('companies.manage_users')"
+              text="GERENCIAR USUÁRIOS"
               icon="mdi-account-multiple-outline"
               variant="outlined"
               color="info"
@@ -354,7 +354,7 @@ const edit = (item: any) => {
 
 const manageUsers = (item: any) => {
   // Navegar para a página de gerenciamento de usuários da empresa
-  router.push(`/companies/${item.id}/bind-professional`);
+  router.push(`/companies/${item.id}/associate-users`);
 };
 
 const handleDeactivate = (item: any) => {

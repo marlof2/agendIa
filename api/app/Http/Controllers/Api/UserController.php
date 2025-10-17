@@ -137,80 +137,25 @@ class UserController extends Controller
             $companyIds = $request->input('company_ids', []);
             $profileId = $request->input('profile_id');
 
-            if (empty($companyIds)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Selecione pelo menos uma empresa'
-                ], 422);
-            }
+            $updatedUser = $this->userService->associateUserToCompanies($user, $companyIds, $profileId);
 
-            // Se profile_id foi fornecido, usar attach com dados da pivot
-            if ($profileId) {
-                // Verificar se o perfil existe
-                $profile = \App\Models\Profile::find($profileId);
-                if (!$profile) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Perfil não encontrado'
-                    ], 422);
-                }
-
-                // Associar usuário às empresas com o perfil especificado
-                foreach ($companyIds as $companyId) {
-                    // Verificar se já está associado
-                    if (!$user->companies()->where('companies.id', $companyId)->exists()) {
-                        $user->companies()->attach($companyId, [
-                            'profile_id' => $profileId,
-                            'is_main_company' => false // Não é principal quando associado via perfil
-                        ]);
-                    }
-                }
-
-                // Recarregar relacionamentos com pivot
-                $user->load(['companies' => function ($query) {
-                    $query->withPivot('profile_id', 'is_main_company');
-                }]);
-
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Associação realizada com sucesso!',
-                    'data' => [
-                        'companies' => $user->companies->map(function ($company) {
-                            return [
-                                'id' => $company->id,
-                                'name' => $company->name,
-                                'pivot' => [
-                                    'profile_id' => $company->pivot->profile_id,
-                                    'is_main_company' => $company->pivot->is_main_company
-                                ]
-                            ];
-                        })
-                    ]
-                ]);
-            } else {
-                // Comportamento original: sincronizar sem dados da pivot
-                $user->companies()->syncWithoutDetaching($companyIds);
-
-                // Recarregar relacionamentos
-                $user->load('companies');
-
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Associação realizada com sucesso!',
-                    'data' => [
-                        'companies' => $user->companies->map(function ($company) {
-                            return [
-                                'id' => $company->id,
-                                'name' => $company->name,
-                            ];
-                        })
-                    ]
-                ]);
-            }
-        } catch (\Exception $e) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Associação realizada com sucesso!',
+                'data' => [
+                    'companies' => $this->userService->formatUserCompanies($updatedUser)
+                ]
+            ]);
+        } catch (\InvalidArgumentException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Erro ao associar empresas: ' . $e->getMessage()
+                'message' => $e->getMessage()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Erro ao associar usuário a empresas: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro interno do servidor'
             ], 500);
         }
     }
@@ -243,74 +188,36 @@ class UserController extends Controller
     }
 
     /**
-     * Buscar profissionais disponíveis para associação a uma empresa
-     */
-    public function availableProfessionals(Request $request): JsonResponse
-    {
-        try {
-            $filters = [
-                'search' => $request->get('search'),
-                'company_id' => $request->get('company_id'),
-                'per_page' => $request->get('per_page', 12),
-            ];
-
-            // Buscar profissionais usando o service com paginação
-            $result = $this->userService->getAvailableProfessionals($filters);
-
-            return response()->json($result);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao buscar profissionais disponíveis: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
      * Desvincular uma empresa específica do usuário autenticado
      */
     public function detachCompany(Request $request, int $companyId): JsonResponse
     {
         try {
             $user = $request->user();
-
-            // Verificar se o usuário tem pelo menos 2 empresas
-            if ($user->companies()->count() <= 1) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Você precisa estar vinculado a pelo menos uma empresa'
-                ], 422);
-            }
-
-            // Verificar se está vinculado à empresa
-            if (!$user->companies()->where('company_id', $companyId)->exists()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Você não está vinculado a esta empresa'
-                ], 422);
-            }
-
-            // Desvincular
-            $user->companies()->detach($companyId);
-            $user->load('companies');
+            $updatedUser = $this->userService->disassociateUserFromCompany($user, $companyId);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Empresa desvinculada com sucesso!',
                 'data' => [
-                    'companies' => $user->companies->map(function ($company) {
-                        return [
-                            'id' => $company->id,
-                            'name' => $company->name,
-                        ];
-                    })
+                    'companies' => $this->userService->formatUserCompanies($updatedUser)
                 ]
             ]);
-        } catch (\Exception $e) {
+        } catch (\InvalidArgumentException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Erro ao desvincular empresa: ' . $e->getMessage()
+                'message' => $e->getMessage()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Erro ao desvincular empresa:', [
+                'user_id' => $request->user()->id,
+                'company_id' => $companyId,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao desvincular empresa'
             ], 500);
         }
     }
@@ -330,53 +237,31 @@ class UserController extends Controller
             $companyId = $request->company_id;
             $isMain = $request->is_main;
 
-            // Verificar se o usuário está vinculado a essa empresa
-            $company = $user->companies()->where('companies.id', $companyId)->first();
-
-            if (!$company) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Usuário não está vinculado a esta empresa'
-                ], 422);
-            }
-
-            // Se está marcando como principal, desmarcar todas as outras
             if ($isMain) {
-                $user->companies()->updateExistingPivot(
-                    $user->companies->pluck('id')->toArray(),
-                    ['is_main_company' => false]
-                );
+                $updatedUser = $this->userService->setMainCompany($user, $companyId);
+                $message = 'Empresa definida como principal';
+            } else {
+                $updatedUser = $this->userService->removeMainCompany($user, $companyId);
+                $message = 'Empresa removida como principal';
             }
-
-            // Atualizar a empresa específica
-            $user->companies()->updateExistingPivot($companyId, [
-                'is_main_company' => $isMain
-            ]);
-
-            // Recarregar dados do usuário
-            $user->load(['companies']);
 
             // Formatar response
-            $userData = $user->toArray();
-            $userData['companies'] = $user->companies->map(function ($company) {
-                return [
-                    'id' => $company->id,
-                    'name' => $company->name,
-                    'pivot' => [
-                        'profile_id' => $company->pivot->profile_id,
-                        'is_main_company' => $company->pivot->is_main_company,
-                    ]
-                ];
-            })->toArray();
+            $userData = $updatedUser->toArray();
+            $userData['companies'] = $this->userService->formatUserCompanies($updatedUser);
 
             return response()->json([
                 'success' => true,
-                'message' => $isMain ? 'Empresa definida como principal' : 'Empresa removida como principal',
+                'message' => $message,
                 'data' => [
                     'user' => $userData
                 ]
             ]);
 
+        } catch (\InvalidArgumentException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 422);
         } catch (\Exception $e) {
             Log::error('Erro ao atualizar empresa principal:', [
                 'user_id' => $request->user()->id,

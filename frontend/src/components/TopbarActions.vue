@@ -34,6 +34,7 @@
     <!-- User Menu -->
     <div class="topbar-actions__user-section">
       <v-menu
+        v-model="isMenuOpen"
         offset-y
         :close-on-content-click="false"
         transition="slide-y-transition"
@@ -104,8 +105,8 @@
           <div class="menu-section">
             <v-list-item
               prepend-icon="mdi-account-edit"
-              title="Gerenciar meu Perfil"
-              subtitle="Atualize suas informações"
+              title="Meu Perfil"
+              subtitle="Gerencie suas informações pessoais"
               @click="navigateToProfile"
               class="menu-item"
             />
@@ -181,6 +182,14 @@ import { useRouter } from "vue-router";
 import { useAuth } from "@/composables/useAuth";
 import { useTenant } from "@/composables/useTenant";
 
+// Estado do menu do usuário
+const isMenuOpen = ref(false);
+
+// Função para fechar o menu
+const closeMenu = () => {
+  isMenuOpen.value = false;
+};
+
 const theme = useTheme();
 const router = useRouter();
 const { logout, user } = useAuth();
@@ -229,6 +238,7 @@ const toggleNotifications = () => {
 
 // Navigation methods
 const navigateToProfile = () => {
+  closeMenu();
   router.push('/profile');
 };
 
@@ -245,6 +255,7 @@ const navigateToSupport = () => {
 };
 
 const navigateToSelectTenant = () => {
+  closeMenu();
   router.push('/select-tenant');
 };
 

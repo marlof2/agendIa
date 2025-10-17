@@ -1,8 +1,8 @@
 <template>
   <BaseDialog
     :model-value="modelValue"
-    title="Adicionar Profissional"
-    subtitle="Selecione os profissionais para associar à empresa"
+    title="Associar Usuário à Empresa"
+    subtitle="Selecione um usuário e defina o perfil para associação"
     icon="mdi-account-plus"
     icon-color="primary"
     :fullscreen="$vuetify.display.mobile"
@@ -12,51 +12,93 @@
   >
     <v-form ref="formRef" v-model="isValid" @submit.prevent="handleSubmit">
       <v-row>
-        <!-- Filtros de Busca -->
+        <!-- Company Info -->
+        <v-col cols="12">
+          <v-card variant="outlined" class="mb-4">
+            <v-card-text class="pa-4">
+              <div class="d-flex align-center">
+                <v-avatar color="primary" size="48" class="mr-3">
+                  <v-icon color="white">mdi-domain</v-icon>
+                </v-avatar>
+                <div>
+                  <h3 class="text-h6 font-weight-bold">{{ company?.name }}</h3>
+                  <p class="text-body-2 text-medium-emphasis">{{ company?.email }}</p>
+                </div>
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
+
+        <!-- Profile Selection -->
         <v-col cols="12">
           <h3 class="text-h6 mb-4 d-flex align-center">
-            <v-icon size="20" class="mr-2">mdi-filter</v-icon>
-            Filtros de Busca
+            <v-icon size="20" class="mr-2">mdi-account-cog</v-icon>
+            Selecionar Perfil
           </h3>
         </v-col>
 
-        <v-col cols="12" md="6">
+        <v-col cols="12">
+          <v-select
+            v-model="selectedProfileId"
+            :items="profileOptions"
+            item-title="text"
+            item-value="value"
+            label="Perfil do usuário na empresa *"
+            variant="outlined"
+            density="comfortable"
+            rounded="lg"
+            prepend-inner-icon="mdi-shield-account"
+            :rules="profileRules"
+            hint="Defina o perfil que o usuário terá nesta empresa"
+            persistent-hint
+            required
+          >
+            <template #item="{ props, item }">
+              <v-list-item v-bind="props">
+                <template #prepend>
+                  <v-avatar
+                    :color="getProfileColor((item.raw as any)?.name)"
+                    size="32"
+                    class="mr-3"
+                  >
+                    <v-icon size="16" color="white">
+                      {{ getProfileIcon((item.raw as any)?.name) }}
+                    </v-icon>
+                  </v-avatar>
+                </template>
+              </v-list-item>
+            </template>
+          </v-select>
+        </v-col>
+
+        <!-- User Search -->
+        <v-col cols="12">
+          <h3 class="text-h6 mb-4 d-flex align-center">
+            <v-icon size="20" class="mr-2">mdi-account-search</v-icon>
+            Buscar Usuário
+          </h3>
+        </v-col>
+
+        <v-col cols="12">
           <v-text-field
             v-model="searchQuery"
             label="Buscar por nome ou email"
             variant="outlined"
-            density="compact"
+            density="comfortable"
             rounded="lg"
             prepend-inner-icon="mdi-magnify"
             clearable
-            hint="Digite para filtrar os profissionais"
+            hint="Digite para filtrar os usuários disponíveis"
             persistent-hint
             @input="performSearch"
           />
-        </v-col>
-
-
-        <!-- Lista de Usuários Disponíveis -->
-        <v-col cols="12">
-          <h3 class="text-h6 mb-4 d-flex align-center">
-            <v-icon size="20" class="mr-2">mdi-account-multiple</v-icon>
-            Profissionais Disponíveis
-            <v-chip
-              v-if="selectedUsers.length > 0"
-              color="primary"
-              size="small"
-              class="ml-2"
-            >
-              {{ selectedUsers.length }} selecionado(s)
-            </v-chip>
-          </h3>
         </v-col>
 
         <!-- Loading State -->
         <v-col v-if="loading" cols="12">
           <div class="text-center py-8">
             <v-progress-circular indeterminate color="primary" size="48" />
-            <p class="text-body-1 mt-4">Carregando profissionais...</p>
+            <p class="text-body-1 mt-4">Carregando usuários...</p>
           </div>
         </v-col>
 
@@ -64,9 +106,9 @@
         <v-col v-else-if="availableUsers.length === 0" cols="12">
           <div class="text-center py-8">
             <v-icon size="64" color="grey-lighten-1">mdi-account-multiple-outline</v-icon>
-            <p class="text-h6 mt-4">Nenhum profissional encontrado</p>
+            <p class="text-h6 mt-4">Nenhum usuário encontrado</p>
             <p class="text-body-2 text-medium-emphasis">
-              Todos os profissionais já estão associados a esta empresa
+              {{ searchQuery ? 'Nenhum usuário corresponde aos filtros de busca' : 'Todos os usuários já estão associados a esta empresa' }}
             </p>
           </div>
         </v-col>
@@ -78,19 +120,18 @@
               v-for="user in availableUsers"
               :key="user.id"
               class="user-item mb-3"
-              :class="{ 'user-selected': isUserSelected(user.id) }"
+              :class="{ 'user-selected': selectedUserId === user.id }"
               variant="outlined"
               hover
-              @click="toggleUserSelection(user)"
+              @click="selectUser(user)"
             >
               <v-card-text class="pa-4">
                 <div class="d-flex align-center">
-                  <v-checkbox
-                    :model-value="isUserSelected(user.id)"
+                  <v-radio
+                    :model-value="selectedUserId === user.id"
                     color="primary"
-                    hide-details
                     class="mr-3"
-                    @click.stop="toggleUserSelection(user)"
+                    @click.stop="selectUser(user)"
                   />
 
                   <div class="flex-grow-1">
@@ -102,21 +143,9 @@
                         <div class="text-body-2 text-medium-emphasis">
                           {{ user.email }}
                         </div>
-
                       </div>
 
                       <div class="d-flex align-center gap-2">
-                        <!-- Profile Badge -->
-                        <v-chip
-                          v-if="user.profile"
-                          :color="getProfileColor(user.profile.name)"
-                          variant="tonal"
-                          size="small"
-                        >
-                          <v-icon start size="14">{{ getProfileIcon(user.profile.name) }}</v-icon>
-                          {{ user.profile.display_name || user.profile.name }}
-                        </v-chip>
-
                         <!-- WhatsApp Badge -->
                         <v-chip
                           v-if="user.phone && user.has_whatsapp"
@@ -145,47 +174,54 @@
           <!-- Pagination -->
           <div v-if="pagination.total > 0" class="mt-4">
             <div class="text-caption text-medium-emphasis mb-2">
-              Mostrando {{ pagination.from }} a {{ pagination.to }} de {{ pagination.total }} profissional(is)
+              Mostrando {{ pagination.from }} a {{ pagination.to }} de {{ pagination.total }} usuário(s)
             </div>
             <v-pagination
               v-model="pagination.current_page"
               :length="pagination.last_page"
-              :total-visible="5"
+              :total-visible="3"
               color="primary"
+              size="small"
               @update:model-value="handlePageChange"
             />
           </div>
         </v-col>
       </v-row>
-    </v-form>
 
-    <template #actions>
-      <v-spacer />
-      <div class="d-flex modal-actions-container">
-        <BtnCancel @click="closeModal" />
-        <BtnSave
-          :loading="loading"
-          :disabled="!isValid || selectedUsers.length === 0"
-          text="Associar Profissionais"
-          @click="handleSubmit"
-        />
+      <!-- Actions -->
+      <div slot="actions" class="modal-actions-container d-flex justify-end">
+        <v-btn
+          variant="outlined"
+          @click="closeModal"
+          :disabled="submitting"
+        >
+          Cancelar
+        </v-btn>
+        <v-btn
+          color="primary"
+          type="submit"
+          :loading="submitting"
+          :disabled="!isValid || !selectedUserId || !selectedProfileId"
+        >
+          Associar Usuário
+        </v-btn>
       </div>
-    </template>
+    </v-form>
   </BaseDialog>
 </template>
 
 <script lang="ts" setup>
 import { ref, computed, watch, nextTick } from "vue";
-import { showSuccessToast, showErrorToast } from "@/utils/swal";
+import BaseDialog from "@/components/BaseDialog.vue";
 import { useCompaniesApi } from "@/pages/companies/api";
+import { useProfilesApi } from "@/pages/profiles/api";
 import { useMask } from "@/composables/useMask";
 import { useProfileUtils } from "@/composables/useProfileUtils";
-import BaseDialog from "@/components/BaseDialog.vue";
-import { BtnCancel, BtnSave } from "@/components/buttons";
+import { showSuccessToast, showErrorToast } from "@/utils/swal";
 
 interface Props {
   modelValue: boolean;
-  company?: any;
+  company: any;
 }
 
 interface Emits {
@@ -193,90 +229,78 @@ interface Emits {
   (e: "reload"): void;
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  company: null,
-});
-
+const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
-// Composables
-const { getAvailableUsersForCompany, attachProfessional } = useCompaniesApi();
 const { formatPhone } = useMask();
 const { getProfileColor, getProfileIcon } = useProfileUtils();
 
-// Reactive data
+// Composables
+const {
+  getAvailableUsers,
+  attachUserToCompany,
+} = useCompaniesApi();
+
+const {
+  getCombo: getProfilesCombo,
+} = useProfilesApi();
+
+// Form refs
 const formRef = ref();
 const isValid = ref(false);
-const loading = ref(false);
+const submitting = ref(false);
 
-// Form data
-const selectedUsers = ref<any[]>([]);
+// State
 const availableUsers = ref<any[]>([]);
-
-// Search and pagination
+const loading = ref(false);
 const searchQuery = ref("");
+const selectedUserId = ref<number | null>(null);
+const selectedProfileId = ref<number | null>(null);
+const profiles = ref<any[]>([]);
+
+// Pagination
 const pagination = ref({
   current_page: 1,
-  per_page: 12,
+  per_page: 15,
   total: 0,
   last_page: 1,
   from: 0,
   to: 0
 });
 
+// Profile options
+const profileOptions = computed(() =>
+  profiles.value.map(profile => ({
+    text: profile.display_name || profile.name,
+    value: profile.id,
+    raw: profile
+  }))
+);
+
+// Validation rules
+const profileRules = [
+  (v: any) => !!v || "Selecione um perfil para o usuário"
+];
+
 // Computed
 const formProgress = computed(() => {
-  if (selectedUsers.value.length === 0) return 0;
-  return Math.min((selectedUsers.value.length / 5) * 100, 100);
+  let progress = 0;
+  if (selectedProfileId.value) progress += 50;
+  if (selectedUserId.value) progress += 50;
+  return progress;
 });
 
 // Methods
-const resetForm = () => {
-  selectedUsers.value = [];
-  availableUsers.value = [];
-  searchQuery.value = "";
-  pagination.value = {
-    current_page: 1,
-    per_page: 12,
-    total: 0,
-    last_page: 1,
-    from: 0,
-    to: 0
-  };
-};
-
-const isUserSelected = (userId: number) => {
-  return selectedUsers.value.some(user => user.id === userId);
-};
-
-const toggleUserSelection = (user: any) => {
-  const index = selectedUsers.value.findIndex(u => u.id === user.id);
-  if (index > -1) {
-    selectedUsers.value.splice(index, 1);
-  } else {
-    selectedUsers.value.push(user);
-  }
-};
-
 const loadAvailableUsers = async (page: number = 1) => {
   try {
     loading.value = true;
 
     if (!props.company?.id) {
       availableUsers.value = [];
-      pagination.value = {
-        current_page: 1,
-        per_page: 12,
-        total: 0,
-        last_page: 1,
-        from: 0,
-        to: 0
-      };
       return;
     }
 
-    // Buscar profissionais disponíveis com paginação
-    const result = await getAvailableUsersForCompany(
+    const result = await getAvailableUsers(
       props.company.id,
       searchQuery.value,
       page,
@@ -284,24 +308,31 @@ const loadAvailableUsers = async (page: number = 1) => {
     );
 
     availableUsers.value = result.data || [];
-
     pagination.value = {
       current_page: result.current_page || 1,
-      per_page: result.per_page || 12,
+      per_page: result.per_page || 15,
       total: result.total || 0,
       last_page: result.last_page || 1,
       from: (result as any).from || 0,
       to: (result as any).to || 0
     };
   } catch (error) {
-    console.error("Erro ao carregar profissionais disponíveis:", error);
-    showErrorToast("Erro ao carregar profissionais", "Erro!");
+    console.error("Erro ao carregar usuários disponíveis:", error);
+    showErrorToast("Erro ao carregar usuários", "Erro!");
   } finally {
     loading.value = false;
   }
 };
 
-
+const loadProfiles = async () => {
+  try {
+    const result = await getProfilesCombo();
+    profiles.value = result || [];
+  } catch (error) {
+    console.error("Erro ao carregar perfis:", error);
+    showErrorToast("Erro ao carregar perfis", "Erro!");
+  }
+};
 
 const performSearch = () => {
   pagination.value.current_page = 1;
@@ -313,52 +344,63 @@ const handlePageChange = (page: number) => {
   loadAvailableUsers(page);
 };
 
+const selectUser = (user: any) => {
+  selectedUserId.value = user.id;
+};
+
 const handleSubmit = async () => {
-  if (selectedUsers.value.length === 0) {
-    showErrorToast("Selecione pelo menos um profissional", "Atenção!");
+  if (!selectedUserId.value || !selectedProfileId.value) {
+    showErrorToast("Selecione um usuário e um perfil", "Atenção!");
     return;
   }
 
   try {
-    loading.value = true;
+    submitting.value = true;
 
-    // Associar cada profissional selecionado
-    const promises = selectedUsers.value.map(user =>
-      attachProfessional(props.company.id, user.id)
+    await attachUserToCompany(
+      props.company.id,
+      selectedUserId.value,
+      selectedProfileId.value
     );
 
-    await Promise.all(promises);
-
-    showSuccessToast(
-      `${selectedUsers.value.length} profissional(is) associado(s) com sucesso!`,
-      "Sucesso!"
-    );
-
-    // Emitir evento para atualizar a lista
+    showSuccessToast("Usuário associado com sucesso à empresa!", "Sucesso!");
     emit("reload");
-
-    // Fechar modal
     closeModal();
 
   } catch (error: any) {
-    console.error("Erro ao associar profissionais:", error);
+    console.error("Erro ao associar usuário:", error);
     showErrorToast(
-      error.response?.data?.message || "Erro ao associar profissionais",
+      error.response?.data?.message || "Erro ao associar usuário",
       "Erro!"
     );
   } finally {
-    loading.value = false;
+    submitting.value = false;
   }
 };
-
 
 const closeModal = () => {
   emit("update:modelValue", false);
   resetForm();
 };
 
+const resetForm = () => {
+  selectedUserId.value = null;
+  selectedProfileId.value = null;
+  searchQuery.value = "";
+  availableUsers.value = [];
+  pagination.value = {
+    current_page: 1,
+    per_page: 15,
+    total: 0,
+    last_page: 1,
+    from: 0,
+    to: 0
+  };
 
-
+  nextTick(() => {
+    formRef.value?.resetValidation();
+  });
+};
 
 // Watchers
 watch(
@@ -366,6 +408,7 @@ watch(
   (newValue) => {
     if (newValue) {
       loadAvailableUsers();
+      loadProfiles();
       nextTick(() => {
         formRef.value?.resetValidation();
       });

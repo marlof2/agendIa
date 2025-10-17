@@ -199,11 +199,11 @@ export function useCompaniesApi() {
 
       // Update the item in the list
       const index = items.value.findIndex(item => item.id === id)
-      if (index !== -1) {
+      if (index !== -1 && items.value[index]) {
         items.value[index].deleted_at = new Date().toISOString()
       }
 
-      return response
+      // Response handled, no return needed
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Erro ao inativar empresa'
       throw err
@@ -289,8 +289,12 @@ export function useCompaniesApi() {
     }
   };
 
-  // Get users for a specific company
-  const getCompanyUsers = async (companyId: number, search?: string, page: number = 1, perPage: number = 12) => {
+
+
+  // === NOVAS FUNÇÕES GENÉRICAS ===
+
+  // Get available users for a company (generic - all users not associated)
+  const getAvailableUsers = async (companyId: number, search?: string, page: number = 1, perPage: number = 15) => {
     try {
       const params = new URLSearchParams();
       if (search) {
@@ -299,39 +303,39 @@ export function useCompaniesApi() {
       params.append('page', page.toString());
       params.append('per_page', perPage.toString());
 
-      const url = `companies/${companyId}/professionals?${params.toString()}`;
+      const url = `companies/${companyId}/available-users?${params.toString()}`;
       const response = await get(url);
-      return response ;
+      return response || {};
     } catch (err: any) {
-      console.error('Erro ao carregar usuários da empresa:', err);
+      console.error('Erro ao carregar usuários disponíveis:', err);
       return {
         data: [],
         current_page: 1,
-        per_page: 12,
+        per_page: 15,
         total: 0,
-        last_page: 1,
-        from: 0,
-        to: 0
+        last_page: 1
       };
     }
   };
 
-  // Get available professionals for a company (not associated yet)
-  const getAvailableUsersForCompany = async (companyId: number, search?: string, page: number = 1, perPage: number = 12) => {
+  // Get company users (generic - all users associated to company)
+  const getCompanyUsers = async (companyId: number, search?: string, profileId?: number, page: number = 1, perPage: number = 12) => {
     try {
       const params = new URLSearchParams();
       if (search) {
         params.append('search', search);
       }
-      params.append('company_id', companyId.toString());
+      if (profileId) {
+        params.append('profile_id', profileId.toString());
+      }
       params.append('page', page.toString());
       params.append('per_page', perPage.toString());
 
-      const url = `users/available-professionals?${params.toString()}`;
+      const url = `companies/${companyId}/users?${params.toString()}`;
       const response = await get(url);
       return response || {};
     } catch (err: any) {
-      console.error('Erro ao carregar profissionais disponíveis:', err);
+      console.error('Erro ao carregar usuários da empresa:', err);
       return {
         data: [],
         current_page: 1,
@@ -342,27 +346,44 @@ export function useCompaniesApi() {
     }
   };
 
-  // Attach professional to company
-  const attachProfessional = async (companyId: number, userId: number) => {
+  // Attach user to company with specific profile
+  const attachUserToCompany = async (companyId: number, userId: number, profileId: number) => {
     try {
-      const response = await post(`companies/${companyId}/professionals/${userId}`);
+      const response = await post(`companies/${companyId}/users`, {
+        user_id: userId,
+        profile_id: profileId
+      });
       return response.data;
     } catch (err: any) {
-      console.error('Erro ao associar profissional:', err);
+      console.error('Erro ao associar usuário:', err);
       throw err;
     }
   };
 
-  // Detach professional from company
-  const detachProfessional = async (companyId: number, userId: number) => {
+  // Update user profile in company
+  const updateUserProfileInCompany = async (companyId: number, userId: number, profileId: number) => {
     try {
-      const response = await del(`companies/${companyId}/professionals/${userId}`);
+      const response = await patch(`companies/${companyId}/users/${userId}/profile`, {
+        profile_id: profileId
+      });
       return response.data;
     } catch (err: any) {
-      console.error('Erro ao desassociar profissional:', err);
+      console.error('Erro ao alterar perfil do usuário:', err);
       throw err;
     }
   };
+
+  // Detach user from company
+  const detachUserFromCompany = async (companyId: number, userId: number) => {
+    try {
+      const response = await del(`companies/${companyId}/users/${userId}`);
+      return response.data;
+    } catch (err: any) {
+      console.error('Erro ao desassociar usuário:', err);
+      throw err;
+    }
+  };
+
 
   return {
     // State
@@ -390,11 +411,13 @@ export function useCompaniesApi() {
 
     // Combo methods
     getCombo,
-    getCompanyUsers,
-    getAvailableUsersForCompany,
 
-    // Professional management
-    attachProfessional,
-    detachProfessional
+    // Generic user management (NEW)
+    getAvailableUsers,
+    getCompanyUsers,
+    attachUserToCompany,
+    updateUserProfileInCompany,
+    detachUserFromCompany,
+
   }
 }

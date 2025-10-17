@@ -13,14 +13,14 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
-    path: '/companies/:id/bind-professional',
-    name: 'companies.bind-professional',
-    component: () => import('../components/bind-professional/index.vue'),
+    path: '/companies/:id/associate-users',
+    name: 'companies.associate-users',
+    component: () => import('../components/associate-users/index.vue'),
     meta: {
-      requiresAuth: false,
-      requiresAbility: 'companies.manage_users',
-      title: 'Gerenciar Profissionais',
-      description: 'Gerencie os profissionais associados à empresa'
+      requiresAuth: true,
+      requiresAbility: 'companies.users.index',
+      title: 'Gerenciar Usuários',
+      description: 'Gerencie todos os usuários associados à empresa'
     }
   }
 ]

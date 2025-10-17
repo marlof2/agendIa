@@ -156,13 +156,11 @@ export const useTenant = () => {
 
       if (response.success && response.data) {
         const abilities = response.data.abilities || []
-        const abilitiesArray = abilities.map((ability: any) => ability.full_name || `${ability.category}.${ability.action}`)
+        const abilitiesArray = abilities.map((ability: any) => `${ability.name}`)
 
         // Salvar abilities no localStorage
         const abilitiesData = {
           abilities: abilitiesArray,
-          profile_id: profileId,
-          updated_at: new Date().toISOString()
         }
 
         // Salvar abilities criptografadas no localStorage

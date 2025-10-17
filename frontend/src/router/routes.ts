@@ -65,7 +65,7 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/pages/dashboard.vue'),
     meta: {
       requiresAuth: true,
-      requiresAbility: 'dashboard.index',
+      requiresAbility: 'dashboard',
       title: 'Dashboard',
       description: 'Visão geral do sistema'
     }
@@ -79,6 +79,17 @@ const routes: RouteRecordRaw[] = [
       requiresAbility: 'appointments.index',
       title: 'Agendamentos',
       description: 'Gerencie todos os agendamentos do sistema'
+    }
+  },
+  {
+    path: '/my-companies',
+    name: 'my-companies',
+    component: () => import('@/pages/my-companies/index.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAbility: 'users.my_companies',
+      title: 'Minhas Empresas',
+      description: 'Gerencie suas associações com empresas'
     }
   },
   {

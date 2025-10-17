@@ -6,6 +6,7 @@ use App\Models\Company;
 use App\Models\Timezone;
 use App\Factories\ExportFactory;
 use App\Models\User;
+use App\Models\Profile;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Response;
@@ -287,19 +288,25 @@ class CompanyService
     }
 
     /**
-     * Buscar profissionais de uma empresa específica
+     * Buscar usuários de uma empresa específica
      */
-    public function getCompanyProfessionals(int $companyId, array $filters = []): \Illuminate\Pagination\LengthAwarePaginator
+    public function getCompanyUsers(int $companyId, array $filters = []): \Illuminate\Pagination\LengthAwarePaginator
     {
-        $query = User::with('companies')
-            ->whereHas('companies', function ($query) use ($companyId) {
+        $query = User::with(['companies' => function ($query) use ($companyId) {
                 $query->where('companies.id', $companyId)
-                    ->where('company_user.profile_id', function ($subQuery) {
-                        $subQuery->select('id')
-                            ->from('profiles')
-                            ->where('name', 'professional');
-                    });
+                    ->withPivot('profile_id');
+            }])
+            ->whereHas('companies', function ($query) use ($companyId) {
+                $query->where('companies.id', $companyId);
             });
+
+        // Filtrar por perfil específico se fornecido
+        if (!empty($filters['profile_id'])) {
+            $query->whereHas('companies', function ($query) use ($companyId, $filters) {
+                $query->where('companies.id', $companyId)
+                    ->where('company_user.profile_id', $filters['profile_id']);
+            });
+        }
 
         // Busca por nome ou email
         if (!empty($filters['search'])) {
@@ -312,70 +319,156 @@ class CompanyService
 
         // Paginação
         $perPage = $filters['per_page'] ?? 12;
+        $result = $query->orderBy('users.name', 'asc')->paginate($perPage);
 
-        return $query->orderBy('users.name', 'asc')->paginate($perPage);
+        // Carregar profiles para cada usuário
+        $result->getCollection()->transform(function ($user) {
+            if ($user->companies) {
+                foreach ($user->companies as $company) {
+                    if ($company->pivot && $company->pivot->profile_id) {
+                        $profile = Profile::find($company->pivot->profile_id);
+                        if ($profile) {
+                            $company->pivot->profile = $profile;
+                        }
+                    }
+                }
+            }
+            return $user;
+        });
+
+        return $result;
     }
 
+
     /**
-     * Associar um profissional a uma empresa
+     * Associar um usuário a uma empresa com perfil específico
      */
-    public function attachProfessional(int $companyId, int $userId): array
+    public function attachUserToCompany(int $companyId, int $userId, int $profileId): array
     {
         $company = Company::findOrFail($companyId);
         $user = \App\Models\User::findOrFail($userId);
+        $profile = Profile::findOrFail($profileId);
 
-        // Verificar se o usuário tem perfil profissional em alguma empresa
-        $hasProfessionalProfile = $user->companies()
-            ->wherePivot('profile_id', function ($query) {
-                $query->select('id')
-                    ->from('profiles')
-                    ->where('name', 'professional');
-            })
-            ->exists();
-
-        if (!$hasProfessionalProfile) {
-            throw new \Exception('Apenas usuários com perfil profissional podem ser associados a empresas.');
-        }
-
-        // Verificar se já está associado
+        // Verificar se já está associado a esta empresa
         if ($company->users()->where('user_id', $userId)->exists()) {
-            throw new \Exception('Este profissional já está associado a esta empresa.');
+            throw new \Exception('Este usuário já está associado a esta empresa.');
         }
 
-        // Associar o profissional à empresa usando a tabela pivot
-        $company->users()->attach($userId);
+        // Associar o usuário à empresa com o perfil especificado
+        $company->users()->attach($userId, [
+            'profile_id' => $profileId,
+            'is_main_company' => false,
+            'created_at' => now(),
+            'updated_at' => now()
+        ]);
 
         return [
             'success' => true,
-            'message' => 'Profissional associado com sucesso à empresa.',
+            'message' => 'Usuário associado com sucesso à empresa.',
             'data' => [
                 'company_id' => $companyId,
                 'user_id' => $userId,
                 'user_name' => $user->name,
-                'company_name' => $company->name
+                'company_name' => $company->name,
+                'profile_id' => $profileId,
+                'profile_name' => $profile->name
             ]
         ];
     }
 
     /**
-     * Desassociar um profissional de uma empresa
+     * Alterar perfil de um usuário em uma empresa específica
      */
-    public function detachProfessional(int $companyId, int $userId): array
+    public function updateUserProfileInCompany(int $companyId, int $userId, int $newProfileId): array
+    {
+        $company = Company::findOrFail($companyId);
+        $user = \App\Models\User::findOrFail($userId);
+        $newProfile = Profile::findOrFail($newProfileId);
+
+        // Verificar se está associado a esta empresa
+        if (!$company->users()->where('user_id', $userId)->exists()) {
+            throw new \Exception('Este usuário não está associado a esta empresa.');
+        }
+
+        // Buscar o perfil atual
+        $currentProfile = $company->users()->where('user_id', $userId)->first()->pivot->profile_id;
+
+        if ($currentProfile == $newProfileId) {
+            throw new \Exception('O usuário já possui este perfil nesta empresa.');
+        }
+
+        // Atualizar o perfil na tabela pivot
+        $company->users()->updateExistingPivot($userId, [
+            'profile_id' => $newProfileId,
+            'updated_at' => now()
+        ]);
+
+        return [
+            'success' => true,
+            'message' => 'Perfil do usuário alterado com sucesso.',
+            'data' => [
+                'company_id' => $companyId,
+                'user_id' => $userId,
+                'user_name' => $user->name,
+                'company_name' => $company->name,
+                'old_profile_id' => $currentProfile,
+                'new_profile_id' => $newProfileId,
+                'new_profile_name' => $newProfile->name
+            ]
+        ];
+    }
+
+
+    /**
+     * Buscar usuários disponíveis para associação a uma empresa
+     */
+    public function getAvailableUsersForCompany(int $companyId, array $filters = []): LengthAwarePaginator
+    {
+        $query = User::query();
+
+        // Buscar usuários que NÃO estão associados à empresa específica
+        $query->whereDoesntHave('companies', function ($q) use ($companyId) {
+            $q->where('companies.id', $companyId);
+        });
+
+        // Busca por nome, email ou telefone
+        if (!empty($filters['search'])) {
+            $search = $filters['search'];
+            $query->where(function ($q) use ($search) {
+                $q->where('users.name', 'like', "%{$search}%")
+                    ->orWhere('users.email', 'like', "%{$search}%")
+                    ->orWhere('users.phone', 'like', "%{$search}%");
+            });
+        }
+
+        // Selecionar apenas os campos necessários
+        $query->select(['id', 'name', 'email', 'phone', 'has_whatsapp', 'created_at']);
+
+        // Paginação
+        $perPage = $filters['per_page'] ?? 15;
+
+        return $query->orderBy('name', 'asc')->paginate($perPage);
+    }
+
+    /**
+     * Desassociar um usuário de uma empresa
+     */
+    public function detachUserFromCompany(int $companyId, int $userId): array
     {
         $company = Company::findOrFail($companyId);
         $user = \App\Models\User::findOrFail($userId);
 
         // Verificar se está associado
         if (!$company->users()->where('user_id', $userId)->exists()) {
-            throw new \Exception('Este profissional não está associado a esta empresa.');
+            throw new \Exception('Este usuário não está associado a esta empresa.');
         }
 
-        // Desassociar o profissional da empresa usando a tabela pivot
+        // Desassociar o usuário da empresa
         $company->users()->detach($userId);
 
         return [
             'success' => true,
-            'message' => 'Profissional desassociado com sucesso da empresa.',
+            'message' => 'Usuário desassociado com sucesso da empresa.',
             'data' => [
                 'company_id' => $companyId,
                 'user_id' => $userId,
@@ -384,6 +477,7 @@ class CompanyService
             ]
         ];
     }
+
 
     /**
      * Format phone for display

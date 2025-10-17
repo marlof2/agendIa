@@ -121,7 +121,7 @@ interface MenuItem {
 // Composables
 const route = useRoute();
 
-const { hasPermission, reloadAbilities } = useAbilities()
+const { hasPermission, reloadAbilities} = useAbilities()
 
 // Menu items filtrados baseado nas permissões
 const filteredMenuItems = computed(() => {
@@ -146,7 +146,7 @@ const menuItems: MenuItem[] = [
     icon: "mdi-view-dashboard",
     value: "dashboard",
     to: "/dashboard",
-    permission: "dashboard.index",
+    permission: "dashboard",
   },
   {
     title: "Agendamentos",
@@ -182,6 +182,13 @@ const menuItems: MenuItem[] = [
     value: "profiles",
     to: "/profiles",
     permission: "profiles.index",
+  },
+  {
+    title: "Minhas Empresas",
+    icon: "mdi-office-building",
+    value: "my-companies",
+    to: "/my-companies",
+    permission: "users.my_companies",
   },
   {
     title: "Empresas",
@@ -222,17 +229,13 @@ const pageTitles: Record<string, string> = {
   "/professionals": "Profissionais",
   "/services": "Serviços",
   "/profiles": "Perfis",
+  "/my-companies": "Minhas Empresas",
   "/companies": "Empresas",
   "/users": "Usuários",
   "/reports": "Relatórios",
   "/integrations": "Integrações",
   "/settings": "Configurações",
 };
-
-// Computed properties
-const currentPageTitle = computed(() => {
-  return pageTitles[route.path] || "";
-});
 
 // Methods
 const isActiveRoute = (path: string) => {
@@ -308,6 +311,7 @@ const observeAbilitiesStorage = () => {
     window.removeEventListener('storage', handleStorageChange);
     localStorage.setItem = originalSetItem;
   };
+
 };
 
 // Inicializar observer

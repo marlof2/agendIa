@@ -176,36 +176,23 @@ class CompanyController extends Controller
         ]);
     }
 
-    /**
-     * Buscar usuários de uma empresa específica
-     */
-    public function companyUsers(Request $request, $companyId): JsonResponse
-    {
-        try {
-            $filters = [
-                'search' => $request->get('search'),
-                'per_page' => $request->get('per_page', 12),
-            ];
-
-            // Buscar profissionais da empresa usando o service
-            $result = $this->companyService->getCompanyProfessionals((int)$companyId, $filters);
-
-            return response()->json($result);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao buscar profissionais da empresa: ' . $e->getMessage()
-            ], 500);
-        }
-    }
 
     /**
-     * Associar um profissional a uma empresa
+     * Associar um usuário a uma empresa com perfil específico
      */
-    public function attachProfessional(Request $request, $companyId, $userId): JsonResponse
+    public function attachUserToCompany(Request $request, $companyId): JsonResponse
     {
+        $request->validate([
+            'user_id' => 'required|integer|exists:users,id',
+            'profile_id' => 'required|integer|exists:profiles,id'
+        ]);
+
         try {
-            $result = $this->companyService->attachProfessional((int)$companyId, (int)$userId);
+            $result = $this->companyService->attachUserToCompany(
+                (int)$companyId,
+                (int)$request->user_id,
+                (int)$request->profile_id
+            );
 
             return response()->json($result, 201);
         } catch (\Exception $e) {
@@ -217,12 +204,20 @@ class CompanyController extends Controller
     }
 
     /**
-     * Desassociar um profissional de uma empresa
+     * Alterar perfil de um usuário em uma empresa específica
      */
-    public function detachProfessional(Request $request, $companyId, $userId): JsonResponse
+    public function updateUserProfileInCompany(Request $request, $companyId, $userId): JsonResponse
     {
+        $request->validate([
+            'profile_id' => 'required|integer|exists:profiles,id'
+        ]);
+
         try {
-            $result = $this->companyService->detachProfessional((int)$companyId, (int)$userId);
+            $result = $this->companyService->updateUserProfileInCompany(
+                (int)$companyId,
+                (int)$userId,
+                (int)$request->profile_id
+            );
 
             return response()->json($result);
         } catch (\Exception $e) {
@@ -230,6 +225,68 @@ class CompanyController extends Controller
                 'success' => false,
                 'message' => $e->getMessage()
             ], 422);
+        }
+    }
+
+    /**
+     * Desassociar um usuário de uma empresa
+     */
+    public function detachUserFromCompany(Request $request, $companyId, $userId): JsonResponse
+    {
+        try {
+            $result = $this->companyService->detachUserFromCompany((int)$companyId, (int)$userId);
+
+            return response()->json($result);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 422);
+        }
+    }
+
+    /**
+     * Buscar usuários disponíveis para associação a uma empresa
+     */
+    public function availableUsersForCompany(Request $request, $companyId): JsonResponse
+    {
+        try {
+            $filters = [
+                'search' => $request->get('search'),
+                'per_page' => $request->get('per_page', 15),
+            ];
+
+            $result = $this->companyService->getAvailableUsersForCompany((int)$companyId, $filters);
+
+            return response()->json($result);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao buscar usuários disponíveis: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Buscar usuários de uma empresa específica
+     */
+    public function companyUsers(Request $request, $companyId): JsonResponse
+    {
+        try {
+            $filters = [
+                'search' => $request->get('search'),
+                'profile_id' => $request->get('profile_id'),
+                'per_page' => $request->get('per_page', 12),
+            ];
+
+            $result = $this->companyService->getCompanyUsers((int)$companyId, $filters);
+
+            return response()->json($result);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao buscar usuários da empresa: ' . $e->getMessage()
+            ], 500);
         }
     }
 

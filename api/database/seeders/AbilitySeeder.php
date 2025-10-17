@@ -22,6 +22,7 @@ class AbilitySeeder extends Seeder
             ['name' => 'users.delete', 'category' => 'users', 'action' => 'delete', 'display_name' => 'Deletar Usuários', 'description' => 'Permite deletar usuários'],
             ['name' => 'users.associate_companies', 'category' => 'users', 'action' => 'associate_companies', 'display_name' => 'Associar Empresas aos Usuários', 'description' => 'Permite associar empresas aos usuários'],
             ['name' => 'users.detach_company', 'category' => 'users', 'action' => 'detach_company', 'display_name' => 'Desassociar Empresa dos Usuários', 'description' => 'Permite desassociar empresa dos usuários'],
+            ['name' => 'users.my_companies', 'category' => 'users', 'action' => 'my_companies', 'display_name' => 'Minhas Empresas', 'description' => 'Permite gerenciar minhas empresas'],
 
 
             // Empresas
@@ -30,9 +31,15 @@ class AbilitySeeder extends Seeder
             ['name' => 'companies.edit', 'category' => 'companies', 'action' => 'edit', 'display_name' => 'Editar Empresas', 'description' => 'Permite editar empresas existentes'],
             ['name' => 'companies.show', 'category' => 'companies', 'action' => 'show', 'display_name' => 'Visualizar Empresas', 'description' => 'Permite visualizar empresas'],
             ['name' => 'companies.delete', 'category' => 'companies', 'action' => 'delete', 'display_name' => 'Deletar Empresas', 'description' => 'Permite deletar empresas'],
-            ['name' => 'companies.manage_professionals', 'category' => 'companies', 'action' => 'manage_professionals', 'display_name' => 'Gerenciar Profissionais das Empresas', 'description' => 'Permite gerenciar profissionais das empresas'],
-            ['name' => 'companies.attach_professional', 'category' => 'companies', 'action' => 'attach_professional', 'display_name' => 'Associar Profissional à Empresa', 'description' => 'Permite associar profissional à empresa'],
-            ['name' => 'companies.detach_professional', 'category' => 'companies', 'action' => 'detach_professional', 'display_name' => 'Desassociar Profissional da Empresa', 'description' => 'Permite desassociar profissional da empresa'],
+            ['name' => 'companies.deactivate', 'category' => 'companies', 'action' => 'deactivate', 'display_name' => 'Inativar Empresas', 'description' => 'Permite inativar empresas'],
+            ['name' => 'companies.activate', 'category' => 'companies', 'action' => 'activate', 'display_name' => 'Ativar Empresas', 'description' => 'Permite ativar empresas'],
+            ['name' => 'companies.manage_users', 'category' => 'companies', 'action' => 'manage_users', 'display_name' => 'Gerenciar Usuários das Empresas', 'description' => 'Permite gerenciar usuários das empresas'],
+
+            ['name' => 'companies.users.index', 'category' => 'companies', 'action' => 'users.index', 'display_name' => 'Listar Usuários das Empresas', 'description' => 'Permite visualizar usuários das empresas'],
+            ['name' => 'companies.users.attach', 'category' => 'companies', 'action' => 'users.attach', 'display_name' => 'Associar Usuário à Empresa', 'description' => 'Permite associar usuário à empresa'],
+            ['name' => 'companies.users.show', 'category' => 'companies', 'action' => 'users.show', 'display_name' => 'Visualizar Usuário da Empresa', 'description' => 'Permite visualizar usuário da empresa'],
+            ['name' => 'companies.users.update_profile', 'category' => 'companies', 'action' => 'users.update_profile', 'display_name' => 'Atualizar Usuário da Empresa', 'description' => 'Permite atualizar o perfil do usuário da empresa'],
+            ['name' => 'companies.users.detach', 'category' => 'companies', 'action' => 'users.detach', 'display_name' => 'Desassociar Usuário da Empresa', 'description' => 'Permite desassociar usuário da empresa'],
 
 
             // Perfis
@@ -51,11 +58,9 @@ class AbilitySeeder extends Seeder
             ['name' => 'clients.edit', 'category' => 'clients', 'action' => 'edit', 'display_name' => 'Editar Clientes', 'description' => 'Permite editar clientes existentes'],
             ['name' => 'clients.delete', 'category' => 'clients', 'action' => 'delete', 'display_name' => 'Deletar Clientes', 'description' => 'Permite deletar clientes'],
 
-            //abilities
-            ['name' => 'abilities.index', 'category' => 'abilities', 'action' => 'index', 'display_name' => 'Listar Abilidades', 'description' => 'Permite visualizar habilidades'],
-
-            // Dashboard
-            ['name' => 'dashboard.index', 'category' => 'dashboard', 'action' => 'index', 'display_name' => 'Visualizar Dashboard', 'description' => 'Permite visualizar o dashboard'],
+            //sistema
+            ['name' => 'abilities.index', 'category' => 'others', 'action' => 'index', 'display_name' => 'Listar Abilidades', 'description' => 'Permite visualizar habilidades'],
+            ['name' => 'dashboard', 'category' => 'others', 'action' => 'dashboard', 'display_name' => 'Visualizar Dashboard', 'description' => 'Permite visualizar o dashboard'],
 
 
             // // Agendamentos

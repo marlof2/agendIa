@@ -77,7 +77,6 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/update-main-company', [UserController::class, 'updateMainCompany']);
             Route::delete('/detach-company/{companyId}', [UserController::class, 'detachCompany'])->middleware('ability:users.detach_company');
             Route::get('/export', [UserController::class, 'export'])->middleware('ability:users.index');
-            Route::get('/available-professionals', [UserController::class, 'availableProfessionals'])->middleware('ability:users.index');
             Route::get('/{user}', [UserController::class, 'show'])->middleware('ability:users.show');
             Route::put('/{user}', [UserController::class, 'update'])->middleware('ability:users.edit');
             Route::delete('/{user}', [UserController::class, 'destroy'])->middleware('ability:users.delete');
@@ -115,12 +114,14 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/{company}', [CompanyController::class, 'show'])->middleware('ability:companies.show');
             Route::put('/{company}', [CompanyController::class, 'update'])->middleware('ability:companies.edit');
             Route::delete('/{company}', [CompanyController::class, 'destroy'])->middleware('ability:companies.delete');
-            Route::patch('/{company}/deactivate', [CompanyController::class, 'deactivate'])->middleware('ability:companies.edit');
-            Route::patch('/{id}/activate', [CompanyController::class, 'activate'])->middleware('ability:companies.edit');
-            Route::get('/{companyId}/professionals', [CompanyController::class, 'companyUsers'])->middleware('ability:companies.manage_professionals');
-            Route::get('/{companyId}/bind-professional/export', [CompanyController::class, 'exportBindProfessional'])->middleware('ability:companies.manage_professionals');
-            Route::post('/{companyId}/professionals/{userId}', [CompanyController::class, 'attachProfessional'])->middleware('ability:companies.attach_professional');
-            Route::delete('/{companyId}/professionals/{userId}', [CompanyController::class, 'detachProfessional'])->middleware('ability:companies.detach_professional');
+            Route::patch('/{company}/deactivate', [CompanyController::class, 'deactivate'])->middleware('ability:companies.deactivate');
+            Route::patch('/{company}/activate', [CompanyController::class, 'activate'])->middleware('ability:companies.activate');
+            Route::get('/{companyId}/users', [CompanyController::class, 'companyUsers'])->middleware('ability:companies.users.index');
+            Route::get('/{companyId}/available-users', [CompanyController::class, 'availableUsersForCompany'])->middleware('ability:companies.users.index');
+            Route::post('/{companyId}/users', [CompanyController::class, 'attachUserToCompany'])->middleware('ability:companies.users.attach');
+            Route::patch('/{companyId}/users/{userId}/profile', [CompanyController::class, 'updateUserProfileInCompany'])->middleware('ability:companies.users.update_profile');
+            Route::delete('/{companyId}/users/{userId}', [CompanyController::class, 'detachUserFromCompany'])->middleware('ability:companies.users.detach');
+
         });
 
         // Rotas para clientes (filtrados por empresa)
